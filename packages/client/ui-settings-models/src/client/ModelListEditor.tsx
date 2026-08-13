@@ -14,12 +14,13 @@
  * rows the user can still fill in by hand.
  */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { DiscoveredModelView, IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { formatCapacity, parseCapacity } from './DeepSeekModelsEditor.tsx'
 import type { DeepSeekModelDraft } from './DeepSeekModelsEditor.tsx'
+import { groupCandidates } from './modelGrouping.ts'
 import { messageOf } from './store.ts'
 import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
@@ -290,6 +291,24 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
     })
   }
 
+  // A relay serving several vendors returns one flat listing, so the picker
+  // groups the candidates by the family their ids name (claude, gemini, gpt…)
+  // instead of one undifferentiated scroll.
+  const groups = useMemo(() => groupCandidates(candidates ?? []), [candidates])
+  /** Every distinct candidate id, the unit adoption actually writes. */
+  const candidateIds = useMemo(
+    () => [...new Set((candidates ?? []).map(candidate => candidate.id))],
+    [candidates],
+  )
+  /** Whether every candidate is picked; the toggle's "all" side. */
+  const allPicked = candidates !== undefined && candidateIds.every(id => picked.has(id))
+  /** Toggle between picking every candidate and picking none. */
+  const toggleAll = (): void => {
+    /* v8 ignore next -- the dialog only renders with candidates loaded */
+    if (candidates === undefined) return
+    setPicked(allPicked ? new Set() : new Set(candidateIds))
+  }
+
   // A route the adapter already describes answers without an endpoint; only a
   // draft with neither has nothing to ask about.
   const askable = probe.provider !== undefined || (probe.baseURL !== undefined && probe.baseURL.length > 0)
@@ -445,23 +464,44 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
           </>
         )}
       >
-        <ul className={styles['candidateList']}>
-          {(candidates ?? []).map(candidate => (
-            <li key={candidate.id} className={styles['candidate']}>
-              <label className={styles['candidateLabel']}>
-                <input
-                  type="checkbox"
-                  checked={picked.has(candidate.id)}
-                  onChange={() => { toggle(candidate.id) }}
-                />
-                {/* The id alone: it is the string adoption writes, and the
-                    capacities the endpoint reported are adopted with it and
-                    editable in the row that appears. */}
-                <span className={styles['candidateId']}>{candidate.id}</span>
-              </label>
-            </li>
+        <div className={styles['candidateToolbar']}>
+          {/* One toggle for the whole listing: with everything picked it reads
+              as the inverse, so a relay's hundred-model reply can be cleared in
+              one click instead of unchecked one by one. */}
+          <button
+            type="button"
+            className={styles['linkButton']}
+            onClick={toggleAll}
+          >
+            {allPicked ? t('fetchDeselectAll') : t('fetchSelectAll')}
+          </button>
+        </div>
+        <div className={styles['candidateScroll']}>
+          {groups.map(group => (
+            <section key={group.family} className={styles['candidateGroup']}>
+              <h3 className={styles['candidateGroupHead']}>
+                {group.label} · {group.models.length}
+              </h3>
+              <ul className={styles['candidateList']}>
+                {group.models.map(candidate => (
+                  <li key={candidate.id} className={styles['candidate']}>
+                    <label className={styles['candidateLabel']}>
+                      <input
+                        type="checkbox"
+                        checked={picked.has(candidate.id)}
+                        onChange={() => { toggle(candidate.id) }}
+                      />
+                      {/* The id alone: it is the string adoption writes, and the
+                          capacities the endpoint reported are adopted with it and
+                          editable in the row that appears. */}
+                      <span className={styles['candidateId']}>{candidate.id}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       </Modal>
     </section>
   )

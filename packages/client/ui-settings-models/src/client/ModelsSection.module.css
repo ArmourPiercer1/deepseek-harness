@@ -644,13 +644,44 @@ select.input {
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
 }
 
+/* The picker's one toggle sits on its own row above the scroll. */
+.candidateToolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* The families scroll together inside this elevated surface; the scrollbar
+   indirection is rebound on the dialog (see `.fetchDialog`), never here. */
+.candidateScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.candidateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* A family header reads as the column caption of the ids beneath it, the
+   same caption tone as the model-catalog title. */
+.candidateGroupHead {
+  margin: 0;
+  padding: 2px 8px 4px;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-secondary);
+}
+
 .candidateList {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: 320px;
   margin: 0;
-  overflow-y: auto;
   padding: 0;
   list-style: none;
 }

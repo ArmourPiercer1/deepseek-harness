@@ -14,6 +14,7 @@
 // reference-free profile from a page-managed key before the credential and
 // settings unsets reach the wire.
 import { readFile } from 'node:fs/promises'
+import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import type { Browser, Page } from 'playwright'
@@ -32,6 +33,7 @@ const DECLARED_EXPECTED = join(SNAPSHOT_DIR, 'declared.expected.md')
 const DECLARED_EDIT_EXPECTED = join(SNAPSHOT_DIR, 'declared-edit.expected.md')
 const NATIVE_DELETE_EXPECTED = join(SNAPSHOT_DIR, 'native-delete.expected.md')
 const DELETE_EXPECTED = join(SNAPSHOT_DIR, 'delete.expected.md')
+const FETCH_GROUPED_EXPECTED = join(SNAPSHOT_DIR, 'fetch-grouped.expected.md')
 const MODE = webSnapshotMode()
 
 describe('web e2e: Models settings page configures a dormant provider', () => {
@@ -277,10 +279,98 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 
+  it('fetches a gateway\u2019s models and adopts a grouped selection', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-models-fetch-grouped'))
+    // A relay serving several vendors returns one flat listing; the picker
+    // must group it by family and offer one select-all toggle. The endpoint is
+    // a local mock server, so the real interrogation path is exercised
+    // keylessly and deterministically.
+    const gateway = createServer((request, response) => {
+      const url = new URL(request.url ?? '/', 'http://127.0.0.1')
+      if (url.pathname !== '/v1/models') {
+        response.writeHead(404)
+        response.end()
+        return
+      }
+      response.setHeader('content-type', 'application/json')
+      response.end(JSON.stringify({
+        object: 'list',
+        data: [
+          { id: 'claude-3-5-sonnet-20241022' },
+          { id: 'gpt-4o' },
+          { id: 'gemini-2.0-flash' },
+          { id: 'claude-3-opus-20240229' },
+        ],
+      }))
+    })
+    await new Promise<void>(resolve => gateway.listen(0, '127.0.0.1', resolve))
+    const address = gateway.address()
+    if (address === null || typeof address === 'string') {
+      throw new Error('web e2e: mock gateway did not bind a TCP port')
+    }
+    try {
+      await page.getByRole('button', { name: '设置', exact: true }).click()
+      const dialog = page.getByRole('dialog', { name: '设置' })
+      await dialog.waitFor({ timeout: 10_000 })
+      await dialog.getByRole('button', { name: '模型' }).click()
+      const declare = dialog.getByRole('button', { name: '添加自定义提供方' })
+      await declare.waitFor({ timeout: 10_000 })
+      await declare.click()
+      await dialog.getByLabel('Provider ID').fill('relay-gateway')
+      await dialog.getByLabel('显示名称').fill('Relay Gateway')
+      await dialog.getByLabel('API 地址').fill(`http://127.0.0.1:${address.port}/v1`)
+      await dialog.getByRole('button', { name: '获取可用模型' }).click()
+      const fetchDialog = page.getByRole('dialog', { name: '选择要添加的模型' })
+      await fetchDialog.waitFor({ timeout: 10_000 })
+
+      const snapshot = await captureStableAria(
+        page,
+        '[role="dialog"][aria-label="选择要添加的模型"]',
+        scaffold.workspaceCwd,
+      )
+      await compareOrRefreshGolden(FETCH_GROUPED_EXPECTED, snapshot, MODE)
+
+      // The grouped captions name the families the listing actually contains.
+      await fetchDialog.getByText('Claude · 2').waitFor({ timeout: 10_000 })
+      await fetchDialog.getByText('GPT · 1').waitFor({ timeout: 10_000 })
+      await fetchDialog.getByText('Gemini · 1').waitFor({ timeout: 10_000 })
+      const checked = async (): Promise<boolean[]> => {
+        const boxes = fetchDialog.locator('input[type="checkbox"]')
+        const states: boolean[] = []
+        for (let index = 0; index < await boxes.count(); index++) {
+          states.push(await boxes.nth(index).isChecked())
+        }
+        return states
+      }
+      // Every candidate starts picked, so the toggle reads as its inverse.
+      expect(await checked()).toEqual([true, true, true, true])
+      await fetchDialog.getByRole('button', { name: '取消全选' }).click()
+      expect(await checked()).toEqual([false, false, false, false])
+      // One click back selects the whole listing again.
+      await fetchDialog.getByRole('button', { name: '全选' }).click()
+      expect(await checked()).toEqual([true, true, true, true])
+      await fetchDialog.getByRole('button', { name: '添加所选' }).click()
+      await dialog.getByRole('button', { name: '创建提供方', exact: true }).click()
+      const row = dialog.getByText('Relay Gateway', { exact: true }).first()
+      await row.waitFor({ timeout: 10_000 })
+
+      // Adoption wrote the picked models back in discovery order.
+      const document = await readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8')
+      expect(document).toContain('relay-gateway:')
+      for (const id of ['claude-3-5-sonnet-20241022', 'gpt-4o', 'gemini-2.0-flash', 'claude-3-opus-20240229']) {
+        expect(document).toContain(id)
+      }
+      expect(tripwire.pageErrors).toEqual([])
+    } finally {
+      await new Promise<void>(resolve => gateway.close(() => { resolve() }))
+    }
+  }, 60_000)
+
   it.skipIf(MODE === 'record')('keeps the fixture inventory closed', async () => {
     await assertFixtureInventory(SNAPSHOT_DIR, [
       'configured.expected.md', 'declared-edit.expected.md', 'declared.expected.md',
-      'delete.expected.md', 'empty.expected.md', 'native-delete.expected.md',
+      'delete.expected.md', 'empty.expected.md', 'fetch-grouped.expected.md',
+      'native-delete.expected.md',
     ])
   })
 })

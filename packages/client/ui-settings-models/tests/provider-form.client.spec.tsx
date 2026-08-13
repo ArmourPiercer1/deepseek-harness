@@ -603,6 +603,77 @@ describe('endpoint interrogation', () => {
     // A disclosed output cap rides along with the candidate that has one.
     expect(firstMutate(mutate).ops[0]?.value).toEqual([{ id: 'a' }, { id: 'b', maxTokens: 2048 }])
   })
+
+  it('groups the discovered candidates by family, in discovery order', async () => {
+    const discover = vi.fn(() => Promise.resolve(ok({
+      models: [
+        { id: 'claude-3-5-sonnet-20241022' },
+        { id: 'gpt-4o' },
+        { id: 'gemini-2.0-flash' },
+        { id: 'claude-3-opus-20240229' },
+      ],
+    })))
+    const { mutate } = await mountSection({ discover })
+    openEditor('openai')
+
+    fireEvent.click(screen.getByText(en.fetchModels))
+    await screen.findByText(en.fetchTitle)
+    // Headers name the family and its size; every candidate is new, so each
+    // starts checked regardless of which family it landed in.
+    expect(screen.getByText('Claude · 2')).toBeTruthy()
+    expect(screen.getByText('GPT · 1')).toBeTruthy()
+    expect(screen.getByText('Gemini · 1')).toBeTruthy()
+    const boxes = [...document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')]
+    expect(boxes.map(box => box.checked)).toEqual([true, true, true, true])
+    fireEvent.click(screen.getByText(en.fetchAdopt))
+    fireEvent.click(screen.getByText(en.apply))
+
+    await waitFor(() => { expect(mutate).toHaveBeenCalled() })
+    // Grouping is presentation only: adoption writes discovery order back.
+    expect(firstMutate(mutate).ops[0]?.value).toEqual([
+      { id: 'claude-3-5-sonnet-20241022' },
+      { id: 'gpt-4o' },
+      { id: 'gemini-2.0-flash' },
+      { id: 'claude-3-opus-20240229' },
+    ])
+  })
+
+  it('selects and clears the whole listing with one toggle', async () => {
+    const discover = vi.fn(() => Promise.resolve(ok({
+      models: [{ id: 'kept', contextWindow: 999 }, { id: 'fresh' }],
+    })))
+    const { mutate } = await mountSection({
+      discover,
+      providers: { openai: { baseURL: 'https://proxy.example/v1', models: [{ id: 'kept', contextWindow: 111 }] } },
+    })
+    openEditor('openai')
+
+    fireEvent.click(screen.getByText(en.fetchModels))
+    await screen.findByText(en.fetchTitle)
+    const checked = (): boolean[] =>
+      [...document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].map(box => box.checked)
+    // The configured row starts unchecked, so the toggle reads "select all".
+    expect(checked()).toEqual([false, true])
+    const selectAll = (): HTMLElement => screen.getByRole('button', { name: en.fetchSelectAll })
+    const deselectAll = (): HTMLElement => screen.getByRole('button', { name: en.fetchDeselectAll })
+    fireEvent.click(selectAll())
+
+    // Selecting all checks every candidate, including the one already listed.
+    expect(checked()).toEqual([true, true])
+    // The same control now reads the inverse and clears the whole listing.
+    fireEvent.click(deselectAll())
+    expect(checked()).toEqual([false, false])
+    // Re-selecting all and adopting keeps the tuned row beside the fresh one.
+    fireEvent.click(selectAll())
+    fireEvent.click(screen.getByText(en.fetchAdopt))
+    fireEvent.click(screen.getByText(en.apply))
+
+    await waitFor(() => { expect(mutate).toHaveBeenCalled() })
+    expect(firstMutate(mutate).ops[0]?.value).toEqual([
+      { id: 'kept', contextWindow: 111 },
+      { id: 'fresh' },
+    ])
+  })
 })
 
 describe('provider rows', () => {
