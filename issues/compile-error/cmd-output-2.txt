@@ -1,0 +1,42 @@
+D:\AgentDev\deepseek-harness>pnpm run build
+$ npm run build:lib && npm run build:web
+系统找不到指定的路径。
+
+> @deepseek-ai/dsh-root@0.1.0-rc.5 build:lib
+> npm run build:lib:host && npm run build:lib:client
+
+系统找不到指定的路径。
+
+> @deepseek-ai/dsh-root@0.1.0-rc.5 build:lib:host
+> tsc -b tsconfig.host.json && tsdown --env.DSH_BUILD_FACE host
+
+packages/core/session/tests/invariant.spec.ts:275:7 - error TS2322: Type '{ content: { content: { type: "text"; text: string; }[]; type: "tool-result"; toolCallId: CallId; isError?: boolean; }[]; role: "user"; source: ToolMessageSource; id: MessageId; }' is not assignable to type 'ToolResultMessage'.
+  Types of property 'content' are incompatible.
+    Type '{ content: { type: "text"; text: string; }[]; type: "tool-result"; toolCallId: CallId; isError?: boolean; }[]' is not assignable to type '[ToolResultBlock]'.
+      Target requires 1 element(s) but source may have fewer.
+
+275       message: freezeMessage({
+          ~~~~~~~
+
+  packages/core/session/lib/types/types.d.ts:307:9
+    307         message: ToolResultMessage;
+                ~~~~~~~
+    The expected type comes from property 'message' which is declared here on type '{ turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; }; meta?: JsonValue; }'
+
+packages/core/session/tests/invariant.spec.ts:314:7 - error TS2322: Type '{ content: { content: { type: "text"; text: string; }[]; type: "tool-result"; toolCallId: CallId; isError?: boolean; }[]; role: "user"; source: ToolMessageSource; id: MessageId; }' is not assignable to type 'ToolResultMessage'.
+  Types of property 'content' are incompatible.
+    Type '{ content: { type: "text"; text: string; }[]; type: "tool-result"; toolCallId: CallId; isError?: boolean; }[]' is not assignable to type '[ToolResultBlock]'.
+      Target requires 1 element(s) but source may have fewer.
+
+314       message: freezeMessage({
+          ~~~~~~~
+
+  packages/core/session/lib/types/types.d.ts:307:9
+    307         message: ToolResultMessage;
+                ~~~~~~~
+    The expected type comes from property 'message' which is declared here on type '{ turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; }; meta?: JsonValue; }'
+
+
+Found 2 errors.
+
+[ELIFECYCLE] Command failed with exit code 1.

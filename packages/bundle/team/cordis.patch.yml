@@ -1,0 +1,15 @@
+- insert:
+    - id: team
+      name: '@deepseek-ai/dsh-team'
+    - id: team-local
+      name: '@deepseek-ai/dsh-team-local'
+      config:
+        homePath: !!js process.env.DSH_HOME ?? ''
+    - id: team-runtime
+      name: '@deepseek-ai/dsh-team-runtime'
+    - id: team-channels
+      name: '@deepseek-ai/dsh-team-channels'
+      config:
+        controlRequestTimeoutMs: 120000
+    - id: tool-team
+      name: '@deepseek-ai/dsh-tool-team'

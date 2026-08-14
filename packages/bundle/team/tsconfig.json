@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "lib/types" },
+  "include": ["src"],
+  "references": [
+    { "path": "../../../vendor/cosmokit" },
+    { "path": "../../../vendor/cordis" },
+    { "path": "../../team/team" },
+    { "path": "../../team/team-local" },
+    { "path": "../../team/team-runtime" },
+    { "path": "../../team/team-channels" },
+    { "path": "../../team/tool-team" },
+    { "path": "../../runtime-diagnostics/invariants" }
+  ]
+}

@@ -361,6 +361,13 @@ export class SessionLogScanner {
 
     const rowStart = this.events.length
     for (const event of decoded) {
+      if (event.seq < rowStart && event.seq < this.events.length) {
+        // Backward seq: a replacement event that rewrites an earlier position
+        // (e.g. a compaction summary replacing pruned tool results). Accept the
+        // replacement in place so the committed prefix stays contiguous.
+        this.events[event.seq] = event
+        continue
+      }
       if (event.seq !== this.events.length) {
         const expected = this.events.length
         this.events.length = rowStart

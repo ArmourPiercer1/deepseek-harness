@@ -1,0 +1,423 @@
+D:\AgentDev\deepseek-harness>pnpm run build
+$ npm run build:lib && npm run build:web
+系统找不到指定的路径。
+
+> @deepseek-ai/dsh-root@0.1.0-rc.5 build:lib
+> npm run build:lib:host && npm run build:lib:client
+
+系统找不到指定的路径。
+
+> @deepseek-ai/dsh-root@0.1.0-rc.5 build:lib:host
+> tsc -b tsconfig.host.json && tsdown --env.DSH_BUILD_FACE host
+
+packages/core/session/tests/invariant.spec.ts:275:7 - error TS2322: Type '{ content: { content: { type: "text"; text: string; }[]; type: "tool-result"; toolCallId: CallId; isError?: boolean; }[]; role: "user"; source: ToolMessageSource; id: MessageId; }' is not assignable to type 'ToolResultMessage'.
+  Types of property 'content' are incompatible.
+    Type '{ content: { type: "text"; text: string; }[]; type: "tool-result"; toolCallId: CallId; isError?: boolean; }[]' is not assignable to type '[ToolResultBlock]'.
+      Target requires 1 element(s) but source may have fewer.
+
+275       message: freezeMessage({
+          ~~~~~~~
+
+  packages/core/session/lib/types/types.d.ts:307:9
+    307         message: ToolResultMessage;
+                ~~~~~~~
+    The expected type comes from property 'message' which is declared here on type '{ turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; }; meta?: JsonValue; }'
+
+packages/core/session/tests/invariant.spec.ts:314:7 - error TS2322: Type '{ content: { content: { type: "text"; text: string; }[]; type: "tool-result"; toolCallId: CallId; isError?: boolean; }[]; role: "user"; source: ToolMessageSource; id: MessageId; }' is not assignable to type 'ToolResultMessage'.
+  Types of property 'content' are incompatible.
+    Type '{ content: { type: "text"; text: string; }[]; type: "tool-result"; toolCallId: CallId; isError?: boolean; }[]' is not assignable to type '[ToolResultBlock]'.
+      Target requires 1 element(s) but source may have fewer.
+
+314       message: freezeMessage({
+          ~~~~~~~
+
+  packages/core/session/lib/types/types.d.ts:307:9
+    307         message: ToolResultMessage;
+                ~~~~~~~
+    The expected type comes from property 'message' which is declared here on type '{ turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; }; meta?: JsonValue; }'
+
+packages/team/team-channels/tests/control-coordinator.spec.ts:2:30 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team/src/index.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/tests/control-coordinator.spec.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/control-coordinator.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/control-coordinator.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/tests/progress-store.spec.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/progress-store.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-local/src/parser.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-local/src/parser.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-local/tests/validation.spec.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-local/tests/validation.spec.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-local/src/validation.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/mcp-guard.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/tests/orchestrator.spec.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/orchestrator.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/tests/tool-policy.spec.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/tests/tool-policy.spec.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/tool-policy.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/tool-policy.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/skill-filter.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/member-setup.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-delegate.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-send-message.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-progress.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-progress.ts'
+    Imported via '@deepseek-ai/dsh-team' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-control.ts'
+
+2 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+                               ~~~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/team-channels/src/control-coordinator.ts:11:42
+    11 import type { TeamControlDecision } from '@deepseek-ai/dsh-team'
+                                                ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-channels/src/control-coordinator.ts:12:45
+    12 import type { TeamControlRequestData } from '@deepseek-ai/dsh-team'
+                                                   ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-channels/tests/progress-store.spec.ts:2:30
+    2 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-channels/src/progress-store.ts:11:39
+    11 import type { TeamProgressData } from '@deepseek-ai/dsh-team'
+                                             ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-local/src/parser.ts:8:30
+    8 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-local/src/parser.ts:16:8
+    16 } from '@deepseek-ai/dsh-team'
+              ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-local/tests/validation.spec.ts:2:30
+    2 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-local/tests/validation.spec.ts:3:43
+    3 import type { TeamMemberDefinition } from '@deepseek-ai/dsh-team'
+                                                ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-local/src/validation.ts:7:43
+    7 import type { TeamMemberDefinition } from '@deepseek-ai/dsh-team'
+                                                ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/mcp-guard.ts:10:36
+    10 import type { TeamMcpPolicy } from '@deepseek-ai/dsh-team'
+                                          ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/tests/orchestrator.spec.ts:2:30
+    2 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/orchestrator.ts:7:35
+    7 import type { TeamMemberId } from '@deepseek-ai/dsh-team'
+                                        ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/tests/tool-policy.spec.ts:2:75
+    2 import { TeamMemberId, DEFAULT_LEADER_TOOLS, TEAMMATE_DENIED_TOOLS } from '@deepseek-ai/dsh-team'
+                                                                                ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/tests/tool-policy.spec.ts:3:43
+    3 import type { TeamMemberDefinition } from '@deepseek-ai/dsh-team'
+                                                ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/tool-policy.ts:8:43
+    8 import type { TeamMemberDefinition } from '@deepseek-ai/dsh-team'
+                                                ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/tool-policy.ts:9:61
+    9 import { DEFAULT_LEADER_TOOLS, TEAMMATE_DENIED_TOOLS } from '@deepseek-ai/dsh-team'
+                                                                  ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/skill-filter.ts:11:38
+    11 import type { TeamSkillPolicy } from '@deepseek-ai/dsh-team'
+                                            ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/member-setup.ts:11:42
+    11 import type { TeamMemberBoundData } from '@deepseek-ai/dsh-team'
+                                                ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/tool-team/src/tool-delegate.ts:9:30
+    9 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/tool-team/src/tool-send-message.ts:9:30
+    9 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/tool-team/src/tool-progress.ts:9:30
+    9 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/tool-team/src/tool-progress.ts:10:41
+    10 import type { TeamProgressStatus } from '@deepseek-ai/dsh-team'
+                                               ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/tool-team/src/tool-control.ts:9:42
+    9 import type { TeamControlDecision } from '@deepseek-ai/dsh-team'
+                                               ~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team-channels/tests/control-coordinator.spec.ts:3:40 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/control-coordinator.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../src/control-coordinator.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/tests/control-coordinator.spec.ts'
+    Imported via './control-coordinator.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/index.ts'
+    Imported via './control-coordinator.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/index.ts'
+
+3 import { TeamControlCoordinator } from '../src/control-coordinator.ts'
+                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/team-channels/src/index.ts:10:40
+    10 export { TeamControlCoordinator } from './control-coordinator.ts'
+                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-channels/src/index.ts:11:44
+    11 export type { PendingControlRequest } from './control-coordinator.ts'
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team-channels/tests/control-coordinator.spec.ts:16:12 - error TS2532: Object is possibly 'undefined'.
+
+16     expect(coord.listPending()[0].data.requestId).toBe('req-1')
+              ~~~~~~~~~~~~~~~~~~~~~~
+
+packages/team/team-channels/tests/progress-store.spec.ts:3:35 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/progress-store.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../src/progress-store.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/tests/progress-store.spec.ts'
+    Imported via './progress-store.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/index.ts'
+
+3 import { TeamProgressStore } from '../src/progress-store.ts'
+                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/team-channels/src/index.ts:12:35
+    12 export { TeamProgressStore } from './progress-store.ts'
+                                         ~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team-local/tests/parser.spec.ts:2:41 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-local/src/parser.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+2 import { parseTeamMemberMarkdown } from '../src/parser.ts'
+                                          ~~~~~~~~~~~~~~~~~~
+
+packages/team/team-local/tests/validation.spec.ts:4:41 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-local/src/validation.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+4 import { validateTeamDefinitions } from '../src/validation.ts'
+                                          ~~~~~~~~~~~~~~~~~~~~~~
+
+packages/team/team-runtime/src/index.ts:13:36 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/skill-filter.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './skill-filter.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/index.ts'
+    Imported via './skill-filter.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/member-setup.ts'
+
+13 export { installSkillFilter } from './skill-filter.ts'
+                                      ~~~~~~~~~~~~~~~~~~~
+
+  packages/team/team-runtime/src/member-setup.ts:13:36
+    13 import { installSkillFilter } from './skill-filter.ts'
+                                          ~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team-runtime/src/index.ts:15:42 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/member-setup.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+15 export { installMemberComposition } from './member-setup.ts'
+                                            ~~~~~~~~~~~~~~~~~~~
+
+packages/team/team-runtime/tests/mcp-guard.spec.ts:2:32 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/mcp-guard.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../src/mcp-guard.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/tests/mcp-guard.spec.ts'
+    Imported via './mcp-guard.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/index.ts'
+    Imported via './mcp-guard.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/index.ts'
+    Imported via './mcp-guard.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/member-setup.ts'
+
+2 import { createMcpGuard } from '../src/mcp-guard.ts'
+                                 ~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/team-runtime/src/index.ts:11:32
+    11 export { createMcpGuard } from './mcp-guard.ts'
+                                      ~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/index.ts:12:33
+    12 export type { McpGuardFn } from './mcp-guard.ts'
+                                       ~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/member-setup.ts:12:32
+    12 import { createMcpGuard } from './mcp-guard.ts'
+                                      ~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team-runtime/tests/orchestrator.spec.ts:3:34 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/orchestrator.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../src/orchestrator.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/tests/orchestrator.spec.ts'
+    Imported via './orchestrator.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/index.ts'
+    Imported via './orchestrator.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/index.ts'
+
+3 import { TeamOrchestrator } from '../src/orchestrator.ts'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/team-runtime/src/index.ts:9:34
+    9 export { TeamOrchestrator } from './orchestrator.ts'
+                                       ~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team-runtime/src/index.ts:10:67
+    10 export type { TeammateActivation, TeammateActivationStatus } from './orchestrator.ts'
+                                                                         ~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team-runtime/tests/tool-policy.spec.ts:4:38 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/tool-policy.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../src/tool-policy.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/tests/tool-policy.spec.ts'
+    Imported via './tool-policy.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/index.ts'
+
+4 import { buildToolRestriction } from '../src/tool-policy.ts'
+                                       ~~~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/team-runtime/src/index.ts:14:38
+    14 export { buildToolRestriction } from './tool-policy.ts'
+                                            ~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team/src/index.ts:13:59 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team/src/types.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './types.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/src/index.ts'
+    Imported via './types.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/src/index.ts'
+    Imported via './types.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/src/events.ts'
+
+13 import type { TeamMemberDefinition, TeamToolPolicy } from './types.ts'
+                                                             ~~~~~~~~~~~~
+
+  packages/team/team/src/index.ts:19:15
+    19 export * from './types.ts'
+                     ~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team/src/events.ts:15:8
+    15 } from './types.ts'
+              ~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team/src/index.ts:22:20 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team/src/events.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+22 export type * from './events.ts'
+                      ~~~~~~~~~~~~~
+
+packages/team/team/tests/brand.spec.ts:2:30 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team/src/brand.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../src/brand.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/tests/brand.spec.ts'
+    Imported via './brand.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/src/types.ts'
+    Imported via './brand.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/src/index.ts'
+    Imported via './brand.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/src/index.ts'
+
+2 import { TeamMemberId } from '../src/brand.ts'
+                               ~~~~~~~~~~~~~~~~~
+
+  packages/team/team/src/types.ts:7:35
+    7 import type { TeamMemberId } from './brand.ts'
+                                        ~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team/src/index.ts:14:35
+    14 import type { TeamMemberId } from './brand.ts'
+                                         ~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team/src/index.ts:18:30
+    18 export { TeamMemberId } from './brand.ts'
+                                    ~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/team/tests/constants.spec.ts:2:61 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team/src/constants.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../src/constants.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/tests/constants.spec.ts'
+    Imported via './constants.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/src/index.ts'
+    Imported via './constants.ts' from file 'D:/AgentDev/deepseek-harness/packages/team/team/src/index.ts'
+
+2 import { DEFAULT_LEADER_TOOLS, TEAMMATE_DENIED_TOOLS } from '../src/constants.ts'
+                                                              ~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/team/src/index.ts:15:61
+    15 import { DEFAULT_LEADER_TOOLS, TEAMMATE_DENIED_TOOLS } from './constants.ts'
+                                                                   ~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/team/src/index.ts:20:15
+    20 export * from './constants.ts'
+                     ~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/tool-team/src/index.ts:9:34 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-runtime/src/index.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '@deepseek-ai/dsh-team-runtime' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/index.ts'
+    Imported via '@deepseek-ai/dsh-team-runtime' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-delegate.ts'
+    Imported via '@deepseek-ai/dsh-team-runtime' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-list-teammates.ts'
+
+9 import { TeamOrchestrator } from '@deepseek-ai/dsh-team-runtime'
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/tool-team/src/tool-delegate.ts:10:34
+    10 import { TeamOrchestrator } from '@deepseek-ai/dsh-team-runtime'
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/tool-team/src/tool-list-teammates.ts:9:34
+    9 import { TeamOrchestrator } from '@deepseek-ai/dsh-team-runtime'
+                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/tool-team/src/index.ts:10:59 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/team-channels/src/index.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '@deepseek-ai/dsh-team-channels' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/index.ts'
+    Imported via '@deepseek-ai/dsh-team-channels' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-progress.ts'
+    Imported via '@deepseek-ai/dsh-team-channels' from file 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-control.ts'
+
+10 import { TeamControlCoordinator, TeamProgressStore } from '@deepseek-ai/dsh-team-channels'
+                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  packages/team/tool-team/src/tool-progress.ts:11:35
+    11 import { TeamProgressStore } from '@deepseek-ai/dsh-team-channels'
+                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+  packages/team/tool-team/src/tool-control.ts:10:40
+    10 import { TeamControlCoordinator } from '@deepseek-ai/dsh-team-channels'
+                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    File is included via import here.
+
+packages/team/tool-team/src/index.ts:11:38 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-delegate.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+11 import { registerDelegateTool } from './tool-delegate.ts'
+                                        ~~~~~~~~~~~~~~~~~~~~
+
+packages/team/tool-team/src/index.ts:12:43 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-list-teammates.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+12 import { registerListTeammatesTool } from './tool-list-teammates.ts'
+                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+packages/team/tool-team/src/index.ts:13:41 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-send-message.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+13 import { registerSendMessageTool } from './tool-send-message.ts'
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~
+
+packages/team/tool-team/src/index.ts:14:38 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-progress.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+14 import { registerProgressTool } from './tool-progress.ts'
+                                        ~~~~~~~~~~~~~~~~~~~~
+
+packages/team/tool-team/src/index.ts:15:37 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/tool-control.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+15 import { registerControlTool } from './tool-control.ts'
+                                       ~~~~~~~~~~~~~~~~~~~
+
+packages/team/tool-team/src/tool-delegate.ts:101:13 - error TS2353: Object literal may only specify known properties, and 'signal' does not exist in type 'Omit<SubagentStartRequest, "label" | "signal" | "outputSchema">'.
+
+101             signal: exec.signal,
+                ~~~~~~
+
+  packages/subagent/subagent/lib/types/continuation.d.ts:89:14
+    89     readonly request: Omit<SubagentStartRequest, 'label' | 'signal' | 'outputSchema'>;
+                    ~~~~~~~
+    The expected type comes from property 'request' which is declared here on type 'ContinuableStartSpec'
+
+packages/team/tool-team/tests/tools.spec.ts:2:27 - error TS6307: File 'D:/AgentDev/deepseek-harness/packages/team/tool-team/src/index.ts' is not listed within the file list of project 'D:/AgentDev/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+
+2 import * as toolTeam from '../src/index.ts'
+                            ~~~~~~~~~~~~~~~~~
+
+
+Found 26 errors.
+
+[ELIFECYCLE] Command failed with exit code 2.
