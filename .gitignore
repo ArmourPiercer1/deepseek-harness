@@ -41,3 +41,6 @@ worktrees/
 
 # references
 references/
+
+# local dev issues
+issues/
