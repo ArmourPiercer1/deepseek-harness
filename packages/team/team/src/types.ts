@@ -26,12 +26,6 @@ export interface TeamMcpPolicy {
   readonly servers: readonly string[]
 }
 
-/** Skill filter policy for a team member. */
-export interface TeamSkillPolicy {
-  /** Skill names the member may load. Unlisted skills are excluded from the catalog. */
-  readonly allow: readonly string[]
-}
-
 /**
  * Unified definition for a team member (leader or teammate).
  * Leader and teammate share the same schema; only `role` differs.
@@ -55,8 +49,8 @@ export interface TeamMemberDefinition {
   readonly maxTokens?: number
   /** Tool allow/deny policy. */
   readonly tools?: TeamToolPolicy
-  /** Skill filter policy. */
-  readonly skills?: TeamSkillPolicy
+  /** Tool names whose execution requires leader approval (teammate only). */
+  readonly requiresApproval?: readonly string[]
   /** MCP server access policy. */
   readonly mcpServers?: TeamMcpPolicy
   /** Context window reload strategy. Defaults to 'persistent'. */
@@ -100,8 +94,8 @@ export interface TeamMemberBoundData {
   readonly maxTokens?: number
   /** Effective tool policy snapshot. */
   readonly tools?: TeamToolPolicy
-  /** Effective skill policy snapshot. */
-  readonly skills?: TeamSkillPolicy
+  /** Tool names whose execution requires leader approval. */
+  readonly requiresApproval?: readonly string[]
   /** Effective MCP policy snapshot. */
   readonly mcpServers?: TeamMcpPolicy
   /** Context policy for this member. */

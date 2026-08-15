@@ -17,6 +17,10 @@ export interface TeammateActivation {
   readonly childSessionId: string
   /** Current activation status. */
   status: TeammateActivationStatus
+  /** Epoch ms of last known activity. */
+  lastActivityAt?: number
+  /** Description of the last action (e.g. tool name). */
+  lastAction?: string
 }
 
 /**
@@ -97,5 +101,34 @@ export class TeamOrchestrator {
   isInFlight(memberId: TeamMemberId): boolean {
     const activation = this.activations.get(memberId)
     return activation?.status === 'running'
+  }
+
+  /**
+   * Find an activation by child session id.
+   *
+   * @param childSessionId - the child session id to look up.
+   * @returns the first matching activation, or undefined if none recorded.
+   */
+  findByChildSession(childSessionId: string): TeammateActivation | undefined {
+    for (const activation of this.activations.values()) {
+      if (activation.childSessionId === childSessionId) {
+        return activation
+      }
+    }
+    return undefined
+  }
+
+  /**
+   * Update the activity tracking fields of a teammate activation.
+   *
+   * @param memberId - the teammate whose activation recorded activity.
+   * @param action - description of the last action (e.g. tool name).
+   */
+  updateActivity(memberId: TeamMemberId, action: string): void {
+    const activation = this.activations.get(memberId)
+    if (activation) {
+      activation.lastActivityAt = Date.now()
+      activation.lastAction = action
+    }
   }
 }

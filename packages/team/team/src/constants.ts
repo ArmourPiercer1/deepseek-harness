@@ -5,10 +5,12 @@
  */
 
 /**
- * The 10 tools every leader receives unconditionally.
- * Plugin load fails if any is absent from the global tool registry.
+ * The 10 tools every leader is expected to have for team coordination.
+ * The leader definition is metadata only (see `TeamRegistry.getLeader`): the
+ * root agent is composed by its preset, so this list is not enforced at
+ * runtime. `TEAMMATE_DENIED_TOOLS` names the subset teammates must never invoke.
  *
- * These tools guarantee the leader can always coordinate the team:
+ * These tools let a leader coordinate the team:
  * - 5 team-specific tools for delegation, messaging, progress, control, and discovery
  * - 5 general-purpose tools for file inspection, search, task tracking, and web research
  */

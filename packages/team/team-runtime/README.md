@@ -4,7 +4,7 @@ Team runtime orchestration, delegation, and per-member capability filtering for 
 
 ## Role
 
-**Consumer** — orchestrates teammate lifecycles, builds per-member tool restrictions, installs MCP guards and skill filters on child agent scopes.
+**Consumer** — orchestrates teammate lifecycles and installs per-member composition (MCP guard + approval hook) on continuable child scopes.
 
 ## Key Exports
 
@@ -12,9 +12,9 @@ Team runtime orchestration, delegation, and per-member capability filtering for 
 |---|---|
 | `TeamOrchestrator` | Session-scoped activation manager |
 | `createMcpGuard` | Dynamic MCP tool guard factory |
-| `installSkillFilter` | Scoped skill catalog filter installer |
-| `buildToolRestriction` | Leader/teammate tool policy resolver |
 | `installMemberComposition` | Composite member setup from bound data |
+| `installApprovalHook` | Scoped `tools/pre-execute` hang for `requiresApproval` tools |
+| `teamMemberSetupContribution` | `registerContinuableSetup` contribution reading `team/member-bound` |
 
 ## Model Experience
 
@@ -27,4 +27,4 @@ No effect.
 ## Known Limitations and Deferred Work
 
 - Conditional tool constraints (`pathWithin`, `executableEquals`) are deferred to Phase 4.
-- Cold resume from `team/member-bound` session event is not yet fully integrated with the subagent continuation manager.
+- `maxTokens` is applied on fresh delegation only; a cold-resumed teammate falls back to its route default because the continuable descriptor omits per-activation budgets by design.

@@ -22,8 +22,6 @@ model: deepseek-v4-flash-0731
 maxTokens: 16384
 tools:
   allow: [read, edit, write, grep, glob, pwsh]
-skills:
-  allow: [codebase-design, tdd]
 mcpServers:
   servers: [postgres-mcp]
 contextPolicy: persistent
@@ -50,4 +48,3 @@ No effect.
 ## Known Limitations and Deferred Work
 
 - The YAML parser is minimal; complex YAML constructs (anchors, multi-line strings) may not parse correctly.
-- File watching for live reload of definitions is not implemented.

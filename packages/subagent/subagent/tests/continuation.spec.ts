@@ -23,6 +23,12 @@ import SubagentRuntime, {
 import type { SubagentRunEndInfo, SubagentRunInfo } from '../src/index.ts'
 import * as SubagentInvariant from '../src/invariant.ts'
 
+declare module '@deepseek-ai/dsh-session/types' {
+  interface SessionEventMap {
+    'test/delegation-event': { value: string }
+  }
+}
+
 type Script = ConstructorParameters<typeof MockAdapter>[0]
 
 /** One scripted response that may wait on a caller-released gate before streaming. */
@@ -361,6 +367,29 @@ describe('SubagentRuntime.startContinuable', () => {
         label: 'child task',
         toolFilter: { deny: ['noop'] },
       })
+    await drainManager(ctx)
+  })
+
+  it('persists delegation events in the child suffix immediately after the descriptor', async () => {
+    const { ctx } = await setup([])
+    const routeless = ctx.agentLoop.create(SessionId('routeless-delegation'), {})
+    const started = await ctx.subagents.startContinuable({
+      ...startSpec(routeless),
+      delegationEvents: [{ type: 'test/delegation-event', data: { value: 'bound' } }],
+    })
+    const child = await vi.waitFor(() => {
+      const found = ctx.agents.get(started.childId)
+      expect(found).toBeDefined()
+      return found!
+    })
+
+    const types = child.session.events.map(event => event.type)
+    const descriptorIndex = types.indexOf('subagent/descriptor')
+    expect(descriptorIndex).toBeGreaterThanOrEqual(0)
+    // A fresh child has no fork seed, so the delegation event follows the
+    // descriptor directly in the child's own suffix.
+    expect(types[descriptorIndex + 1]).toBe('test/delegation-event')
+    expect(child.session.events[descriptorIndex + 1]!.data).toEqual({ value: 'bound' })
     await drainManager(ctx)
   })
 

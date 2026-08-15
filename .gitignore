@@ -44,3 +44,18 @@ references/
 
 # local dev issues
 issues/
+
+# local archive (gitignored workspace stash for superseded WIP artifacts)
+archive/
+
+# local instance launcher
+start-dev.ps1
+
+# tsc composite build products emitted next to sources
+# (rewriteRelativeImportExtensions), never source of record
+*.js.map
+*.d.ts.map
+packages/core/session/src/*.js
+packages/core/session/src/*.d.ts
+packages/permission/permission-engine/src/*.js
+packages/permission/permission-engine/src/*.d.ts

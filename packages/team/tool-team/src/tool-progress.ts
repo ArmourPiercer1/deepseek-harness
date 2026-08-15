@@ -7,7 +7,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { TeamMemberId } from '@deepseek-ai/dsh-team'
-import type { TeamProgressStatus } from '@deepseek-ai/dsh-team'
 import { TeamProgressStore } from '@deepseek-ai/dsh-team-channels'
 
 /**
@@ -86,28 +85,42 @@ export function registerProgressTool(
         return [{ type: 'text', text: value.message ?? 'No tasks.' }]
       },
     },
-    async execute(args, _exec) {
+    // oxlint-disable-next-line typescript/require-await -- the tool seam requires a Promise return, but the board read/write is synchronous
+    async execute(args, exec) {
+      const me = exec.agent
+      if (!me) {
+        return { message: 'Error: team_progress requires a calling agent.' }
+      }
+
       if (args.action === 'list') {
-        return { tasks: [...store.list()] }
+        // Fold the durable log into the store so the board survives cold resume.
+        const events = me.session.events
+          .filter(e => e.type === 'team/progress')
+          .map(e => e.data)
+        store.restore(me.id, events)
+        return { tasks: [...store.list(me.id)] }
       }
 
       // Update
       if (!args.task_id) {
         return { message: 'Error: task_id is required for update.' }
       }
-      if (!args.subject && !store.get(args.task_id)) {
+      if (!args.subject && !store.get(me.id, args.task_id)) {
         return { message: 'Error: subject is required for new tasks.' }
       }
 
-      const existing = store.get(args.task_id)
+      const existing = store.get(me.id, args.task_id)
       const summary = args.summary ?? existing?.summary
-      store.update({
+      const entry = {
         taskId: args.task_id,
         subject: args.subject ?? existing?.subject ?? args.task_id,
-        status: (args.status as TeamProgressStatus) ?? existing?.status ?? 'pending',
+        status: args.status ?? existing?.status ?? 'pending',
         ...(summary !== undefined ? { summary } : {}),
-        memberId: TeamMemberId(args.teammate_id ?? (existing?.memberId as string) ?? 'leader'),
-      })
+        memberId: TeamMemberId(args.teammate_id ?? existing?.memberId ?? 'leader'),
+      }
+
+      me.session.append('team/progress', entry)
+      store.update(me.id, entry)
 
       return { message: `Task "${args.task_id}" updated.` }
     },

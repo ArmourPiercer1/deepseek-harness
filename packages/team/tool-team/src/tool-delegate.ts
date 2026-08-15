@@ -7,6 +7,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { TeamMemberId } from '@deepseek-ai/dsh-team'
+import type { TeamMemberBoundData } from '@deepseek-ai/dsh-team'
+import { SessionId } from '@deepseek-ai/dsh-session'
 import { TeamOrchestrator } from '@deepseek-ai/dsh-team-runtime'
 
 /**
@@ -36,7 +38,7 @@ export function registerDelegateTool(
       },
       action: {
         type: 'string' as const,
-        description: 'Action: "run" starts a new delegation or follows up (default), "shutdown" stops the teammate.',
+        description: 'Action: "run" starts a new delegation (default), "follow_up" sends additional instructions to an existing teammate session, "shutdown" stops the teammate.',
         enum: ['run', 'follow_up', 'shutdown'] as const,
       },
     },
@@ -57,6 +59,10 @@ export function registerDelegateTool(
     async execute(args, exec) {
       const memberId = TeamMemberId(args.teammate_id)
       const action = args.action ?? 'run'
+      const me = exec.agent
+      if (!me) {
+        return { status: 'error', teammate_id: args.teammate_id, message: 'delegate_to_teammate requires a calling agent' }
+      }
 
       const team = ctx.get('team')
       if (!team) {
@@ -73,12 +79,58 @@ export function registerDelegateTool(
         return { status: 'shutdown', teammate_id: args.teammate_id, message: `Teammate "${args.teammate_id}" shut down.` }
       }
 
+      if (action === 'follow_up') {
+        const activation = orchestrator.get(memberId)
+        if (!activation || activation.status === 'disposed') {
+          return {
+            status: 'error',
+            teammate_id: args.teammate_id,
+            message: `No active session for "${args.teammate_id}". Use action "run" to start a new delegation.`,
+          }
+        }
+
+        const subagents = ctx.get('subagents')
+        if (!subagents) {
+          return { status: 'error', teammate_id: args.teammate_id, message: 'Subagent capability not available' }
+        }
+
+        try {
+          const parent = me
+          const content = [{ type: 'text' as const, text: args.prompt }]
+          const options = {
+            source: { kind: 'coordinator' as const, form: 'relay' as const, senderSessionId: parent.id },
+            signal: exec.signal,
+          }
+          await subagents.followup(parent, SessionId(activation.childSessionId), content, options)
+
+          if (activation.status === 'settled') {
+            orchestrator.recordActivation(memberId, activation.childSessionId)
+          }
+
+          return {
+            status: 'delivered',
+            teammate_id: args.teammate_id,
+            message: `Follow-up delivered to "${args.teammate_id}".`,
+          }
+        } catch (e: unknown) {
+          return {
+            status: 'error',
+            teammate_id: args.teammate_id,
+            message: `Follow-up failed: ${e instanceof Error ? e.message : String(e)}`,
+          }
+        }
+      }
+
       // Check if already in-flight
-      if (orchestrator.isInFlight(memberId)) {
+      const running = orchestrator.get(memberId)
+      if (running?.status === 'running') {
+        const info = running.lastActivityAt
+          ? ` Last activity: ${running.lastAction ?? 'unknown'} at ${new Date(running.lastActivityAt).toISOString()}.`
+          : ''
         return {
           status: 'already_running',
           teammate_id: args.teammate_id,
-          message: `Teammate "${args.teammate_id}" already has an in-flight delegation. Wait for it to complete or use action "shutdown" first.`,
+          message: `Teammate "${args.teammate_id}" is currently running.${info} Use action "follow_up" to send additional instructions, or "shutdown" to stop.`,
         }
       }
 
@@ -90,14 +142,26 @@ export function registerDelegateTool(
 
       try {
         const toolRestriction = team.effectiveToolPolicy(member)
+        const bound: TeamMemberBoundData = {
+          memberId: member.id,
+          role: member.role,
+          ...(member.provider !== undefined ? { provider: member.provider } : {}),
+          ...(member.model !== undefined ? { model: member.model } : {}),
+          ...(member.maxTokens !== undefined ? { maxTokens: member.maxTokens } : {}),
+          ...(member.tools !== undefined ? { tools: member.tools } : {}),
+          ...(member.requiresApproval !== undefined ? { requiresApproval: member.requiresApproval } : {}),
+          ...(member.mcpServers !== undefined ? { mcpServers: member.mcpServers } : {}),
+          ...(member.contextPolicy !== undefined ? { contextPolicy: member.contextPolicy } : {}),
+        }
 
         const result = await subagents.startContinuable({
           provider: 'spawn',
           label: `team:${member.name}`,
           signal: exec.signal,
+          delegationEvents: [{ type: 'team/member-bound', data: bound }],
           request: {
             prompt: [{ type: 'text' as const, text: args.prompt }],
-            parent: exec.agent!,
+            parent: me,
             persona: member.prompt,
             toolFilter: toolRestriction,
             agentOptions: {
@@ -123,7 +187,7 @@ export function registerDelegateTool(
         }
       }
     },
-    presentCall: (args) => ({
+    presentCall: args => ({
       card: 'generic' as const,
       title: `Delegate to ${args.teammate_id}`,
       kind: 'other' as const,

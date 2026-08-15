@@ -15,32 +15,63 @@ function makeDef(id: string, role: 'leader' | 'teammate'): TeamMemberDefinition 
 
 describe('validateTeamDefinitions', () => {
   it('accepts a valid set with one leader and teammates', () => {
-    expect(() => validateTeamDefinitions([
+    expect(() => { validateTeamDefinitions([
       makeDef('leader', 'leader'),
       makeDef('backend', 'teammate'),
       makeDef('frontend', 'teammate'),
-    ])).not.toThrow()
+    ]) }).not.toThrow()
   })
 
   it('throws on duplicate ids', () => {
-    expect(() => validateTeamDefinitions([
+    expect(() => { validateTeamDefinitions([
       makeDef('leader', 'leader'),
       makeDef('dup', 'teammate'),
       makeDef('dup', 'teammate'),
-    ])).toThrow(/[Dd]uplicate/)
+    ]) }).toThrow(/[Dd]uplicate/)
   })
 
   it('throws when no leader is defined', () => {
-    expect(() => validateTeamDefinitions([
+    expect(() => { validateTeamDefinitions([
       makeDef('a', 'teammate'),
       makeDef('b', 'teammate'),
-    ])).toThrow(/[Nn]o leader/)
+    ]) }).toThrow(/[Nn]o leader/)
   })
 
   it('throws when multiple leaders are defined', () => {
-    expect(() => validateTeamDefinitions([
+    expect(() => { validateTeamDefinitions([
       makeDef('leader1', 'leader'),
       makeDef('leader2', 'leader'),
-    ])).toThrow(/[Mm]ultiple leader/)
+    ]) }).toThrow(/[Mm]ultiple leader/)
+  })
+
+  it('accepts requiresApproval naming allowed, non-denied tools', () => {
+    const backend: TeamMemberDefinition = {
+      ...makeDef('backend', 'teammate'),
+      tools: { allow: ['read', 'pwsh'], deny: ['rm'] },
+      requiresApproval: ['pwsh'],
+    }
+    expect(() => { validateTeamDefinitions([makeDef('leader', 'leader'), backend]) }).not.toThrow()
+  })
+
+  it('throws when requiresApproval names a denied tool', () => {
+    expect(() => { validateTeamDefinitions([
+      makeDef('leader', 'leader'),
+      {
+        ...makeDef('backend', 'teammate'),
+        tools: { deny: ['pwsh'] },
+        requiresApproval: ['pwsh'],
+      },
+    ]) }).toThrow(/denied tool/)
+  })
+
+  it('throws when requiresApproval names a tool outside the allow list', () => {
+    expect(() => { validateTeamDefinitions([
+      makeDef('leader', 'leader'),
+      {
+        ...makeDef('backend', 'teammate'),
+        tools: { allow: ['read'] },
+        requiresApproval: ['pwsh'],
+      },
+    ]) }).toThrow(/not in member/)
   })
 })

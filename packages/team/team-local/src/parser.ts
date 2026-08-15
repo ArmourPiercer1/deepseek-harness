@@ -11,7 +11,6 @@ import type {
   TeamMemberRole,
   TeamContextPolicy,
   TeamToolPolicy,
-  TeamSkillPolicy,
   TeamMcpPolicy,
 } from '@deepseek-ai/dsh-team'
 
@@ -131,14 +130,11 @@ export function parseTeamMemberMarkdown(
     }
   }
 
-  // Skill policy
-  let skills: TeamSkillPolicy | undefined
-  const rawSkills = frontmatter['skills']
-  if (rawSkills != null && typeof rawSkills === 'object' && !Array.isArray(rawSkills)) {
-    const s = rawSkills as Record<string, unknown>
-    if (Array.isArray(s['allow'])) {
-      skills = { allow: (s['allow'] as unknown[]).map(String) }
-    }
+  // Approval-gated tools (leader approval required before execution)
+  let requiresApproval: readonly string[] | undefined
+  const rawApproval = frontmatter['requiresApproval']
+  if (Array.isArray(rawApproval)) {
+    requiresApproval = (rawApproval as unknown[]).map(String)
   }
 
   // MCP policy
@@ -175,7 +171,7 @@ export function parseTeamMemberMarkdown(
     ...(model !== undefined ? { model } : {}),
     ...(maxTokens !== undefined ? { maxTokens } : {}),
     ...(tools !== undefined ? { tools } : {}),
-    ...(skills !== undefined ? { skills } : {}),
+    ...(requiresApproval !== undefined ? { requiresApproval } : {}),
     ...(mcpServers !== undefined ? { mcpServers } : {}),
     ...(contextPolicy !== undefined ? { contextPolicy } : {}),
     sourcePath,
@@ -214,8 +210,9 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
     if (/^\s+\w/.test(line) && currentKey !== undefined && currentArray === undefined) {
       const nestedMatch = /^\s+(\w+):\s*(.*)$/.exec(line)
       if (nestedMatch) {
-        const nestedKey = nestedMatch[1]!
-        const nestedRaw = nestedMatch[2]!.trim()
+        const nestedKey = nestedMatch[1]
+        const nestedRaw = nestedMatch[2]?.trim() ?? ''
+        if (nestedKey === undefined) continue
         if (currentObject === undefined) {
           currentObject = {}
         }
@@ -237,8 +234,9 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
     if (topMatch) {
       currentArray = undefined
       currentObject = undefined
-      const topKey = topMatch[1]!
-      const topValue = topMatch[2]!.trim()
+      const topKey = topMatch[1]
+      const topValue = topMatch[2]?.trim() ?? ''
+      if (topKey === undefined) continue
       currentKey = topKey
       if (topValue.length === 0) {
         result[topKey] = undefined

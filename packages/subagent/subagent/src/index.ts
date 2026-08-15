@@ -74,6 +74,7 @@ export { SubagentRunId } from './types.ts'
 export type {
   ContinuableCreateRequest,
   ContinuableCreateSpec,
+  DelegationEventAppend,
   ResolvedSubagentStartRequest,
   SubagentCapabilities,
   SubagentProvider,

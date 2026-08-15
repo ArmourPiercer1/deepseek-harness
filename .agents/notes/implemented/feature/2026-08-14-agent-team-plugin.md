@@ -1,46 +1,41 @@
-# Agent Team Plugin Implementation
+# Agent Note: Agent Team Plugin Implementation
+
+Status: implemented
+
+## Problem
+
+The harness had no leader-teammate coordination model: subagents were anonymous per-task delegations with no durable roster, no per-member permission scoping, no leader approval gate, and no team progress board. The team plugin adds these as a capability seam over the continuable-subagent runtime.
 
 ## Decision
 
-Implemented the agent-team plugin as 6 packages under `packages/team/` plus a bundle at `packages/bundle/team/`, following the capability-seam pattern (Service Definition / Service Provider / Consumer).
+The agent-team plugin ships as six packages under `packages/team/` plus a bundle at `packages/bundle/team/`, following the capability-seam pattern (Service Definition / Service Provider / Consumer).
 
-## Architecture
+| Package | npm name | Role |
+|---|---|---|
+| `team/team/` | `dsh-team` | Service Definition: types, events, constants, `TeamRegistry` |
+| `team/team-local/` | `dsh-team-local` | Service Provider: Markdown definition loader with hot reload |
+| `team/team-runtime/` | `dsh-team-runtime` | Consumer: orchestration, MCP guard, approval hook |
+| `team/team-channels/` | `dsh-team-channels` | Consumer: `TeamControlRegistry` service, progress store |
+| `team/tool-team/` | `dsh-tool-team` | Consumer: 5 model-facing tools |
+| `bundle/team/` | `dsh-bundle-team` | Bundle manifest |
 
-| Package | npm name | Role | Plugin form |
-|---|---|---|---|
-| `team/team/` | `dsh-team` | Service Definition | Service subclass (default export) |
-| `team/team-local/` | `dsh-team-local` | Service Provider | function plugin |
-| `team/team-runtime/` | `dsh-team-runtime` | Consumer (orchestration) | function plugin |
-| `team/team-channels/` | `dsh-team-channels` | Consumer (messaging) | function plugin |
-| `team/tool-team/` | `dsh-tool-team` | Consumer (5 tools) | function plugin |
-| `bundle/team/` | `dsh-bundle-team` | Bundle manifest | cordis.patch.yml |
+Key design decisions:
 
-## Key Design Decisions
+- **`TeamRegistry` is a concrete Service**, not abstract: one data-loading strategy, no provider polymorphism.
+- **Per-member MCP filtering uses `tools.guard()` with runtime `mcp__<server>__` prefix matching**, not startup enumeration, so late-connected servers are covered.
+- **The leader definition is metadata only.** The root agent is composed by its preset, never by the registry; `DEFAULT_LEADER_TOOLS` documents the intended leader surface but is not enforced at runtime.
+- **Member binding is durable and reconstructable.** `delegate_to_teammate` seeds one `team/member-bound` event through the subagent seam's `delegationEvents` field; a `registerContinuableSetup` contribution reads it on fresh creation and cold resume to reinstall the MCP guard and approval hook. See the [delegation-event-seeding note](../architecture/2026-08-15-continuable-delegation-event-seeding.md).
+- **The leader approval gate suspends `requiresApproval` tools** via a scoped `tools/pre-execute` listener that creates a request on the host-level `TeamControlRegistry` (keyed by leader session), wakes the leader through `reportFrom`, and resumes or denies on the decision.
+- **Skill filtering was removed**: the field was recorded but never enforced, and there is no per-scope skill-catalog API to enforce it against.
 
-### Concrete Service vs Abstract
+## Alternatives considered
 
-`TeamRegistry` is a **concrete** `Service` subclass (not abstract) with a `register()` method. The provider (`dsh-team-local`) populates it by calling `ctx.team.register(definitions)`. This avoids the complexity of the abstract Service Definition + separate concrete Provider class pattern, since there is exactly one data-loading strategy and no need for provider polymorphism.
+**Reference PilotDeck's `TeammateExtensionResolver` for MCP filtering.** Rejected: it has a known bug where teammates fail to detect MCP mounts; the dynamic prefix guard is independent and correct.
 
-### MCP Guard — Dynamic Prefix Matching
+**Modify `dsh-agent`/`dsh-agent-loop` for team primitives.** Rejected: the subagent seam, tool restriction, and scoped registration already provide the needed primitives, and the repo rule is extension points over loop changes.
 
-Per-member MCP tool filtering uses `ctx.tools.guard()` with runtime prefix matching (`mcp__<server>__`), not startup-time tool enumeration. This covers MCP servers that connect late, reconnect, or add new tools after the guard is installed. PilotDeck's `TeammateExtensionResolver` was explicitly not referenced due to known bugs.
+**Use the workflow engine for orchestration.** Rejected: workflows are stateless fan-out scripts; team members are persistent continuable subagents with follow-up turns.
 
-### Leader Configuration Parity
+## Consequences
 
-Leader uses the same `TeamMemberDefinition` as teammates. 10 default tools (`DEFAULT_LEADER_TOOLS`) are always merged into the leader's effective tool set and cannot be removed by configuration.
-
-### Skill Filter Deferred
-
-Skill catalog filtering is recorded in `team/member-bound` but not yet enforced at runtime, pending integration with the skill registry's per-scope API.
-
-### Tool Policy in Service Definition
-
-`effectiveToolPolicy()` lives on `TeamRegistry` (the Service Definition) rather than in `team-runtime`, because the tool restriction computation is a pure function of the definition and constants — no runtime state needed.
-
-## Session Events
-
-Five events declared via `SessionEventMap` merging: `team/member-bound`, `team/progress`, `team/control-request`, `team/control-decision`, `team/message`.
-
-## Test Coverage
-
-48 tests across 10 test files covering: branded id construction, constants completeness, Markdown parsing (valid/invalid/edge cases), cross-definition validation, MCP guard (allow/deny/non-MCP), tool policy (leader merging, teammate deny), orchestrator state machine, control coordinator lifecycle, progress store CRUD, and plugin shape verification.
+Teammates are durable continuable subagents whose persona, tool filter, MCP scope, and approval gate are fixed at delegation and reconstructed on cold resume. Teammates never receive `delegate_to_teammate`, `team_control`, or `list_teammates`. The five team tools, the keyed registries, and the approval rendezvous are pinned by unit, integration, and Loader-booted REAL-composition tests. `maxTokens` applies on fresh delegation only (the descriptor omits per-activation budgets).

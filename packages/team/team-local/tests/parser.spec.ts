@@ -25,8 +25,7 @@ model: deepseek-v4-flash-0731
 maxTokens: 16384
 tools:
   allow: [read, edit, write, grep, glob, pwsh]
-skills:
-  allow: [codebase-design, tdd]
+requiresApproval: [write, pwsh]
 mcpServers:
   servers: [postgres-mcp]
 contextPolicy: persistent
@@ -54,7 +53,7 @@ describe('parseTeamMemberMarkdown', () => {
     expect(result.definition!.role).toBe('teammate')
     expect(result.definition!.provider).toBe('Qiyuan-Inter')
     expect(result.definition!.tools?.allow).toEqual(['read', 'edit', 'write', 'grep', 'glob', 'pwsh'])
-    expect(result.definition!.skills?.allow).toEqual(['codebase-design', 'tdd'])
+    expect(result.definition!.requiresApproval).toEqual(['write', 'pwsh'])
     expect(result.definition!.mcpServers?.servers).toEqual(['postgres-mcp'])
     expect(result.definition!.contextPolicy).toBe('persistent')
   })
@@ -62,9 +61,7 @@ describe('parseTeamMemberMarkdown', () => {
   it('reports error for missing frontmatter', () => {
     const result = parseTeamMemberMarkdown('No frontmatter here', '/test/bad.md')
     expect(result.definition).toBeUndefined()
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ severity: 'error', message: expect.stringContaining('frontmatter') }),
-    )
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('frontmatter'))).toBe(true)
   })
 
   it('reports error for unsupported schemaVersion', () => {
@@ -80,9 +77,7 @@ Test prompt
 `
     const result = parseTeamMemberMarkdown(content, '/test/bad.md')
     expect(result.definition).toBeUndefined()
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ severity: 'error', message: expect.stringContaining('schemaVersion') }),
-    )
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('schemaVersion'))).toBe(true)
   })
 
   it('reports error for missing required fields', () => {
@@ -108,8 +103,6 @@ description: Test
 ---
 `
     const result = parseTeamMemberMarkdown(content, '/test/warn.md')
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ severity: 'warning', message: expect.stringContaining('Empty prompt body') }),
-    )
+    expect(result.diagnostics.some(d => d.severity === 'warning' && d.message.includes('Empty prompt body'))).toBe(true)
   })
 })

@@ -6,19 +6,18 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { TeamControlDecision } from '@deepseek-ai/dsh-team'
-import { TeamControlCoordinator } from '@deepseek-ai/dsh-team-channels'
+import type { TeamControlRegistry } from '@deepseek-ai/dsh-team-channels'
 
 /**
  * Register the `team_control` tool.
  *
  * @param ctx - plugin context.
- * @param coordinator - the control coordinator.
+ * @param registry - the host-level control registry.
  * @returns disposer.
  */
 export function registerControlTool(
   ctx: Context,
-  coordinator: TeamControlCoordinator,
+  registry: TeamControlRegistry,
 ): () => void {
   return ctx.tools.register(defineTool({
     name: 'team_control',
@@ -76,15 +75,21 @@ export function registerControlTool(
         return [{ type: 'text', text: value.message ?? 'No pending requests.' }]
       },
     },
-    async execute(args, _exec) {
+    // oxlint-disable-next-line typescript/require-await -- the tool seam requires a Promise return, but list/decide are synchronous
+    async execute(args, exec) {
+      const me = exec.agent
+      if (!me) {
+        return { message: 'Error: team_control requires a calling agent.' }
+      }
+
       if (args.action === 'list') {
-        const pending = coordinator.listPending()
+        const pending = registry.list(me.id)
         return {
           requests: pending.map(p => ({
-            requestId: p.data.requestId,
-            memberId: p.data.memberId as string,
-            toolName: p.data.toolName,
-            reason: p.data.reason,
+            requestId: p.requestId,
+            memberId: p.memberId as string,
+            toolName: p.toolName,
+            reason: p.reason,
           })),
         }
       }
@@ -97,8 +102,14 @@ export function registerControlTool(
         return { message: 'Error: decision is required for decide.' }
       }
 
+      const decision = args.decision
       try {
-        coordinator.decide(args.request_id, args.decision as TeamControlDecision)
+        registry.decide(me.id, args.request_id, decision)
+        me.session.append('team/control-decision', {
+          requestId: args.request_id,
+          decision,
+          ...(args.reason !== undefined ? { reason: args.reason } : {}),
+        })
         return { message: `Request "${args.request_id}" decided: ${args.decision}.` }
       } catch (e: unknown) {
         return { message: `Error: ${e instanceof Error ? e.message : String(e)}` }

@@ -1,5 +1,7 @@
 /**
- * No runtime invariant: DEFAULT_LEADER_TOOLS validation is deferred to first delegation.
+ * No runtime invariant: per-member composition (MCP guard + approval hook) is
+ * installed per continuable child by the setup contribution; its behavior is
+ * pinned by member-setup/approval-setup unit tests rather than a log relation.
  *
  * @module @deepseek-ai/dsh-team-runtime
  */
@@ -10,7 +12,7 @@ import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 const PACKAGE_NAME = '@deepseek-ai/dsh-team-runtime'
 
 /** @see InvariantInstaller */
-// No runtime invariant: DEFAULT_LEADER_TOOLS validation is deferred to first delegation.
+// No runtime invariant: per-child composition has no cross-event log relation to assert.
 const install: InvariantInstaller = () => {}
 
 export const name = 'team-runtime-invariant'

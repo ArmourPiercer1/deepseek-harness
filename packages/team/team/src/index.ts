@@ -62,13 +62,12 @@ export default class TeamRegistry extends Service {
   }
 
   /**
-   * Get the leader definition. Exactly one leader must exist among loaded
-   * definitions; throws otherwise.
+   * Get the leader definition, or `undefined` when none is loaded. The leader
+   * definition is metadata only: the root agent is composed by its own preset,
+   * never by this registry, so no leader policy is applied at runtime.
    */
-  getLeader(): TeamMemberDefinition {
-    const leader = this.definitions.find(d => d.role === 'leader')
-    if (!leader) throw new Error('No leader definition loaded')
-    return leader
+  getLeader(): TeamMemberDefinition | undefined {
+    return this.definitions.find(d => d.role === 'leader')
   }
 
   /**
@@ -93,7 +92,7 @@ export default class TeamRegistry extends Service {
  * @param member - the member definition.
  * @returns the resolved tool restriction.
  */
-function buildEffectiveToolPolicy(member: TeamMemberDefinition): ToolRestriction {
+export function buildEffectiveToolPolicy(member: TeamMemberDefinition): ToolRestriction {
   const definedTools: TeamToolPolicy = member.tools ?? {}
 
   if (member.role === 'leader') {

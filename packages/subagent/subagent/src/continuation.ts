@@ -49,7 +49,7 @@ import {
 import type { DelegatedPolicyOverrides } from './child-agent.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
 import { seedDescriptorTurn } from './descriptor-seed.ts'
-import type { ContinuableCreateRequest, ContinuableCreateSpec, SubagentResult, SubagentStartRequest } from './types.ts'
+import type { ContinuableCreateRequest, ContinuableCreateSpec, DelegationEventAppend, SubagentResult, SubagentStartRequest } from './types.ts'
 import type { ActivationObserver, ActivationTerminal } from './lifecycle.ts'
 import { SubagentError } from './error.ts'
 import type SubagentActivationSetupRegistry from './activation-setup-registry.ts'
@@ -119,6 +119,12 @@ export interface ContinuableStartSpec {
    * the durable descriptor, and composes the child itself.
    */
   readonly request: Omit<SubagentStartRequest, 'label' | 'signal' | 'outputSchema'>
+  /**
+   * Durable events appended to the child's own suffix after the descriptor
+   * turn and any fork seed, reconstructed verbatim on cold resume. Used by
+   * consumers that persist per-child composition the descriptor omits.
+   */
+  readonly delegationEvents?: readonly DelegationEventAppend[]
   /** Caller cancellation, owning the operation only until inbox acceptance. */
   readonly signal: AbortSignal
 }
@@ -434,7 +440,7 @@ export class SubagentContinuationManager {
     this.assertAdmitting(parent)
 
     const lineageSeedLength = prepared.seed?.length ?? 0
-    const seed = seedDescriptorTurn(childId, prepared.seed, descriptor)
+    const seed = seedDescriptorTurn(childId, prepared.seed, descriptor, spec.delegationEvents)
     const messageId = await this.locks.run(childId, async () => {
       const activation = await this.materialize({
         childId,

@@ -45,4 +45,30 @@ describe('TeamOrchestrator', () => {
     orch.markSettled(memberId)
     expect(orch.isInFlight(memberId)).toBe(false)
   })
+
+  it('finds activation by child session id', () => {
+    const orch = new TeamOrchestrator()
+    orch.recordActivation(TeamMemberId('backend'), 'child-1')
+    expect(orch.findByChildSession('child-1')?.memberId).toBe('backend')
+  })
+
+  it('returns undefined for unknown child session id', () => {
+    const orch = new TeamOrchestrator()
+    expect(orch.findByChildSession('nonexistent')).toBeUndefined()
+  })
+
+  it('updates activity tracking fields', () => {
+    const orch = new TeamOrchestrator()
+    const memberId = TeamMemberId('backend')
+    orch.recordActivation(memberId, 'session-1')
+    orch.updateActivity(memberId, 'pwsh')
+    expect(orch.get(memberId)?.lastAction).toBe('pwsh')
+    expect(orch.get(memberId)?.lastActivityAt).toBeTypeOf('number')
+    expect(orch.get(memberId)?.lastActivityAt).toBeGreaterThan(0)
+  })
+
+  it('updateActivity is a no-op for unknown member', () => {
+    const orch = new TeamOrchestrator()
+    expect(() => { orch.updateActivity(TeamMemberId('unknown'), 'test') }).not.toThrow()
+  })
 })

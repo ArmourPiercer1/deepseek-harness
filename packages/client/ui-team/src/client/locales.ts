@@ -12,7 +12,6 @@ export type TeamKey =
   | 'member.teammate'
   | 'field.model'
   | 'field.tools'
-  | 'field.skills'
   | 'field.mcp'
   | 'field.context'
 
@@ -28,7 +27,6 @@ export const zh: Record<TeamKey, string> = {
   'member.teammate': '队员',
   'field.model': '模型',
   'field.tools': '工具',
-  'field.skills': '技能',
   'field.mcp': 'MCP 服务器',
   'field.context': '上下文策略',
 }
@@ -45,7 +43,6 @@ export const en: Record<TeamKey, string> = {
   'member.teammate': 'Teammate',
   'field.model': 'Model',
   'field.tools': 'Tools',
-  'field.skills': 'Skills',
   'field.mcp': 'MCP Servers',
   'field.context': 'Context Policy',
 }

@@ -1,9 +1,9 @@
 /**
  * Team progress store.
  *
- * Read/write team progress backed by in-memory state. Session events
- * are the durable backing and are emitted by the tool-team tool;
- * the store folds them into a queryable view.
+ * Read/write team progress backed by in-memory state keyed by the leader's
+ * session id. Session events are the durable backing and are emitted by the
+ * tool-team tool; the store folds them into a queryable view.
  *
  * @module @deepseek-ai/dsh-team-channels
  */
@@ -11,48 +11,62 @@
 import type { TeamProgressData } from '@deepseek-ai/dsh-team'
 
 /**
- * In-memory team progress store. All mutations are tracked by taskId;
- * reads fold entries by taskId (latest wins).
+ * In-memory team progress store keyed by leader session id. Mutations are
+ * tracked by taskId within each leader; reads fold entries by taskId (latest
+ * wins).
  */
 export class TeamProgressStore {
-  private readonly entries = new Map<string, TeamProgressData>()
+  private readonly byLeader = new Map<string, Map<string, TeamProgressData>>()
+
+  private entriesFor(leaderSessionId: string): Map<string, TeamProgressData> {
+    let entries = this.byLeader.get(leaderSessionId)
+    if (entries === undefined) {
+      entries = new Map()
+      this.byLeader.set(leaderSessionId, entries)
+    }
+    return entries
+  }
 
   /**
-   * Upsert a progress entry.
+   * Upsert a progress entry for one leader.
    *
+   * @param leaderSessionId - the leader whose board is updated.
    * @param entry - the progress data to record.
    */
-  update(entry: TeamProgressData): void {
-    this.entries.set(entry.taskId, entry)
+  update(leaderSessionId: string, entry: TeamProgressData): void {
+    this.entriesFor(leaderSessionId).set(entry.taskId, entry)
   }
 
   /**
-   * Read all progress entries, deduplicated by taskId (latest wins).
+   * Read all progress entries for one leader, deduplicated by taskId (latest wins).
    *
-   * @returns all current progress entries.
+   * @param leaderSessionId - the leader whose board is read.
+   * @returns the leader's current progress entries.
    */
-  list(): readonly TeamProgressData[] {
-    return [...this.entries.values()]
+  list(leaderSessionId: string): readonly TeamProgressData[] {
+    return [...(this.byLeader.get(leaderSessionId)?.values() ?? [])]
   }
 
   /**
-   * Read one entry by task id.
+   * Read one entry by task id for one leader.
    *
+   * @param leaderSessionId - the leader whose board is read.
    * @param taskId - the task to look up.
    * @returns the progress entry, or undefined if unknown.
    */
-  get(taskId: string): TeamProgressData | undefined {
-    return this.entries.get(taskId)
+  get(leaderSessionId: string, taskId: string): TeamProgressData | undefined {
+    return this.byLeader.get(leaderSessionId)?.get(taskId)
   }
 
   /**
-   * Restore entries from session events (fold by taskId, latest wins).
+   * Restore entries from session events for one leader (fold by taskId, latest wins).
    *
+   * @param leaderSessionId - the leader whose board is restored.
    * @param events - progress events to restore from.
    */
-  restore(events: readonly TeamProgressData[]): void {
+  restore(leaderSessionId: string, events: readonly TeamProgressData[]): void {
     for (const event of events) {
-      this.entries.set(event.taskId, event)
+      this.entriesFor(leaderSessionId).set(event.taskId, event)
     }
   }
 }

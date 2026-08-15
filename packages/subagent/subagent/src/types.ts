@@ -12,7 +12,7 @@
 import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
+import type { SessionEvent, SessionEventMap, SessionEventType, SessionId } from '@deepseek-ai/dsh-session'
 import type { ObjectJsonSchema, ToolRestriction } from '@deepseek-ai/dsh-tools'
 import type { SubagentDescriptorData } from './descriptor.ts'
 
@@ -27,6 +27,18 @@ export type SubagentRunId = Branded<'SubagentRunId'>
 export function SubagentRunId(id: string): SubagentRunId {
   return id as SubagentRunId
 }
+
+/**
+ * One durable event a delegation seeds into a continuable child's own suffix.
+ * A discriminated union over {@link SessionEventMap}: each member pairs a
+ * `type` with its exact `data` payload, so {@link Session.append} can be
+ * applied without a per-key branch. Appended after the child's
+ * `subagent/descriptor` turn and any fork seed, so it is reconstructed
+ * verbatim on cold resume.
+ */
+export type DelegationEventAppend = {
+  [K in SessionEventType]: { readonly type: K; readonly data: SessionEventMap[K] }
+}[SessionEventType]
 
 /**
  * Observe-only identifying detail for a published subagent run, carried by

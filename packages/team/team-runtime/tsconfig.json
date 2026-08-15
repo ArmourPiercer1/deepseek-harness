@@ -12,6 +12,7 @@
     { "path": "../../core/tools" },
     { "path": "../../subagent/subagent" },
     { "path": "../team" },
+    { "path": "../team-channels" },
     { "path": "../../runtime-diagnostics/invariants" }
   ]
 }

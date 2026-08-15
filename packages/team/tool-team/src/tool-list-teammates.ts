@@ -41,6 +41,8 @@ export function registerListTeammatesTool(
                 description: { type: 'string', required: true },
                 model: { type: 'string' },
                 status: { type: 'string', required: true },
+                last_activity: { type: 'string', description: 'ISO timestamp of the last known activity.' },
+                last_action: { type: 'string', description: 'Description of the last action performed.' },
               },
             },
           },
@@ -48,12 +50,24 @@ export function registerListTeammatesTool(
       },
       render(_args, value) {
         const lines = value.teammates.map(
-          (t: { id: string; name: string; role: string; status: string }) =>
-            `- ${t.name} (${t.id}) [${t.role}] — ${t.status}`,
+          (t: {
+            id: string
+            name: string
+            role: string
+            status: string
+            last_activity?: string
+            last_action?: string
+          }) => {
+            let line = `- ${t.name} (${t.id}) [${t.role}] — ${t.status}`
+            if (t.last_action) line += ` (last: ${t.last_action})`
+            if (t.last_activity) line += ` at ${t.last_activity}`
+            return line
+          },
         )
         return [{ type: 'text', text: lines.join('\n') || 'No teammates configured.' }]
       },
     },
+    // oxlint-disable-next-line typescript/require-await -- the tool seam requires a Promise return, but listing is synchronous
     async execute(_args, _exec) {
       const team = ctx.get('team')
       if (!team) {
@@ -63,15 +77,19 @@ export function registerListTeammatesTool(
       const members = team.list()
       const teammates = members
         .filter(m => m.role === 'teammate')
-        .map(m => {
+        .map((m) => {
           const activation = orchestrator.get(m.id)
           return {
-            id: m.id as string,
+            id: m.id,
             name: m.name,
-            role: m.role as string,
+            role: m.role,
             description: m.description,
             ...(m.model !== undefined ? { model: m.model } : {}),
             status: activation?.status ?? 'idle',
+            ...(activation?.lastActivityAt !== undefined
+              ? { last_activity: new Date(activation.lastActivityAt).toISOString() } : {}),
+            ...(activation?.lastAction !== undefined
+              ? { last_action: activation.lastAction } : {}),
           }
         })
 
