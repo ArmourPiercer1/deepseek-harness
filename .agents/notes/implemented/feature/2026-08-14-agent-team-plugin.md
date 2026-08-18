@@ -41,3 +41,5 @@ Key design decisions:
 ## Consequences
 
 Teammates are durable continuable subagents whose persona, tool filter, MCP scope, and approval gate are fixed at delegation and reconstructed on cold resume. Teammates never receive `delegate_to_teammate`, `team_control`, or `list_teammates`. The five team tools, the keyed registries, and the approval rendezvous are pinned by unit, integration, and Loader-booted REAL-composition tests. `maxTokens` applies on fresh delegation only (the descriptor omits per-activation budgets).
+
+The team events are durable `SessionEventMap` members and therefore join the harness's generated session-event vocabulary: the persistence read path refuses a log containing a non-ignorable event type it does not know, and `team/member-bound` is required for cold resume. The plugin consequently publishes version-coupled with `@deepseek-ai/dsh-session` rather than as a standalone package. Its only runtime coupling to the base is this vocabulary, isolated to `team/team/src/events.ts`; the plugin keeps that as the single contact point so it can migrate to runtime event registration when the base provides a registration surface.

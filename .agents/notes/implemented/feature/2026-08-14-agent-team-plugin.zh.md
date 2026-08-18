@@ -41,3 +41,5 @@ agent-team 插件以 `packages/team/` 下的六个包加上 `packages/bundle/tea
 ## 后果
 
 teammate 是持久的可继续 subagent，其 persona、工具过滤、MCP 范围和审批门禁在委托时固定，并在冷恢复时重建。teammate 绝不会收到 `delegate_to_teammate`、`team_control` 或 `list_teammates`。这五个团队工具、键控注册表以及审批汇合点由单元测试、集成测试以及通过 Loader 启动的真实组合（REAL-composition）测试所固定。`maxTokens` 仅在全新委托时应用（描述符按设计省略了每次激活的预算）。
+
+team 事件是持久的 `SessionEventMap` 成员，因此会并入 harness 生成的会话事件词汇表：持久化读取路径会拒绝包含其不认识、且未标记可忽略（ignorable）事件类型的日志，而 `team/member-bound` 是冷恢复所必需。因此该插件随 `@deepseek-ai/dsh-session` 版本耦合发布，而非作为独立包。它对基座唯一的运行时耦合就是这一词汇表，且被隔离在 `team/team/src/events.ts`；插件将该处保持为唯一接触面，以便在基座提供事件注册接口时迁移到运行时事件注册。

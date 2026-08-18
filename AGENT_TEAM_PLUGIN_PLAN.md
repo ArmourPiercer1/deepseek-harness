@@ -328,11 +328,12 @@ oh-my-opencode（源码位于 `references/oh-my-opencode`）是 OpenCode 的插�
 
 | 任务 | 描述 |
 |---|---|
-| 5.1 Bundle packaging | 打包为 `dsh-agent-team` bundle，可通过 `dsh plugin --profile <name> add @deepseek-ai/dsh-agent-team` 安装 |
+| 5.1 Bundle packaging | 打包为 `dsh-bundle-team` bundle，**路线 A 随 harness 版本耦合发布**（与 `dsh-session` 同版本配套，见 4.6）。已存在 `packages/bundle/team/` |
 | 5.2 Web client 集成 | Team progress panel（`ConversationNodeDefinition`），teammate 状态显示，message timeline |
 | 5.3 CLI 集成 | `dsh teammate list` / `dsh teammate add <file>` / `dsh teammate enable <id>` / `dsh teammate disable <id>` |
 | 5.4 Documentation | Package README、config-catalog entries、cookbook guide（`docs/cookbook/adding-agent-team.md`） |
 | 5.5 Agent Note | 决策记录：为什么选择 continuable subagent 而非独立 session、per-teammate scope 实现选择 |
+| 5.6 独立化迁移接口 | 保持 team 事件声明集中于 `events.ts` 单一接触面（见 4.6），不在其它模块散布词汇表假设。**独立发布本身推迟**到基座支持运行时事件注册面后 |
 
 ---
 
@@ -403,6 +404,24 @@ oh-my-opencode（源码位于 `references/oh-my-opencode`）是 OpenCode 的插�
 - [ ] `./invariant` 注册或 empty-with-reason
 - [ ] 文件以恰好一个 trailing newline 结尾
 
+### 4.6 发布策略与独立化迁移接口
+
+**决策**：team mode 采用**路线 A——随 harness 版本耦合发布**（`dsh-bundle-team` 与 `@deepseek-ai/dsh-session` 同版本配套），暂不作为真正独立的第三方插件发布。同时在代码结构上**保留独立化迁移接口**，待 dsh 基座支持运行时会话事件类型注册后，再将其转为单独插件。
+
+**背景（唯一运行时耦合）**：team 的 5 个持久化事件（`team/member-bound` / `message` / `progress` / `control-request` / `control-decision`）通过声明合并并入 `@deepseek-ai/dsh-session/types` 的 `SessionEventMap`，并由 `gen-persistence-catalog` 生成进核心包 `packages/core/session/src/known-event-types.ts` 的运行时词汇表。持久化读取路径（`session-persistence` coordinator 的 `assertEventsSupported`）对词汇表之外、且未标 `ignorable` 的事件会拒绝解读日志。由于 `team/member-bound` 是冷恢复依据、不能 ignorable，team 日志的可读性依赖"宿主 harness 的词汇表认识 team 事件"。当前基座**不存在**让仓库外插件在运行时注册事件类型的机制（`known-event-types.ts` 注释明确该注册面"被推迟到出现这类消费者为止"）。
+
+**除该点外无其它运行时耦合**：插件区域外的代码零反向 import team 包；`apps/`、`examples/` 零引用；team 各包仅依赖公开 seam（dsh-session / dsh-tools / dsh-agent / dsh-subagent / dsh-system-prompt）与 vendored 框架（cordis / schemastery）。
+
+**保留的迁移接口**（降低未来独立化成本）：
+
+- 全部 team 事件的声明与 payload 类型**集中于单一模块** `packages/team/team/src/events.ts`——这是与基座词汇表的唯一接触面。独立化时只需把该模块从"声明合并 + 生成词汇表"改为"挂载时向注册面登记"，不触及 team 其它代码。
+- 不在 team 其它模块散布对事件词汇表机制的假设；冷恢复读取 `team/member-bound` 的逻辑（`team-runtime/src/member-setup.ts`）只依赖事件内容本身，不依赖词汇表如何被认识。
+- 保持 team 事件 payload 类型自包含（均在 `packages/team/team/src/types.ts`），不依赖核心内部类型。
+
+**为何暂不采用路线 B（真正独立发布）**：需先在基座实现"会话事件类型运行时注册面"（核心层改动，非 team 插件自身可完成）。在基座具备该能力前，路线 A 以版本对齐消化耦合，成本最低。
+
+**触发独立化的条件**：dsh 基座提供运行时会话事件注册能力后，将 team 事件改为运行时注册，解除对生成词汇表的依赖，即可作为独立插件发布。届时 `packages/core/session/src/known-event-types.ts` 中的 `team/*` 条目与 `docs/persistence-catalog.md` 的 team 事件随之移除。
+
 ---
 
 ## 五、依赖与风险
@@ -417,6 +436,7 @@ oh-my-opencode（源码位于 `references/oh-my-opencode`）是 OpenCode 的插�
 | 多 teammate 并发 in-flight | Continuable subagent 已支持并发 activation；在 team orchestrator 层限制同一 teammate 同时只有一个 in-flight delegation（与 PilotDeck 行为一致） |
 | Teammate 重新委派形成递归 | Teammate 的 tool restriction 显式 deny `delegate_to_teammate`；`maxDepth` 提供额外保护 |
 | Cold resume 后 team state 恢复 | Continuable subagent 的 descriptor 持久化 provider/model/persona/toolFilter；team progress 通过 session event 恢复 |
+| team 事件词汇表耦合核心、阻碍独立发布 | 采用路线 A 随 harness 版本耦合发布消化（见 4.6）；事件声明集中于 `events.ts` 单一接触面，待基座提供运行时事件注册面后再独立化。team 插件**不得**在 `events.ts` 之外引用词汇表机制 |
 
 ---
 
