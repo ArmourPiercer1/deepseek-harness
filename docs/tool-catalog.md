@@ -29,6 +29,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
+| `@deepseek-ai/dsh-tool-permission-guard` | - | `ctx.tools (pre-execute listener)`, `ctx.permission via ctx.get` | `permission/decision audit events in the acting session log` | - | A `tools/pre-execute` guard that applies `ctx.permission.evaluate` to the main agent and single delegated subagents; it registers no model-facing tool, so it has no schema section. The note is the whole contract: `allow` proceeds, `deny` blocks, `ask` routes to the approval seam. |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every fresh round)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap. |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`, `session_event_search`, `session_event_trace`, `session_search`, `session_trace` | `ctx.tools`, `ctx.systemPrompt`, `ctx.sessionQuery`, `a calling Agent for workspace authority` | `tool/call`, `tool/result` | - | The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies. |
@@ -39,6 +40,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`, `ctx.workflowEngine`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents the script children)` | `tool/call`, `tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
+| `@deepseek-ai/dsh-tool-team` | `delegate_to_teammate`, `list_teammates`, `send_team_message`, `team_control`, `team_progress` | `ctx.tools`, `ctx.team`, `ctx.teamControl`, `ctx.subagents + ctx.session at execution time` | `tool/call`, `tool/result`, `team/message, team/progress, team/control-decision session events` | - | Five team tools over the team seam and control coordinator. Schemas are stable; the delegate/list/send/control tools read `ctx.team` (and `ctx.subagents`/`ctx.session` at execution time) via `ctx.get`, so the harvest mounts only the registry + coordinator the plugin injects. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -1177,6 +1179,12 @@ Source: [`packages/lsp/tool-lsp/src/index.ts`](../packages/lsp/tool-lsp/src/inde
 
 The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema.
 
+<a id="deepseek-aidsh-tool-permission-guard"></a>
+
+## `@deepseek-ai/dsh-tool-permission-guard`
+
+A `tools/pre-execute` guard that applies `ctx.permission.evaluate` to the main agent and single delegated subagents; it registers no model-facing tool, so it has no schema section. The note is the whole contract: `allow` proceeds, `deny` blocks, `ask` routes to the approval seam.
+
 <a id="deepseek-aidsh-tool-ralph"></a>
 
 ## `@deepseek-ai/dsh-tool-ralph`
@@ -1871,3 +1879,176 @@ Search the web for current information. Returns an optional summary answer and a
 Source: [`packages/web/tool-web/src/index.ts`](../packages/web/tool-web/src/index.ts)
 
 web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps.
+
+<a id="deepseek-aidsh-tool-team"></a>
+
+## `@deepseek-ai/dsh-tool-team`
+
+### `delegate_to_teammate`
+
+Delegate a task to a teammate. The teammate works in the background and reports back when done. Only the leader may use this tool.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "teammate_id": {
+      "type": "string",
+      "description": "The teammate id from list_teammates."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The complete task description for the teammate. Be specific and include all necessary context."
+    },
+    "action": {
+      "type": "string",
+      "description": "Action: \"run\" starts a new delegation (default), \"follow_up\" sends additional instructions to an existing teammate session, \"shutdown\" stops the teammate.",
+      "enum": [
+        "run",
+        "follow_up",
+        "shutdown"
+      ]
+    }
+  },
+  "required": [
+    "teammate_id",
+    "prompt"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team/src/tool-delegate.ts`](../packages/team/tool-team/src/tool-delegate.ts)
+
+### `list_teammates`
+
+List all available teammates with their roles, capabilities, and current status.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/team/tool-team/src/tool-list-teammates.ts`](../packages/team/tool-team/src/tool-list-teammates.ts)
+
+### `send_team_message`
+
+Send a message to a teammate (from leader) or report to leader (from teammate).
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "target_id": {
+      "type": "string",
+      "description": "The teammate or leader id to send the message to."
+    },
+    "message": {
+      "type": "string",
+      "description": "The message content."
+    }
+  },
+  "required": [
+    "target_id",
+    "message"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team/src/tool-send-message.ts`](../packages/team/tool-team/src/tool-send-message.ts)
+
+### `team_control`
+
+Review and decide on pending teammate permission requests. Only the leader may use this tool.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "List pending requests or decide one.",
+      "enum": [
+        "list",
+        "decide"
+      ]
+    },
+    "request_id": {
+      "type": "string",
+      "description": "Required for decide."
+    },
+    "decision": {
+      "type": "string",
+      "description": "The decision for the request.",
+      "enum": [
+        "allow_once",
+        "deny",
+        "escalate_to_user"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "description": "Optional reason for the decision."
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team/src/tool-control.ts`](../packages/team/tool-team/src/tool-control.ts)
+
+### `team_progress`
+
+Read or update the team task progress board.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "List all tasks or update one.",
+      "enum": [
+        "list",
+        "update"
+      ]
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Required for update."
+    },
+    "subject": {
+      "type": "string",
+      "description": "Short task subject."
+    },
+    "status": {
+      "type": "string",
+      "description": "Task status.",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "blocked"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Optional summary or blocker description."
+    },
+    "teammate_id": {
+      "type": "string",
+      "description": "Assigned teammate id."
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team/src/tool-progress.ts`](../packages/team/tool-team/src/tool-progress.ts)
+
+Five team tools over the team seam and control coordinator. Schemas are stable; the delegate/list/send/control tools read `ctx.team` (and `ctx.subagents`/`ctx.session` at execution time) via `ctx.get`, so the harvest mounts only the registry + coordinator the plugin injects.

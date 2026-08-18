@@ -58,7 +58,7 @@ export const Config: z<Config> = z.object({
 })
 
 export const name = 'tool-permission-guard'
-export const inject = [] as const
+export const inject = []
 
 /**
  * Register the guard listener. The scope's rules compile once at apply; each

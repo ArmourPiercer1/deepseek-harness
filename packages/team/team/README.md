@@ -1,5 +1,7 @@
 # dsh-team
 
+English | [中文](README.zh.md)
+
 Agent team Service Definition for the DeepSeek Harness.
 
 Provides `ctx.team` — the abstract contract for loading, querying, and validating team member definitions. Concrete providers (e.g. `dsh-team-local`) supply the implementation.

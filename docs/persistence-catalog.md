@@ -496,6 +496,22 @@ Source: [`packages/llm/llm-retry/src/types.ts:11`](../packages/llm/llm-retry/src
 
 ### `permission/*`
 
+<a id="permissiondecision--log-only"></a>
+
+#### `permission/decision` — log-only
+
+```ts persistence-catalog
+/**
+ * Audit record of one permission decision. Appended by the engine after it
+ * commits the decision, so the session log reconstructs which tool call was
+ * allowed, prompted, or denied, under which rule, layer, member, and mode.
+ * @param data - the evaluated tool, outcome, deciding rule and layer, member, mode, and deny cause.
+ */
+'permission/decision': PermissionDecisionData
+```
+
+Source: [`packages/permission/permission/src/index.ts:87`](../packages/permission/permission/src/index.ts)
+
 <a id="permissionpreset--log-only"></a>
 
 #### `permission/preset` — log-only
@@ -705,6 +721,80 @@ Source: [`packages/core/session/src/types.ts:254`](../packages/core/session/src/
 ```
 
 Source: [`packages/subagent/subagent/src/descriptor.ts:37`](../packages/subagent/subagent/src/descriptor.ts)
+
+### `team/*`
+
+<a id="teamcontrol-decision--log-only"></a>
+
+#### `team/control-decision` — log-only
+
+```ts persistence-catalog
+/**
+ * Leader's decision on a control request.
+ * @param data - request id and decision.
+ */
+'team/control-decision': TeamControlDecisionData
+```
+
+Source: [`packages/team/team/src/events.ts:40`](../packages/team/team/src/events.ts)
+
+<a id="teamcontrol-request--log-only"></a>
+
+#### `team/control-request` — log-only
+
+```ts persistence-catalog
+/**
+ * Control request from a teammate to the leader.
+ * @param data - request id, teammate, tool name, and reason.
+ */
+'team/control-request': TeamControlRequestData
+```
+
+Source: [`packages/team/team/src/events.ts:35`](../packages/team/team/src/events.ts)
+
+<a id="teammember-bound--log-only"></a>
+
+#### `team/member-bound` — log-only
+
+```ts persistence-catalog
+/**
+ * Durable binding of a child session to a team member definition.
+ * Appended once in the child's initial turn. Carries the full effective
+ * policy so cold resume reconstructs without the parent's live registry.
+ * @param data - the member id, role, and resolved policy snapshot.
+ */
+'team/member-bound': TeamMemberBoundData
+```
+
+Source: [`packages/team/team/src/events.ts:25`](../packages/team/team/src/events.ts)
+
+<a id="teammessage--log-only"></a>
+
+#### `team/message` — log-only
+
+```ts persistence-catalog
+/**
+ * Message sent between leader and teammate.
+ * @param data - sender, target, and message content.
+ */
+'team/message': TeamMessageData
+```
+
+Source: [`packages/team/team/src/events.ts:45`](../packages/team/team/src/events.ts)
+
+<a id="teamprogress--log-only"></a>
+
+#### `team/progress` — log-only
+
+```ts persistence-catalog
+/**
+ * Team progress item created or updated.
+ * @param data - the progress entry.
+ */
+'team/progress': TeamProgressData
+```
+
+Source: [`packages/team/team/src/events.ts:30`](../packages/team/team/src/events.ts)
 
 ### `todo/*`
 

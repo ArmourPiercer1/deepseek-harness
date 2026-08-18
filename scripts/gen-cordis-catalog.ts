@@ -106,6 +106,9 @@ export const SERVICE_PAGE: Record<string, string> = {
   web: 'web.md',
   workflowEngine: 'workflow.md',
   workspaceRegistry: 'workspace.md',
+  team: 'team.md',
+  teamControl: 'team.md',
+  permission: 'permission.md',
 }
 
 /**
@@ -517,6 +520,15 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   BashEnvVariableInfo: 'service-local metadata type is owned by packages/shell/tool-bash/src/index.ts',
   CompactionAgentContext: 'compaction service input is owned by packages/compaction/compaction/src/index.ts',
   ManualCompactAgentContext: 'manual compaction service input is owned by packages/compaction/compaction/src/index.ts',
+  CompiledPolicy: 'compiled permission policy handle is owned by packages/permission/permission/src/types.ts',
+  RuleSource: 'authored permission rule input is owned by packages/permission/permission/src/index.ts',
+  PermissionContext: 'permission evaluation inputs are owned by packages/permission/permission/src/types.ts',
+  PermissionDecision: 'permission evaluation result is owned by packages/permission/permission/src/types.ts',
+  ToolCallView: 'minimal tool-call view is owned by packages/permission/permission/src/types.ts',
+  TeamMemberDefinition: 'team member definition is owned by packages/team/team/src/types.ts',
+  TeamMemberId: 'branded team member identity is owned by packages/team/team/src/brand.ts',
+  TeamControlDecision: 'leader control decision is owned by packages/team/team-channels/src/control-coordinator.ts',
+  TeamControlRequestData: 'teammate control request payload is owned by packages/team/team-channels/src/control-coordinator.ts',
   ClientResponse: 'wire response message is owned by packages/host/apiproxy/src/api/rpc.ts',
   ApprovalRequestId: 'dynamic Plugin approval identity is owned by packages/extensions/cordis-host-runner/src/types.ts',
   CordisErrorDetails: 'Cordis runtime error payload is owned by packages/extensions/cordis-host-runner/src/types.ts',

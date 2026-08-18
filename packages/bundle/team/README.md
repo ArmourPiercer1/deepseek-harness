@@ -1,5 +1,7 @@
 # dsh-bundle-team
 
+English | [中文](README.zh.md)
+
 The dsh agent-team bundle: leader-teammate coordination over continuable subagents.
 
 ## Installation

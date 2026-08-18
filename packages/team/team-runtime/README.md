@@ -1,5 +1,7 @@
 # dsh-team-runtime
 
+English | [中文](README.zh.md)
+
 Team runtime orchestration, delegation, and per-member capability filtering for the DeepSeek Harness team plugin.
 
 ## Role

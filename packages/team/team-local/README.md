@@ -1,5 +1,7 @@
 # dsh-team-local
 
+English | [中文](README.zh.md)
+
 Local filesystem team member definition loader for the DeepSeek Harness team plugin.
 
 ## Role

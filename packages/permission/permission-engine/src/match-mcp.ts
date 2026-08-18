@@ -14,7 +14,7 @@ const PREFIX = 'mcp__'
  *
  * @param matcher - the compiled MCP matcher payload.
  * @param toolName - the invoked tool name.
- * @param args - the tool's JSON arguments (unused; MCP matches on the name).
+ * @param _args - the tool's JSON arguments (unused; MCP matches on the name).
  * @returns true when the matcher applies to this tool name.
  */
 export function matchMcp(matcher: McpMatcher, toolName: string, _args: JsonValue): boolean {

@@ -6,7 +6,7 @@ English | [中文](2026-08-14-model-picker-family-grouping.zh.md)
 
 ## Problem
 
-The fetch picker of the [Models-page declaring flow](2026-08-04-declaring-a-provider-from-the-models-page.md) renders a provider's discovered models as one undifferentiated checkbox list. That is the right shape for a vendor's own few models and the wrong one for the case the flow exists for: a relay or gateway serves every vendor's catalog at once, a listing of a hundred ids scrolls past as a wall, and there is no way to pick or clear the whole batch — the user who wants three models from one relay must either uncheck the ninety-seven the picker pre-selected or leave them all configured.
+The fetch picker of the [Models-page declaring flow](../architecture/2026-08-04-declaring-a-provider-from-the-models-page.md) renders a provider's discovered models as one undifferentiated checkbox list. That is the right shape for a vendor's own few models and the wrong one for the case the flow exists for: a relay or gateway serves every vendor's catalog at once, a listing of a hundred ids scrolls past as a wall, and there is no way to pick or clear the whole batch — the user who wants three models from one relay must either uncheck the ninety-seven the picker pre-selected or leave them all configured.
 
 ## Decision
 

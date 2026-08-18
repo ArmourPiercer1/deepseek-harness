@@ -2,6 +2,8 @@
 
 Status: implemented
 
+English | [中文](2026-08-14-plugin-development-guide-reference.zh.md)
+
 ## Problem
 
 This workspace is dedicated to developing a family of DeepSeek Harness plugins. Onboarding plugin authors repeatedly re-derive the same facts from scattered sources: the plugin runtime-stability requirements, the standard plugin interface, and how to install, uninstall, activate, and disable plugins. There was no single place that collected these for a plugin author, and no persistent record of where such a guide lives.

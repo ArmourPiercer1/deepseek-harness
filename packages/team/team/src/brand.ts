@@ -10,7 +10,12 @@ import type { Branded } from '@deepseek-ai/dsh-brand'
 /** Nominal team member id — structurally a string, branded at compile time. */
 export type TeamMemberId = Branded<'TeamMemberId'>
 
-/** Construct a {@link TeamMemberId} from a plain string. Zero runtime cost. */
+/**
+ * Construct a {@link TeamMemberId} from a plain string. Zero runtime cost.
+ *
+ * @param id - the plain string id to brand.
+ * @returns the same string, branded as a {@link TeamMemberId}.
+ */
 export function TeamMemberId(id: string): TeamMemberId {
   return id as TeamMemberId
 }

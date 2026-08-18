@@ -1,5 +1,7 @@
 # dsh-team-channels
 
+English | [中文](README.zh.md)
+
 Team messaging, progress tracking, and approval coordination for the DeepSeek Harness team plugin.
 
 ## Role
@@ -16,12 +18,12 @@ Team messaging, progress tracking, and approval coordination for the DeepSeek Ha
 ## Config
 
 | Key | Type | Default | Description |
-|---|---|---|
+|---|---|---|---|
 | `controlRequestTimeoutMs` | `number` | `120000` | Auto-deny timeout for pending requests |
 
 ## Model Experience
 
-None directly: the package provides coordination state consumed by the `team_control` and `team_progress` tools.
+None, as the package provides in-memory coordination state consumed by the `team_control` and `team_progress` tools; it registers no prompt, schema, or result of its own.
 
 #### KV Cache effect
 

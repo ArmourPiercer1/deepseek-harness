@@ -136,7 +136,7 @@ PascalCase 标识符中的首字母缩略词使用首字母大写格式：`Ui`�
 | `@deepseek-ai/dsh-client-ui-slash`, `ui-slash/` | `@deepseek-ai/dsh-client-ui-input-trigger`, `ui-input-trigger/` | 客户端处理 `/`、`@`、键盘仲裁、候选菜单和程序化启动，并非只处理斜杠命令。 |
 | `ctx.slash`、`SlashService`、`SlashController`、`SlashSource` | `ctx.inputTriggers`、`InputTriggerService`、`InputTriggerController`、`InputTriggerSource` | 这些名称覆盖所有受支持的触发器，并保留现有的服务、控制器和来源职责。耦合的区域设置和公开类型名称也改用 `InputTrigger`。 |
 | `@deepseek-ai/dsh-agent-tool-mode`，插件 `tool-mode` | `@deepseek-ai/dsh-agent-tool-presentation`，插件 `tool-presentation` | 该插件改变工具向模型呈现的方式，而不改变执行行为。保留局部 `Config.mode` 和 `ToolPresentationMode`。 |
-| `packages/interaction/permission/` | `packages/interaction/permission-presets/` | 该包拥有沙箱与审批设置的具名组合，而不负责执行权限。 |
+| `interaction/permission/` | `packages/interaction/permission-presets/` | 该包拥有沙箱与审批设置的具名组合，而不负责执行权限。 |
 | `@deepseek-ai/dsh-permission`, `ctx.permission`, `PermissionService` | `@deepseek-ai/dsh-permission-presets`, `ctx.permissionPresets`, `PermissionPresetService` | 该服务选择并持久化预设。沙箱和审批服务负责执行结果。 |
 | `@deepseek-ai/dsh-client-ui-permission` | `@deepseek-ai/dsh-client-ui-permission-presets` | UI 编辑和选择权限预设。 |
 | `docs/subsystems/permission.md` | `docs/subsystems/permission-presets.md` | 该页面记录预设选择，而不是权限执行。 |

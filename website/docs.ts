@@ -291,10 +291,12 @@ const subsystemGroups = [
     ['skills.md', '技能', 'Skills'],
     ['workflow.md', '工作流', 'Workflows'],
     ['subagent.md', '子代理', 'Subagents'],
+    ['team.md', '团队', 'Team'],
   ]],
   ['策略与交互', 'Policy and interaction', [
     ['approval.md', '审批', 'Approvals'],
     ['permission-presets.md', '权限预设', 'Permission presets'],
+    ['permission.md', '权限', 'Permissions'],
     ['sandbox.md', '沙箱', 'Sandboxing'],
     ['plan.md', '计划模式', 'Plan mode'],
     ['user-questions.md', '用户交互', 'User interaction'],

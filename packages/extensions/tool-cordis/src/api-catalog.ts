@@ -907,6 +907,25 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'permission',
+    summary: 'The permission engine.',
+    description: 'The permission engine. Consumers `compile` a scope\'s authored rules once at load into an opaque CompiledPolicy, then `evaluate` each tool call against it. Both are pure: neither appends the audit event or runs the approval flow — a consumer appends `permission/decision` at its commit point and routes an `ask` to the approval seam or the leader rendezvous.',
+    methods: [
+      {
+        signature: 'compile(rules: readonly RuleSource[]): { readonly policy: CompiledPolicy; readonly diagnostics: readonly string[] }',
+        description: 'Compile a scope\'s authored rules into an opaque policy.',
+        parameters: [{ name: 'rules', description: 'the authored rule strings with their kinds and layers.' }],
+        returns: 'the compiled policy, plus any parse diagnostics as human-readable strings.',
+      },
+      {
+        signature: 'evaluate(call: ToolCallView, context: PermissionContext): PermissionDecision',
+        description: 'Decide whether a tool call may be issued.',
+        parameters: [{ name: 'call', description: 'the tool name and JSON arguments to decide.' }, { name: 'context', description: 'the compiled policy, mode, path bases, and acting member.' }],
+        returns: 'the allow/ask/deny decision, with the matched rule when a rule decided it.',
+      },
+    ],
+  },
+  {
     key: 'permissionPresets',
     summary: 'Owns the deployment\'s permission presets and their write path.',
     description: 'Owns the deployment\'s permission presets and their write path. Requires a confining `ctx.shell` executor and `ctx.approval`; unmatched knob values are reported as CUSTOM_PRESET, not an error.',
@@ -1733,6 +1752,77 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Assemble global and scoped providers, detach tool parameters, apply canonical ordering, then run the assembly waterfall. Scoped sections and variables shadow globals. The returned waterfall value is authoritative except that an effective complete section is restored afterwards as the sole prompt section.',
         parameters: [{ name: 'context', description: 'the optional scope and plugin-defined assembly fields.' }],
         returns: 'the post-waterfall assembly with any complete prompt enforced.',
+      },
+    ],
+  },
+  {
+    key: 'team',
+    summary: 'Registry of team member definitions.',
+    description: 'Registry of team member definitions.\n\nService Providers call register to populate the registry with definitions. Consumers read definitions through list, get, etc.',
+    methods: [
+      {
+        signature: 'register(definitions: readonly TeamMemberDefinition[]): void',
+        description: 'Register member definitions. Replaces any previously registered set.',
+        parameters: [{ name: 'definitions', description: 'the complete set of definitions to register.' }],
+      },
+      {
+        signature: 'list(): readonly TeamMemberDefinition[]',
+        description: 'List all loaded member definitions (leader + teammates).',
+        parameters: [],
+        returns: 'the registry\'s full set of member definitions.',
+      },
+      {
+        signature: 'get(id: TeamMemberId): TeamMemberDefinition | undefined',
+        description: 'Get one member by id.',
+        parameters: [{ name: 'id', description: 'the member to look up.' }],
+        returns: 'the member definition, or undefined when the id is unknown.',
+      },
+      {
+        signature: 'getLeader(): TeamMemberDefinition | undefined',
+        description: 'Get the leader definition, or `undefined` when none is loaded. The leader definition is metadata only: the root agent is composed by its own preset, never by this registry, so no leader policy is applied at runtime.',
+        parameters: [],
+        returns: 'the leader definition, or undefined when none is loaded.',
+      },
+      {
+        signature: 'effectiveToolPolicy(member: TeamMemberDefinition): ToolRestriction',
+        description: 'Resolve the effective ToolRestriction for a member.\n\n- **Leader**: `allow = DEFAULT_LEADER_TOOLS ∪ definition.tools.allow`; `deny = definition.tools.deny` (DEFAULT_LEADER_TOOLS never denied).\n- **Teammate**: `allow`/`deny` from definition; `deny` always includes team control tools (`delegate_to_teammate`, `team_control`, `list_teammates`).',
+        parameters: [{ name: 'member', description: 'the member definition to resolve.' }],
+        returns: 'the resolved tool restriction.',
+      },
+    ],
+  },
+  {
+    key: 'teamControl',
+    summary: 'Host-level registry of pending control requests, keyed by leader session id.',
+    description: 'Host-level registry of pending control requests, keyed by leader session id.\n\nFlow: 1. Teammate calls a `requiresApproval` tool 2. The teammate\'s `tools/pre-execute` listener calls `create` 3. Request is logged as `team/control-request` session event 4. Leader receives the request via `reportFrom` wakeup 5. Leader calls `team_control` tool with decision 6. Decision is logged as `team/control-decision` session event 7. The suspended `tools/pre-execute` Promise resolves → tool proceeds or is denied',
+    methods: [
+      {
+        signature: 'create(leaderSessionId: string, data: TeamControlRequestData): Promise<TeamControlDecision>',
+        description: 'Create a pending request under a leader session and return its settlement promise.',
+        parameters: [{ name: 'leaderSessionId', description: 'the leader session the request is addressed to.' }, { name: 'data', description: 'the control request data.' }],
+        returns: 'a promise that resolves with the leader\'s decision.',
+      },
+      {
+        signature: 'decide(leaderSessionId: string, requestId: string, decision: TeamControlDecision): void',
+        description: 'Settle a pending request with the leader\'s decision.',
+        parameters: [{ name: 'leaderSessionId', description: 'the leader session the request belongs to.' }, { name: 'requestId', description: 'the request to settle.' }, { name: 'decision', description: 'the leader\'s decision.' }],
+        throws: ['when the request id is unknown for that leader.'],
+      },
+      {
+        signature: 'list(leaderSessionId: string): readonly TeamControlRequestData[]',
+        description: 'List all pending requests for one leader.',
+        parameters: [{ name: 'leaderSessionId', description: 'the leader session whose pending requests to return.' }],
+        returns: 'the pending request data for that leader.',
+      },
+      {
+        signature: 'sweep(now: number, timeoutMs: number): void',
+        description: 'Time out and auto-deny expired requests across every leader.',
+        parameters: [{ name: 'now', description: 'current epoch ms.' }, { name: 'timeoutMs', description: 'maximum age in ms.' }],
+      },
+      {
+        signature: 'dispose(leaderSessionId: string): void',
+        description: 'Dispose all pending requests for one leader, auto-denying each.',
+        parameters: [{ name: 'leaderSessionId', description: 'the leader session whose pending requests to dispose.' }],
       },
     ],
   },
@@ -2822,6 +2912,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type CompactionTrigger = \'pressure\' | \'context-overflow\';',
   },
   {
+    name: 'CompiledPolicy',
+    declaration: 'export interface CompiledPolicy {\n    readonly __compiledPolicy: true;\n}',
+  },
+  {
     name: 'ConfinedArgv',
     declaration: 'export interface ConfinedArgv {\n    argv: string[];\n    enforcement: SandboxEnforcement;\n    denialSignatures: readonly string[];\n    runnerFailureRules: readonly RunnerFailureRule[];\n}',
   },
@@ -2863,7 +2957,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ContinuableStartSpec',
-    declaration: 'export interface ContinuableStartSpec {\n    readonly provider: string;\n    readonly label: string;\n    readonly request: Omit<SubagentStartRequest, \'label\' | \'signal\' | \'outputSchema\'>;\n    readonly signal: AbortSignal;\n}',
+    declaration: 'export interface ContinuableStartSpec {\n    readonly provider: string;\n    readonly label: string;\n    readonly request: Omit<SubagentStartRequest, \'label\' | \'signal\' | \'outputSchema\'>;\n    readonly delegationEvents?: readonly DelegationEventAppend[];\n    readonly signal: AbortSignal;\n}',
   },
   {
     name: 'ContinuableSubagentDescriptorData',
@@ -2922,8 +3016,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type CredentialRef = Branded<\'CredentialRef\'>;',
   },
   {
-    name: 'DiffCallView',
-    declaration: 'export interface DiffCallView {\n    card: \'diff\';\n    title: string;\n    diffs: FileDiff[];\n    locations?: FileLocation[];\n}',
+    name: 'DelegationEventAppend',
+    declaration: 'export type DelegationEventAppend = {\n    [K in SessionEventType]: {\n        readonly type: K;\n        readonly data: SessionEventMap[K];\n    };\n}[SessionEventType];',
+  },
+  {
+    name: 'DenyCause',
+    declaration: 'export type DenyCause = \'rule\' | \'mode\' | \'leader_unreachable\';',
   },
   {
     name: 'DiffResultView',
@@ -3034,10 +3132,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface FileDiff {\n    path: string;\n    oldText: string | null;\n    newText: string;\n}',
   },
   {
-    name: 'FileLocation',
-    declaration: 'export interface FileLocation {\n    path: string;\n    line?: number;\n}',
-  },
-  {
     name: 'FinishReason',
     declaration: 'export type FinishReason = FinishReasonMap[keyof FinishReasonMap];',
   },
@@ -3092,10 +3186,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'GenerateOptions',
     declaration: 'export interface GenerateOptions {\n    provider: string;\n    model: string;\n    reasoningEffort?: ReasoningEffortId;\n    messages: Message[];\n    system?: string;\n    tools?: ToolSchema[];\n    temperature?: number;\n    maxTokens?: number;\n    stop?: string[];\n    signal?: AbortSignal;\n    sessionId?: Branded<\'SessionId\'>;\n    purpose?: \'compaction\' | \'session-title\';\n}',
-  },
-  {
-    name: 'GenericCallView',
-    declaration: 'export interface GenericCallView {\n    card: \'generic\';\n    title: string;\n    kind?: ToolCallKind;\n    rawInput?: unknown;\n    content?: ContentBlock[];\n    locations?: FileLocation[];\n}',
   },
   {
     name: 'GenericResultView',
@@ -3362,6 +3452,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ManualCompactAgentContext extends CompactionAgentContext {\n    runMaintenance<T>(task: (signal: AbortSignal) => Promise<T>): Promise<T>;\n}',
   },
   {
+    name: 'MatcherKind',
+    declaration: 'export type MatcherKind = \'command\' | \'path\' | \'mcp\' | \'param\';',
+  },
+  {
     name: 'Message',
     declaration: 'export interface Message {\n    readonly id: MessageId;\n    readonly role: \'system\' | \'user\' | \'assistant\';\n    readonly content: ContentBlock[];\n    readonly source: MessageSource;\n}',
   },
@@ -3472,6 +3566,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'OneShotSubagentDescriptorData',
     declaration: 'export interface OneShotSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: \'one-shot\';\n    readonly label?: string;\n}',
+  },
+  {
+    name: 'PathBases',
+    declaration: 'export interface PathBases {\n    readonly settingsDir: string;\n    readonly homeDir: string;\n    readonly cwd: string;\n}',
+  },
+  {
+    name: 'PermissionContext',
+    declaration: 'export interface PermissionContext {\n    readonly policy: CompiledPolicy;\n    readonly mode: PermissionMode;\n    readonly pathBases: PathBases;\n    readonly memberId?: string;\n}',
+  },
+  {
+    name: 'PermissionDecision',
+    declaration: 'export type PermissionDecision = {\n    readonly kind: \'allow\';\n    readonly matchedRule?: RuleIR;\n} | {\n    readonly kind: \'deny\';\n    readonly reason: string;\n    readonly matchedRule?: RuleIR;\n    readonly cause?: DenyCause;\n} | {\n    readonly kind: \'ask\';\n    readonly reason?: string;\n    readonly matchedRule?: RuleIR;\n};',
+  },
+  {
+    name: 'PermissionMode',
+    declaration: 'export type PermissionMode = \'enforce\' | \'default\' | \'readonly\' | \'bypass\';',
   },
   {
     name: 'PermissionSelect',
@@ -3648,6 +3758,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'RpcResult',
     declaration: 'export type RpcResult<T> = {\n    ok: true;\n    value: T;\n} | {\n    ok: false;\n    error: RpcError;\n};',
+  },
+  {
+    name: 'RuleIR',
+    declaration: 'export interface RuleIR {\n    readonly kind: RuleKind;\n    readonly layer: RuleLayer;\n    readonly tool: string;\n    readonly matcher: MatcherKind;\n    readonly raw: string;\n}',
+  },
+  {
+    name: 'RuleKind',
+    declaration: 'export type RuleKind = \'allow\' | \'ask\' | \'deny\';',
+  },
+  {
+    name: 'RuleLayer',
+    declaration: 'export type RuleLayer = \'managed\' | \'project\' | \'teammate\';',
+  },
+  {
+    name: 'RuleSource',
+    declaration: 'export interface RuleSource {\n    readonly raw: string;\n    readonly kind: RuleKind;\n    readonly layer: RuleLayer;\n}',
   },
   {
     name: 'RunnerFailureRule',
@@ -4242,6 +4368,38 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TableValueOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<string, infer V> ? V : never;',
   },
   {
+    name: 'TeamContextPolicy',
+    declaration: 'export type TeamContextPolicy = \'persistent\' | \'fresh_per_delegation\';',
+  },
+  {
+    name: 'TeamControlDecision',
+    declaration: 'export type TeamControlDecision = \'allow_once\' | \'deny\' | \'escalate_to_user\';',
+  },
+  {
+    name: 'TeamControlRequestData',
+    declaration: 'export interface TeamControlRequestData {\n    readonly requestId: string;\n    readonly memberId: TeamMemberId;\n    readonly toolName: string;\n    readonly reason: string;\n    readonly arguments?: Record<string, unknown>;\n}',
+  },
+  {
+    name: 'TeamMcpPolicy',
+    declaration: 'export interface TeamMcpPolicy {\n    readonly servers: readonly string[];\n}',
+  },
+  {
+    name: 'TeamMemberDefinition',
+    declaration: 'export interface TeamMemberDefinition {\n    readonly id: TeamMemberId;\n    readonly role: TeamMemberRole;\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider?: string;\n    readonly model?: string;\n    readonly maxTokens?: number;\n    readonly tools?: TeamToolPolicy;\n    readonly requiresApproval?: readonly string[];\n    readonly mcpServers?: TeamMcpPolicy;\n    readonly contextPolicy?: TeamContextPolicy;\n    readonly sourcePath?: string;\n}',
+  },
+  {
+    name: 'TeamMemberId',
+    declaration: 'export type TeamMemberId = Branded<\'TeamMemberId\'>;',
+  },
+  {
+    name: 'TeamMemberRole',
+    declaration: 'export type TeamMemberRole = \'leader\' | \'teammate\';',
+  },
+  {
+    name: 'TeamToolPolicy',
+    declaration: 'export interface TeamToolPolicy {\n    readonly allow?: readonly string[];\n    readonly deny?: readonly string[];\n}',
+  },
+  {
     name: 'TerminalBackend',
     declaration: 'export interface TerminalBackend {\n    readonly type: string;\n    spawn(spec: TerminalBackendSpawnSpec): Promise<TerminalBackendSession>;\n}',
   },
@@ -4252,10 +4410,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TerminalBackendSpawnSpec',
     declaration: 'export interface TerminalBackendSpawnSpec extends TerminalSpawnRequest {\n    sessionId: TerminalSessionIdValue;\n    owner: Agent;\n    signal?: AbortSignal;\n}',
-  },
-  {
-    name: 'TerminalCallView',
-    declaration: 'export interface TerminalCallView {\n    card: \'terminal\';\n    title: string;\n    description?: string;\n    cwd?: string;\n}',
   },
   {
     name: 'TerminalReadRequest',
@@ -4340,14 +4494,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TokenUsage',
     declaration: 'export interface TokenUsage {\n    inputTokens: number;\n    outputTokens: number;\n    cacheReadTokens?: number;\n    cacheWriteTokens?: number;\n    reasoningTokens?: number;\n}',
-  },
-  {
-    name: 'ToolCallKind',
-    declaration: 'export type ToolCallKind = \'read\' | \'edit\' | \'delete\' | \'move\' | \'search\' | \'execute\' | \'fetch\' | \'other\';',
-  },
-  {
-    name: 'ToolCallView',
-    declaration: 'export type ToolCallView = GenericCallView | TerminalCallView | DiffCallView;',
   },
   {
     name: 'ToolDefinition',

@@ -195,6 +195,17 @@ flowchart LR
   pkg_cordis_host_runner["cordis-host-runner"]
   svc_dynamicCordisRunner["ctx.dynamicCordisRunner<br/>Dynamic Cordis package host runner"]
   svc_cordisInspect["ctx.cordisInspect<br/>Dynamic Cordis inspect registry"]
+  pkg_team["team"]
+  svc_team["ctx.team<br/>Team member registry seam"]
+  pkg_team_local["team-local"]
+  pkg_tool_team["tool-team"]
+  pkg_team_runtime["team-runtime"]
+  pkg_team_channels["team-channels"]
+  svc_teamControl["ctx.teamControl<br/>Host-level team control request coordinator"]
+  pkg_permission["permission"]
+  svc_permission["ctx.permission<br/>Tool-call permission evaluation seam"]
+  pkg_permission_engine["permission-engine"]
+  pkg_tool_permission_guard["tool-permission-guard"]
   pkg_acp --> svc_approval
   pkg_agent --> svc_agents
   pkg_agent_default_model --> svc_agentDefaultModel
@@ -237,6 +248,8 @@ flowchart LR
   pkg_lsp_local --> svc_lsp
   pkg_message_feedback --> svc_messageFeedback
   pkg_modules --> svc_clientModules
+  pkg_permission --> svc_permission
+  pkg_permission_engine --> svc_permission
   pkg_permission_presets --> svc_permissionPresets
   pkg_plan_mode --> svc_planMode
   pkg_pwsh_local --> svc_shell
@@ -281,6 +294,9 @@ flowchart LR
   pkg_subprocess_e2b --> svc_subprocess
   pkg_subprocess_local --> svc_subprocess
   pkg_system_prompt --> svc_systemPrompt
+  pkg_team --> svc_team
+  pkg_team_channels --> svc_teamControl
+  pkg_team_local --> svc_team
   pkg_terminal --> svc_terminals
   pkg_terminal_bash --> svc_terminals
   pkg_token_meter --> svc_tokenMeter
@@ -330,6 +346,7 @@ flowchart LR
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
+  svc_permission --> pkg_tool_permission_guard
   svc_sandbox --> pkg_bash_sandbox
   svc_sandbox --> pkg_terminal_bash
   svc_sandboxPolicy --> pkg_bash_sandbox
@@ -385,6 +402,11 @@ flowchart LR
   svc_systemPrompt --> pkg_tool_terminal
   svc_systemPrompt --> pkg_tool_web
   svc_systemPrompt --> pkg_tools
+  svc_team --> pkg_team_channels
+  svc_team --> pkg_team_runtime
+  svc_team --> pkg_tool_team
+  svc_teamControl --> pkg_team_runtime
+  svc_teamControl --> pkg_tool_team
   svc_terminals --> pkg_tool_terminal
   svc_tokenMeter --> pkg_compaction_basic
   svc_toolResultPruner --> pkg_compaction_basic
@@ -469,5 +491,8 @@ flowchart LR
 | `ctx.apiProxy` | `core` | `apiproxy` | - | `connection` | - | 与传输无关的 Host 网关接口：它分派浏览器 API 调用，每条打开的 Host 流自行订阅转发事件，而不是由广播方法向其推送。 |
 | `ctx.dynamicCordisRunner` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 拥有内存定义注册表、Host 半的 vm 沙箱和 request-run 往返流程；浏览器页面通过其 Remote 命名空间在线访问同一服务。 |
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 注册 Host inspect 提供方、镜像 Client 提供方 manifest，并通过动态 Cordis 传输路由 Client 查询。 |
+| `ctx.team` | `seam` | [`team`](../packages/team/team) | [`team-local`](../packages/team/team-local) | [`tool-team`](../packages/team/tool-team), [`team-runtime`](../packages/team/team-runtime), [`team-channels`](../packages/team/team-channels) | - | Service Definition 声明抽象的 TeamRegistry；provider 填充成员定义，runtime、channels 与 tool 消费方协调成员生命周期。 |
+| `ctx.teamControl` | `core` | [`team-channels`](../packages/team/team-channels) | - | [`tool-team`](../packages/team/tool-team), [`team-runtime`](../packages/team/team-runtime) | - | 跨子上下文与工具执行，在 leader 会话上协调 teammate 的审批请求与汇合。 |
+| `ctx.permission` | `seam` | [`permission`](../packages/permission/permission) | [`permission-engine`](../packages/permission/permission-engine) | [`tool-permission-guard`](../packages/permission/tool-permission-guard) | - | Service Definition 声明 evaluate 与策略类型；engine 与 guard 包实现裁决与执行门控，但两者目前都尚未组合进任何已发布的 profile。 |
 
 维护模式：混合模式。服务从 Cordis 声明中发现；接口、实现和消费方角色在 `scripts/gen-doc-graphs.ts` 中分类，并设有完整性守卫。

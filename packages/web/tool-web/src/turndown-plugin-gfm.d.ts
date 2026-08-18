@@ -1,12 +1,11 @@
 /**
- * Ambient module declaration for `@joplin/turndown-plugin-gfm`, which ships no
- * types and has no DefinitelyTyped package. Only the composite `gfm` plugin is
- * declared; the package's individual plugins (`tables`, `strikethrough`, …)
- * stay undeclared until something imports them.
+ * Ambient declaration for `@joplin/turndown-plugin-gfm`, which ships no types.
+ * The package's `gfm` export is a standard turndown plugin (see
+ * `@types/turndown`'s `TurndownService.Plugin`).
  */
 declare module '@joplin/turndown-plugin-gfm' {
   import type TurndownService from 'turndown'
 
-  /** The composite GitHub-flavored-markdown plugin (tables, strikethrough, task lists, highlighted code blocks). */
+  /** GitHub-flavored markdown plugin (tables, strikethrough) for turndown. */
   export const gfm: TurndownService.Plugin
 }

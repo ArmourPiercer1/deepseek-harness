@@ -15,6 +15,7 @@ export type TeamKey =
   | 'field.mcp'
   | 'field.context'
 
+/** Simplified Chinese UI strings for every {@link TeamKey}. */
 export const zh: Record<TeamKey, string> = {
   'nav': '团队',
   'title': '团队成员配置',
@@ -31,6 +32,7 @@ export const zh: Record<TeamKey, string> = {
   'field.context': '上下文策略',
 }
 
+/** English UI strings for every {@link TeamKey}. */
 export const en: Record<TeamKey, string> = {
   'nav': 'Team',
   'title': 'Team Member Configuration',

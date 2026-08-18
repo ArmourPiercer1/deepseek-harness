@@ -85,7 +85,7 @@ export type Config = Readonly<Record<string, never>>
 export const Config = z.object({}) as unknown as z<Config>
 
 export const name = 'permission-engine'
-export const inject = [] as const
+export const inject = []
 
 /**
  * Register {@link PermissionEngine} as `ctx.permission`. Consumers compile a

@@ -54,6 +54,7 @@ function findMemberBound(events: readonly SessionEvent[]): TeamMemberBoundData |
  * no-op disposer for a non-team child.
  *
  * @param ctx - the host context carrying `teamControl` and `subagents`.
+ * @returns the setup contribution for a continuable child.
  */
 export function teamMemberSetupContribution(ctx: Context): ContinuableSetupContribution {
   return (childCtx) => {

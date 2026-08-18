@@ -15,7 +15,7 @@ export { installApprovalHook } from './approval-setup.ts'
 export { installMemberComposition, teamMemberSetupContribution } from './member-setup.ts'
 
 export const name = 'team-runtime'
-export const inject = ['team', 'tools', 'subagents'] as const
+export const inject = ['team', 'tools', 'subagents']
 
 export function apply(ctx: Context): void {
   // Install per-member composition (MCP guard + approval hook) into every

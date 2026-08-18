@@ -15,7 +15,7 @@ import { registerProgressTool } from './tool-progress.ts'
 import { registerControlTool } from './tool-control.ts'
 
 export const name = 'tool-team'
-export const inject = ['tools', 'team', 'teamControl'] as const
+export const inject = ['tools', 'team', 'teamControl']
 
 export function apply(ctx: Context): void {
   const orchestrator = new TeamOrchestrator()

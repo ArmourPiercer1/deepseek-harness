@@ -77,7 +77,11 @@ export class TeamOrchestrator {
     }
   }
 
-  /** List all current activations. */
+  /**
+   * List all current activations.
+   *
+   * @returns the current activations, in recording order.
+   */
   list(): readonly TeammateActivation[] {
     return [...this.activations.values()]
   }

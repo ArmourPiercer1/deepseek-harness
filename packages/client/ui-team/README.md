@@ -1,5 +1,7 @@
 # dsh-client-ui-team
 
+English | [中文](README.zh.md)
+
 Web team configuration and status surface for the DeepSeek Harness team plugin.
 
 ## Role

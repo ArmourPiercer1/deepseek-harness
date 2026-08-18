@@ -17,11 +17,12 @@ import { discoverTeamMembers, deduplicateDefinitions } from './discovery.ts'
 import { validateTeamDefinitions } from './validation.ts'
 
 export const name = 'team-local'
-export const inject = ['team'] as const
+export const inject = ['team']
 
 /** Debounce window for file-change reloads (ms). */
 const RELOAD_DEBOUNCE_MS = 500
 
+/** Plugin configuration controlling where local team member definitions are discovered and watched. */
 export interface Config {
   /** DSH home path for global teammate definitions. Defaults to $DSH_HOME. */
   homePath: string

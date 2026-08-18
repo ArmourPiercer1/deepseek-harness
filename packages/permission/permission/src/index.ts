@@ -82,7 +82,6 @@ declare module '@deepseek-ai/dsh-session/types' {
      * Audit record of one permission decision. Appended by the engine after it
      * commits the decision, so the session log reconstructs which tool call was
      * allowed, prompted, or denied, under which rule, layer, member, and mode.
-     * @mode append
      * @param data - the evaluated tool, outcome, deciding rule and layer, member, mode, and deny cause.
      */
     'permission/decision': PermissionDecisionData

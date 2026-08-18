@@ -31,6 +31,7 @@
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
 | `@deepseek-ai/dsh-schedule` | `schedule_create`、`schedule_delete`、`schedule_list` | `ctx.tools`、`ctx.sessions`、Session 持久化、未来创建的 live 根 Agent | `tool/call`、`schedule/change create or delete`、`tool/result` | - | 仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。 |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.tools`、`ctx.lsp`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。 |
+| `@deepseek-ai/dsh-tool-permission-guard` | - | `ctx.tools (pre-execute listener)`、通过 `ctx.get` 获取的 `ctx.permission` | 作用中会话日志内的 `permission/decision` 审计事件 | - | 一个将 `ctx.permission.evaluate` 应用于主 agent 及单个委派 subagent 的 `tools/pre-execute` 守卫；它不注册面向模型的工具，因此没有 schema 章节。说明即完整契约：`allow` 继续执行，`deny` 阻止，`ask` 路由到审批 seam。 |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`、`ctx.workflowEngine`、`ctx.subagents`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents every fresh round)` | `tool/call`、`tool/result`、`workflow and child session events during execution` | - | 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。 |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.tools`、`ctx.agents`、`ctx.skills` | `tool/call`、`tool/result`、`user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`、`session_event_search`、`session_event_trace`、`session_search`、`session_trace` | `ctx.tools`、`ctx.systemPrompt`、`ctx.sessionQuery`、`a calling Agent for workspace authority` | `tool/call`、`tool/result` | - | 这 5 个只读工具会隐藏提供方游标，并根据不可变的调用 agent 会话为每个结果授权。该包需要选择启用；需要强制截止时间或限制行内输出的组合还会挂载通用超时或 spill 策略。 |
@@ -41,6 +42,7 @@
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`、`owning Agent session` | `tool/call`、`todo/write`、`tool/result` | - | todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。 |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
+| `@deepseek-ai/dsh-tool-team` | `delegate_to_teammate`、`list_teammates`、`send_team_message`、`team_control`、`team_progress` | `ctx.tools`、`ctx.team`、`ctx.teamControl`、执行时的 `ctx.subagents + ctx.session` | `tool/call`、`tool/result`、`team/message, team/progress, team/control-decision session events` | - | 建立在 team seam 和控制协调器之上的 5 个 team 工具。Schema 是稳定的；delegate/list/send/control 工具在执行时通过 `ctx.get` 读取 `ctx.team`（以及 `ctx.subagents`/`ctx.session`），因此 harvest 只挂载该插件注入的注册表 + 协调器。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
 
@@ -1181,6 +1183,12 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 
 lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。
 
+<a id="deepseek-aidsh-tool-permission-guard"></a>
+
+## `@deepseek-ai/dsh-tool-permission-guard`
+
+一个将 `ctx.permission.evaluate` 应用于主 agent 及单个委派 subagent 的 `tools/pre-execute` 守卫；它不注册面向模型的工具，因此没有 schema 章节。说明即完整契约：`allow` 继续执行，`deny` 阻止，`ask` 路由到审批 seam。
+
 <a id="deepseek-aidsh-tool-ralph"></a>
 
 ## `@deepseek-ai/dsh-tool-ralph`
@@ -1876,3 +1884,176 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 来源：[`packages/web/tool-web/src/index.ts`](../packages/web/tool-web/src/index.ts)
 
 web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。
+
+<a id="deepseek-aidsh-tool-team"></a>
+
+## `@deepseek-ai/dsh-tool-team`
+
+### `delegate_to_teammate`
+
+将任务委派给队友。队友在后台工作并在完成时报告。只有 leader 可以使用此工具。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "teammate_id": {
+      "type": "string",
+      "description": "The teammate id from list_teammates."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The complete task description for the teammate. Be specific and include all necessary context."
+    },
+    "action": {
+      "type": "string",
+      "description": "Action: \"run\" starts a new delegation (default), \"follow_up\" sends additional instructions to an existing teammate session, \"shutdown\" stops the teammate.",
+      "enum": [
+        "run",
+        "follow_up",
+        "shutdown"
+      ]
+    }
+  },
+  "required": [
+    "teammate_id",
+    "prompt"
+  ]
+}
+```
+
+来源：[`packages/team/tool-team/src/tool-delegate.ts`](../packages/team/tool-team/src/tool-delegate.ts)
+
+### `list_teammates`
+
+列出所有可用队友及其角色、能力和当前状态。
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+来源：[`packages/team/tool-team/src/tool-list-teammates.ts`](../packages/team/tool-team/src/tool-list-teammates.ts)
+
+### `send_team_message`
+
+向队友发送消息（由 leader 发送）或向 leader 报告（由队友发送）。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "target_id": {
+      "type": "string",
+      "description": "The teammate or leader id to send the message to."
+    },
+    "message": {
+      "type": "string",
+      "description": "The message content."
+    }
+  },
+  "required": [
+    "target_id",
+    "message"
+  ]
+}
+```
+
+来源：[`packages/team/tool-team/src/tool-send-message.ts`](../packages/team/tool-team/src/tool-send-message.ts)
+
+### `team_control`
+
+审查并决定待处理的队友权限请求。只有 leader 可以使用此工具。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "List pending requests or decide one.",
+      "enum": [
+        "list",
+        "decide"
+      ]
+    },
+    "request_id": {
+      "type": "string",
+      "description": "Required for decide."
+    },
+    "decision": {
+      "type": "string",
+      "description": "The decision for the request.",
+      "enum": [
+        "allow_once",
+        "deny",
+        "escalate_to_user"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "description": "Optional reason for the decision."
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+来源：[`packages/team/tool-team/src/tool-control.ts`](../packages/team/tool-team/src/tool-control.ts)
+
+### `team_progress`
+
+读取或更新团队任务进度板。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "List all tasks or update one.",
+      "enum": [
+        "list",
+        "update"
+      ]
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Required for update."
+    },
+    "subject": {
+      "type": "string",
+      "description": "Short task subject."
+    },
+    "status": {
+      "type": "string",
+      "description": "Task status.",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "blocked"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Optional summary or blocker description."
+    },
+    "teammate_id": {
+      "type": "string",
+      "description": "Assigned teammate id."
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
+```
+
+来源：[`packages/team/tool-team/src/tool-progress.ts`](../packages/team/tool-team/src/tool-progress.ts)
+
+建立在 team seam 和控制协调器之上的 5 个 team 工具。Schema 是稳定的；delegate/list/send/control 工具在执行时通过 `ctx.get` 读取 `ctx.team`（以及 `ctx.subagents`/`ctx.session`），因此 harvest 只挂载该插件注入的注册表 + 协调器。

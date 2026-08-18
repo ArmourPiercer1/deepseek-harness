@@ -60,6 +60,10 @@ import * as ToolTasks from '@deepseek-ai/dsh-tool-jobs'
 import * as ToolTodo from '@deepseek-ai/dsh-tool-todo'
 import * as ToolSubagent from '@deepseek-ai/dsh-tool-subagent'
 import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
+import TeamRegistry from '@deepseek-ai/dsh-team'
+import { TeamControlRegistry } from '@deepseek-ai/dsh-team-channels'
+import * as ToolTeam from '@deepseek-ai/dsh-tool-team'
+import * as ToolPermissionGuard from '@deepseek-ai/dsh-tool-permission-guard'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
@@ -154,6 +158,11 @@ export interface ToolPackage {
   writes: string[]
   /** Additional model-visible names shipped by example/app config. */
   shippedNames?: string[]
+  /**
+   * Package contributes no model-facing tool (e.g. a `tools/pre-execute`
+   * guard). Skips {@link assertToolsHarvested}; the note documents the role.
+   */
+  noModelTools?: boolean
   /** Plug the injected seams + the tool plugin onto a context that already
    * carries `systemPrompt` + `tools`. */
   mount: (ctx: Context) => Promise<void>
@@ -391,6 +400,23 @@ const TOOL_PACKAGES: ToolPackage[] = [
       'The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema.',
   },
   {
+    pkg: '@deepseek-ai/dsh-tool-permission-guard',
+    dir: 'tool-permission-guard',
+    source: 'packages/permission/tool-permission-guard/src/index.ts',
+    requires: ['ctx.tools (pre-execute listener)', 'ctx.permission via ctx.get'],
+    writes: ['permission/decision audit events in the acting session log'],
+    noModelTools: true,
+    async mount(ctx) {
+      await ctx.plugin(ToolPermissionGuard, {
+        mode: 'default',
+        rules: [],
+        pathBases: { settingsDir: '.', homeDir: '.', cwd: '.' },
+      })
+    },
+    note:
+      'A `tools/pre-execute` guard that applies `ctx.permission.evaluate` to the main agent and single delegated subagents; it registers no model-facing tool, so it has no schema section. The note is the whole contract: `allow` proceeds, `deny` blocks, `ask` routes to the approval seam.',
+  },
+  {
     pkg: '@deepseek-ai/dsh-tool-ralph',
     dir: 'tool-ralph',
     source: 'packages/workflow/tool-ralph/src/index.ts',
@@ -551,6 +577,26 @@ const TOOL_PACKAGES: ToolPackage[] = [
     note:
       'web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps.',
   },
+  {
+    pkg: '@deepseek-ai/dsh-tool-team',
+    dir: 'tool-team',
+    source: {
+      delegate_to_teammate: 'packages/team/tool-team/src/tool-delegate.ts',
+      list_teammates: 'packages/team/tool-team/src/tool-list-teammates.ts',
+      send_team_message: 'packages/team/tool-team/src/tool-send-message.ts',
+      team_progress: 'packages/team/tool-team/src/tool-progress.ts',
+      team_control: 'packages/team/tool-team/src/tool-control.ts',
+    },
+    requires: ['ctx.tools', 'ctx.team', 'ctx.teamControl', 'ctx.subagents + ctx.session at execution time'],
+    writes: ['tool/call', 'tool/result', 'team/message, team/progress, team/control-decision session events'],
+    async mount(ctx) {
+      await ctx.plugin(TeamRegistry)
+      await ctx.plugin(TeamControlRegistry)
+      await ctx.plugin(ToolTeam)
+    },
+    note:
+      'Five team tools over the team seam and control coordinator. Schemas are stable; the delegate/list/send/control tools read `ctx.team` (and `ctx.subagents`/`ctx.session` at execution time) via `ctx.get`, so the harvest mounts only the registry + coordinator the plugin injects.',
+  },
 ]
 
 /** One package's contribution to the catalog: its schemas plus attribution. */
@@ -632,7 +678,7 @@ export async function collectToolCatalog(packages: ToolPackage[] = TOOL_PACKAGES
       await ctx.plugin(ToolRuntime, entry.toolsConfig ?? {})
       await entry.mount(ctx)
       const schemas = ctx.tools.schemas(entry.scope?.(ctx)).sort((a, b) => a.name.localeCompare(b.name))
-      assertToolsHarvested(entry, schemas.length)
+      if (!entry.noModelTools) assertToolsHarvested(entry, schemas.length)
       catalog.push({
         pkg: entry.pkg,
         sources: Object.fromEntries(schemas.map(schema => [

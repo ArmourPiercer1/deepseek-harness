@@ -96,7 +96,12 @@ export class TeamControlRegistry extends Service {
     request.resolve(decision)
   }
 
-  /** List all pending requests for one leader. */
+  /**
+   * List all pending requests for one leader.
+   *
+   * @param leaderSessionId - the leader session whose pending requests to return.
+   * @returns the pending request data for that leader.
+   */
   list(leaderSessionId: string): readonly TeamControlRequestData[] {
     return [...(this.byLeader.get(leaderSessionId)?.values() ?? [])].map(request => request.data)
   }
@@ -119,7 +124,11 @@ export class TeamControlRegistry extends Service {
     }
   }
 
-  /** Dispose all pending requests for one leader (auto-deny). */
+  /**
+   * Dispose all pending requests for one leader, auto-denying each.
+   *
+   * @param leaderSessionId - the leader session whose pending requests to dispose.
+   */
   dispose(leaderSessionId: string): void {
     const pending = this.byLeader.get(leaderSessionId)
     if (pending === undefined) return

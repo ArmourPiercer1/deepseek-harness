@@ -2,6 +2,8 @@
 
 Status: implemented
 
+English | [中文](2026-08-14-agent-team-plugin.zh.md)
+
 ## Problem
 
 The harness had no leader-teammate coordination model: subagents were anonymous per-task delegations with no durable roster, no per-member permission scoping, no leader approval gate, and no team progress board. The team plugin adds these as a capability seam over the continuable-subagent runtime.

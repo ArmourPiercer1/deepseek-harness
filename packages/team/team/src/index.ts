@@ -51,12 +51,21 @@ export default class TeamRegistry extends Service {
     this.definitions = [...definitions]
   }
 
-  /** List all loaded member definitions (leader + teammates). */
+  /**
+   * List all loaded member definitions (leader + teammates).
+   *
+   * @returns the registry's full set of member definitions.
+   */
   list(): readonly TeamMemberDefinition[] {
     return this.definitions
   }
 
-  /** Get one member by id. Returns `undefined` when the id is unknown. */
+  /**
+   * Get one member by id.
+   *
+   * @param id - the member to look up.
+   * @returns the member definition, or undefined when the id is unknown.
+   */
   get(id: TeamMemberId): TeamMemberDefinition | undefined {
     return this.definitions.find(d => d.id === id)
   }
@@ -65,6 +74,8 @@ export default class TeamRegistry extends Service {
    * Get the leader definition, or `undefined` when none is loaded. The leader
    * definition is metadata only: the root agent is composed by its own preset,
    * never by this registry, so no leader policy is applied at runtime.
+   *
+   * @returns the leader definition, or undefined when none is loaded.
    */
   getLeader(): TeamMemberDefinition | undefined {
     return this.definitions.find(d => d.role === 'leader')

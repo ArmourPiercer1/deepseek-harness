@@ -1,5 +1,7 @@
 # dsh-tool-team
 
+English | [中文](README.zh.md)
+
 Model-facing team tools for the DeepSeek Harness team plugin.
 
 ## Role

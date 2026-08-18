@@ -12,8 +12,9 @@ export { TeamControlRegistry } from './control-coordinator.ts'
 export { TeamProgressStore } from './progress-store.ts'
 
 export const name = 'team-channels'
-export const inject = [] as const
+export const inject = []
 
+/** Plugin configuration for team messaging, progress tracking, and control approval. */
 export interface Config {
   /** Timeout for control requests before auto-deny (ms). */
   controlRequestTimeoutMs: number

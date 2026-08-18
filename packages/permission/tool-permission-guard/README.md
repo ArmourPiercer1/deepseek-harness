@@ -1,5 +1,7 @@
 # dsh-tool-permission-guard
 
+English | [中文](README.zh.md)
+
 Permission guard Consumer for the DeepSeek Harness.
 
 A `tools/pre-execute` listener that applies `ctx.permission.evaluate` for the main agent and single delegated subagents. `allow` proceeds; `deny` blocks the call with the engine's reason; `ask` routes to the approval seam.
@@ -19,8 +21,22 @@ Rule-source layering and cold-recovery snapshots are the loader's concern; this 
 
 ## Model Experience
 
-The guard adds no tool. Its model-visible effect is a denied call's `reason` and, for an `ask`, the approval prompt. A denied call returns an error result the model sees; the decision is also recorded as a `permission/decision` audit event.
+### Guarded tool-call outcomes
+
+#### What the model sees
+
+The guard registers no tool. Its model-visible effect is the outcome of a guarded call: an allowed call proceeds, a denied call returns an error result carrying the engine's `reason`, and an `ask` routes to the approval seam and surfaces the engine's reason. Every decision is appended to the acting session's log as a `permission/decision` audit event.
+
+#### Token effect
+
+Conditional. Only a denied or asked call contributes its `reason` and the approval prompt to the model request; an allowed call contributes nothing beyond the tool call itself.
+
+#### KV Cache effect
+
+Independent. The guard adds no request-prefix tokens and cannot invalidate an otherwise reusable provider cache entry.
 
 ## Known Limitations and Deferred Work
 
-The listener and config land in S5 of the permission seam Agent Note. Rule learning and MCP lifecycle are later stages and are not consumed here.
+- **Not mounted in any composition** — the listener row appears in no bundle or profile `cordis.yml`, so the guard is inactive until a row is composed and `ctx.permission` is present.
+- **Rule-source layering and cold-recovery snapshots are not implemented** — the guard receives the resolved mode and rules; the loader that assembles managed/project/teammate layers and cold-resume snapshots is deferred.
+- **The `ask` path depends on the approval seam** — the guard routes an `ask` to the approval seam; the team plugin routes one to the leader rendezvous instead, and no session-log composition test proves either path yet.

@@ -1,5 +1,7 @@
 # Team
 
+English | [中文](README.zh.md)
+
 Agent team capability for the DeepSeek Harness: leader-teammate coordination over continuable subagents.
 
 ## Packages

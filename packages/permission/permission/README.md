@@ -1,5 +1,7 @@
 # dsh-permission
 
+English | [中文](README.zh.md)
+
 Permission Service Definition for the DeepSeek Harness.
 
 Provides `ctx.permission` — the abstract contract deciding whether a tool call may be issued. The engine provider (`dsh-permission-engine`) supplies the implementation; consumers (`dsh-tool-permission-guard` and the team plugin) read the service.
@@ -26,8 +28,24 @@ Provides `ctx.permission` — the abstract contract deciding whether a tool call
 
 ## Model Experience
 
-None, as the Service Definition provides types, the evaluate contract, and one audit event with no prompt, schema, or result.
+### Service Definition surface
+
+#### What the model sees
+
+The package contributes no prompt, tool schema, or model request. It declares the `ctx.permission` service contract and the `permission/decision` session event type; the provider (`dsh-permission-engine`) and consumers (`dsh-tool-permission-guard` and the team plugin) own every model-visible effect the decision produces.
+
+#### Token effect
+
+Zero. No request, result, or failure from this Definition enters a model request.
+
+#### KV Cache effect
+
+Independent. The Definition adds no request-prefix tokens and cannot invalidate an otherwise reusable provider cache entry.
 
 ## Known Limitations and Deferred Work
 
-Rule learning (writing an approved `ask` back to a destination) and MCP lifecycle types are shaped for the later stages of the permission seam Agent Note but are not part of this Definition yet. `readonly` and `bypass` modes are reserved enum values the first-stage engine rejects as unimplemented.
+- **Not mounted in any composition** — the row appears in no bundle or profile `cordis.yml`, so `ctx.permission` is absent until a provider row is composed.
+- **`readonly` and `bypass` are reserved, unimplemented enum values** — the type declares them, and the first-stage engine rejects either with an error rather than acting on it.
+- **Layered rule loading is not part of the Definition** — the merged, layer-tagged rule set is an input to `evaluate`; the loader that assembles managed/project/teammate layers is deferred.
+- **Rule learning is deferred** — writing an approved `ask` back to a destination is shaped by the permission seam Agent Note but is not part of this Definition yet.
+- **No session-log composition test yet** — the deny-to-`permission/decision` relation is asserted by a composition test that does not exist yet.
