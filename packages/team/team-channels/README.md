@@ -19,7 +19,7 @@ Team messaging, progress tracking, and approval coordination for the DeepSeek Ha
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `controlRequestTimeoutMs` | `number` | `120000` | Auto-deny timeout for pending requests |
+| `controlRequestTimeoutMs` | `number` | `120000` | Auto-deny timeout for pending requests, enforced by the plugin's periodic sweep |
 
 ## Model Experience
 

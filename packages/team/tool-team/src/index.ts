@@ -28,7 +28,14 @@ export function apply(ctx: Context): void {
   registerProgressTool(ctx, progressStore)
   registerControlTool(ctx, coordinator)
 
-  ctx.on('session/event', (_session, event) => {
+  ctx.on('session/event', (session, event) => {
+    if (event.type === 'tool/call') {
+      const activation = orchestrator.findByChildSession(session.id)
+      if (activation && activation.status === 'running') {
+        orchestrator.updateActivity(activation.memberId, event.data.name)
+      }
+      return
+    }
     if (event.type !== 'user/message') return
     const source: Record<string, unknown> = event.data.source as Record<string, unknown>
     if (source.kind !== 'subagent-settled') return
@@ -38,13 +45,5 @@ export function apply(ctx: Context): void {
     if (activation && activation.status === 'running') {
       orchestrator.markSettled(activation.memberId)
     }
-  })
-
-  // Periodic sweep for expired control requests (P2-7 fix)
-  ctx.effect(() => {
-    const timer = setInterval(() => {
-      coordinator.sweep(Date.now(), 120_000)
-    }, 30_000)
-    return () => { clearInterval(timer) }
   })
 }

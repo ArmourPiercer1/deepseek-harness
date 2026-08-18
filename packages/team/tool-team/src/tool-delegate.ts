@@ -5,11 +5,38 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { SessionId } from '@deepseek-ai/dsh-session'
+import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 import { TeamMemberId } from '@deepseek-ai/dsh-team'
 import type { TeamMemberBoundData } from '@deepseek-ai/dsh-team'
-import { SessionId } from '@deepseek-ai/dsh-session'
 import { TeamOrchestrator } from '@deepseek-ai/dsh-team-runtime'
+
+/**
+ * Deliver one prompt to a durable child session as a follow-up turn under
+ * coordinator relay attribution.
+ *
+ * @param subagents - the subagent service providing followup.
+ * @param parent - the calling agent authorizing the delivery.
+ * @param childSessionId - the durable child session id to wake.
+ * @param prompt - the task text to deliver.
+ * @param signal - caller cancellation, owning the operation until inbox acceptance.
+ * @returns the accepted message's inbox id.
+ * @throws when the message is not admitted.
+ */
+async function deliverFollowup(
+  subagents: SubagentRuntime,
+  parent: Agent,
+  childSessionId: string,
+  prompt: string,
+  signal: AbortSignal,
+): Promise<unknown> {
+  return subagents.followup(parent, SessionId(childSessionId), [{ type: 'text' as const, text: prompt }], {
+    source: { kind: 'coordinator' as const, form: 'relay' as const, senderSessionId: parent.id },
+    signal,
+  })
+}
 
 /**
  * Register the `delegate_to_teammate` tool.
@@ -75,8 +102,41 @@ export function registerDelegateTool(
       }
 
       if (action === 'shutdown') {
+        const activation = orchestrator.get(memberId)
+        if (!activation || activation.status === 'disposed') {
+          return {
+            status: 'shutdown',
+            teammate_id: args.teammate_id,
+            message: `No active session for "${args.teammate_id}" to shut down.`,
+          }
+        }
+
+        let interrupted = false
+        if (activation.status === 'running') {
+          const subagents = ctx.get('subagents')
+          if (!subagents) {
+            return { status: 'error', teammate_id: args.teammate_id, message: 'Subagent capability not available' }
+          }
+          try {
+            subagents.interrupt(SessionId(activation.childSessionId), { kind: 'ancestor', agent: me })
+            interrupted = true
+          } catch (e: unknown) {
+            return {
+              status: 'error',
+              teammate_id: args.teammate_id,
+              message: `Interrupt failed: ${e instanceof Error ? e.message : String(e)}`,
+            }
+          }
+        }
+
         orchestrator.markDisposed(memberId)
-        return { status: 'shutdown', teammate_id: args.teammate_id, message: `Teammate "${args.teammate_id}" shut down.` }
+        return {
+          status: 'shutdown',
+          teammate_id: args.teammate_id,
+          message: interrupted
+            ? `Stop signal sent to "${args.teammate_id}"; the teammate may keep running briefly.`
+            : `Teammate "${args.teammate_id}" shut down.`,
+        }
       }
 
       if (action === 'follow_up') {
@@ -95,13 +155,7 @@ export function registerDelegateTool(
         }
 
         try {
-          const parent = me
-          const content = [{ type: 'text' as const, text: args.prompt }]
-          const options = {
-            source: { kind: 'coordinator' as const, form: 'relay' as const, senderSessionId: parent.id },
-            signal: exec.signal,
-          }
-          await subagents.followup(parent, SessionId(activation.childSessionId), content, options)
+          await deliverFollowup(subagents, me, activation.childSessionId, args.prompt, exec.signal)
 
           if (activation.status === 'settled') {
             orchestrator.recordActivation(memberId, activation.childSessionId)
@@ -131,6 +185,37 @@ export function registerDelegateTool(
           status: 'already_running',
           teammate_id: args.teammate_id,
           message: `Teammate "${args.teammate_id}" is currently running.${info} Use action "follow_up" to send additional instructions, or "shutdown" to stop.`,
+        }
+      }
+
+      // persistent (the default) reuses a settled child session instead of
+      // starting a fresh one.
+      const policy = member.contextPolicy ?? 'persistent'
+      if (policy === 'persistent') {
+        const activation = orchestrator.get(memberId)
+        if (activation && activation.status === 'settled') {
+          const subagents = ctx.get('subagents')
+          if (!subagents) {
+            return { status: 'error', teammate_id: args.teammate_id, message: 'Subagent capability not available' }
+          }
+
+          try {
+            await deliverFollowup(subagents, me, activation.childSessionId, args.prompt, exec.signal)
+
+            orchestrator.recordActivation(memberId, activation.childSessionId)
+
+            return {
+              status: 'dispatched',
+              teammate_id: args.teammate_id,
+              message: `Task delegated to "${member.name}", continuing its existing session. They will report back when done.`,
+            }
+          } catch (e: unknown) {
+            return {
+              status: 'error',
+              teammate_id: args.teammate_id,
+              message: `Follow-up failed: ${e instanceof Error ? e.message : String(e)}`,
+            }
+          }
         }
       }
 

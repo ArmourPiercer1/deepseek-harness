@@ -24,8 +24,17 @@ export const Config: z<Config> = z.object({
   controlRequestTimeoutMs: z.natural().default(120_000),
 })
 
-export function apply(ctx: Context, _config: Config): void {
+export function apply(ctx: Context, config: Config): void {
   // One host-level registry shared by the leader's `team_control` tool and the
   // teammate-side approval hook installed by `dsh-team-runtime`.
-  ctx.plugin(TeamControlRegistry)
+  const registry = new TeamControlRegistry(ctx)
+
+  // Periodic auto-deny of expired control requests. The sweep cadence is the
+  // configured timeout clamped to 1-30 s, so the default 120000 keeps the
+  // previous 30-second cadence.
+  ctx.effect(() => {
+    const intervalMs = Math.max(1_000, Math.min(30_000, config.controlRequestTimeoutMs))
+    const timer = setInterval(() => { registry.sweep(Date.now(), config.controlRequestTimeoutMs) }, intervalMs)
+    return () => { clearInterval(timer) }
+  }, 'team-channels.controlSweep()')
 }

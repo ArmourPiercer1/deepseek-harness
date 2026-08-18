@@ -19,7 +19,7 @@ DeepSeek Harness 团队插件的团队消息、进度跟踪与审批协调。
 
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `controlRequestTimeoutMs` | `number` | `120000` | 待处理请求的自动拒绝超时 |
+| `controlRequestTimeoutMs` | `number` | `120000` | 待处理请求的自动拒绝超时，由插件的周期性清理强制执行 |
 
 ## 模型体验
 
