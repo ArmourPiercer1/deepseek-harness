@@ -21,7 +21,7 @@ export function registerListTeammatesTool(
 ): () => void {
   return ctx.tools.register(defineTool({
     name: 'list_teammates',
-    description: 'List all available teammates with their roles, capabilities, and current status.',
+    description: 'List all team members — the leader and every teammate — with their roles, capabilities, and current status.',
     parameters: {},
     output: {
       schema: {
@@ -76,7 +76,6 @@ export function registerListTeammatesTool(
 
       const members = team.list()
       const teammates = members
-        .filter(m => m.role === 'teammate')
         .map((m) => {
           const activation = orchestrator.get(m.id)
           return {

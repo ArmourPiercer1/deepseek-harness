@@ -37,7 +37,16 @@ You are a senior backend developer...
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
 | `homePath` | `string` | `$DSH_HOME` | 全局定义的路径 |
-| `workspacePath` | `string` | — | 项目级定义的路径 |
+| `workspacePath` | `string` | `$DSH_CWD`，再否则进程当前工作目录 | 项目级定义的初始路径；运行中的会话会覆盖它（见下） |
+
+## 会话工作区跟踪
+
+一个 preset 的 standing mount 由加入其下的所有会话共享，挂载时刻的进程状态无法知道该扫描哪个工作区的 `.dsh/teammates/`。因此 team-local 在运行时跟踪工作区：
+
+- 初始工作区为配置的 `workspacePath`，然后 `$DSH_CWD`，再然后进程当前工作目录。
+- 每个 `agent/created` 事件，只要其会话头携带不同且非空的 `cwd`，就会把工作区重新指向该会话目录并立即重载。
+- 工作区在 `.dsh/teammates/` 下定义了自己的成员时即为自包含：这些定义构成该工作区的完整团队，全局 home 定义不会混入项目团队。home 定义只作用于自身没有任何定义的工作区。
+- 每个被观察到的工作区的 `.dsh/teammates/` 目录都会获得一个 watcher，其后的文件修改走正常的防抖重载。
 
 ## Teammate 启用
 
@@ -52,7 +61,7 @@ team-enablement:
 - 缺失的设置小节、工作区或 teammate 一律视为启用；只有显式的 `false` 会禁用。
 - 只有 `role: teammate` 的定义会被过滤。leader 永不会被禁用：有效的团队要求恰好一个 leader，且 leader 仅为元数据，由自己的 preset 组合，而非注册表。
 - 已提交的设置变更会重新加载定义，因此启用与禁用无需重启即可生效。
-- 工作区键为插件配置中 `workspacePath` 的原始字符串；不做任何路径归一化。
+- 工作区键为当前跟踪的工作区路径：在被不同 cwd 的会话重新指向之前，取初始解析结果（配置的 `workspacePath`，然后 `DSH_CWD` 环境变量，再然后进程当前工作目录）；不做任何路径归一化。
 
 ## 启动诊断
 
@@ -69,3 +78,4 @@ team-enablement:
 ## 已知限制与暂缓事项
 
 - YAML 解析器是最小实现；复杂的 YAML 结构（锚点、多行字符串）可能无法正确解析。
+- 团队注册表在每个 standing mount 下只保存一份扁平定义集合。因此不同工作区的并发会话共享该集合，注册集合由最近创建 agent 的会话工作区决定；按工作区划分的注册表视图暂缓到 orchestrator 与进度存储会话化之后。

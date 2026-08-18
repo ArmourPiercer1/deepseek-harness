@@ -101,6 +101,14 @@ export function registerDelegateTool(
         return { status: 'error', teammate_id: args.teammate_id, message: `Unknown teammate: "${args.teammate_id}"` }
       }
 
+      if (member.role === 'leader') {
+        return {
+          status: 'error',
+          teammate_id: args.teammate_id,
+          message: 'The leader is the current agent; delegate to a teammate instead.',
+        }
+      }
+
       if (action === 'shutdown') {
         const activation = orchestrator.get(memberId)
         if (!activation || activation.status === 'disposed') {

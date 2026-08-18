@@ -6,6 +6,15 @@
  * `ctx.team`. Watches definition directories for changes and reloads
  * automatically with a debounce window.
  *
+ * The workspace root tracks the live session: the initial resolution is the
+ * configured `workspacePath`, then `$DSH_CWD`, then the process cwd; every
+ * later `agent/created` whose session header carries a different cwd
+ * re-resolves the workspace and reloads. A preset's standing mount is shared
+ * by every session joined under it, so mount-time process state alone cannot
+ * know which workspace's `.dsh/teammates/` to scan. A workspace that defines
+ * its own members is self-contained; global home definitions apply only to
+ * workspaces that define none of their own.
+ *
  * Per-workspace teammate enablement persists in the `team-enablement`
  * settings namespace (see `enablement.ts`): disabled teammates are filtered
  * before registration, and a committed settings change triggers a reload, so
@@ -19,6 +28,8 @@ import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { installSettingsSection } from '@deepseek-ai/dsh-settings'
+// Event-map augmentation for `agent/created`.
+import type {} from '@deepseek-ai/dsh-agent'
 import { discoverTeamMembers, deduplicateDefinitions } from './discovery.ts'
 import { diagnoseLeaderTools } from './diagnostic.ts'
 import { validateTeamDefinitions } from './validation.ts'
@@ -49,7 +60,7 @@ const RELOAD_DEBOUNCE_MS = 500
 export interface Config {
   /** DSH home path for global teammate definitions. Defaults to $DSH_HOME. */
   homePath: string
-  /** Workspace path for project-level teammate definitions. */
+  /** Initial workspace path for project-level teammate definitions. Defaults to $DSH_CWD, then the process cwd. */
   workspacePath: string
 }
 
@@ -59,13 +70,38 @@ export const Config: z<Config> = z.object({
 })
 
 /**
+ * Resolve the DSH home path carrying global teammate definitions.
+ *
+ * @param homePath - configured home path; an empty value falls back to $DSH_HOME.
+ * @returns the resolved home path, or an empty string when none applies.
+ */
+function resolveHomePath(homePath: string): string {
+  return homePath || process.env['DSH_HOME'] || ''
+}
+
+/**
+ * Resolve the initial workspace path before any session exists.
+ *
+ * @param workspacePath - configured workspace path.
+ * @returns the configured path when non-empty, otherwise $DSH_CWD, otherwise the process cwd.
+ */
+function resolveInitialWorkspace(workspacePath: string): string {
+  return workspacePath || process.env['DSH_CWD'] || process.cwd()
+}
+
+/**
  * Load team member definitions from the filesystem, drop the teammates
  * disabled for the workspace, register the remainder, then run the leader
  * tool diagnostic against the registered tools.
  *
+ * A workspace that defines its own members under `.dsh/teammates/` is
+ * self-contained: those definitions form the complete team for that
+ * workspace, so global home definitions never merge into a project team.
+ * Home definitions apply only to workspaces that define none of their own.
+ *
  * @param ctx - plugin context.
- * @param homePath - DSH home path.
- * @param workspacePath - workspace root path.
+ * @param homePath - resolved DSH home path.
+ * @param workspacePath - resolved workspace root path.
  * @param getEnablement - source of the resolved `team-enablement` section.
  * @param signal - abort signal for cancellation.
  */
@@ -76,11 +112,13 @@ async function loadDefinitions(
   getEnablement: () => TeamEnablementSettings,
   signal?: AbortSignal,
 ): Promise<void> {
-  const results = await discoverTeamMembers({
-    homePath: homePath || process.env['DSH_HOME'] || '',
-    ...(workspacePath ? { workspacePath } : {}),
-    ...(signal !== undefined ? { signal } : {}),
-  })
+  const options = signal !== undefined ? { signal } : {}
+  const workspaceResults = workspacePath === ''
+    ? []
+    : await discoverTeamMembers({ homePath: '', workspacePath, ...options })
+  const results = workspaceResults.length > 0
+    ? workspaceResults
+    : await discoverTeamMembers({ homePath, ...options })
   const definitions = deduplicateDefinitions(results)
   if (definitions.length > 0) {
     const enabled = filterDisabledTeammates(definitions, getEnablement(), workspacePath)
@@ -90,32 +128,22 @@ async function loadDefinitions(
   }
 }
 
-/**
- * Resolve the teammate directories that should be watched.
- *
- * @param homePath - DSH home path.
- * @param workspacePath - workspace root path.
- * @returns directories to watch.
- */
-function resolveWatchDirs(homePath: string, workspacePath: string): string[] {
-  const dirs: string[] = []
-  const resolvedHome = homePath || process.env['DSH_HOME'] || ''
-  if (resolvedHome) dirs.push(join(resolvedHome, 'teammates'))
-  if (workspacePath) dirs.push(join(workspacePath, '.dsh', 'teammates'))
-  return dirs
-}
-
 export function apply(ctx: Context, config: Config): void {
   const controller = new AbortController()
   const log = ctx.logger('team-local')
   let reloadTimer: ReturnType<typeof setTimeout> | undefined
+
+  const homePath = resolveHomePath(config.homePath)
+  // The workspace tracks the live session: mount-time state seeds it, and
+  // every agent created under a different session cwd re-resolves it.
+  let workspacePath = resolveInitialWorkspace(config.workspacePath)
 
   // Resolved enablement section: the live settings scope while a settings
   // service is mounted, the empty default otherwise.
   let enablement: () => TeamEnablementSettings = () => DEFAULT_TEAM_ENABLEMENT
 
   const load = (): void => {
-    loadDefinitions(ctx, config.homePath, config.workspacePath, enablement, controller.signal).catch((e: unknown) => {
+    loadDefinitions(ctx, homePath, workspacePath, enablement, controller.signal).catch((e: unknown) => {
       if (!controller.signal.aborted) {
         log.error('Failed to load team definitions:', e)
       }
@@ -135,6 +163,26 @@ export function apply(ctx: Context, config: Config): void {
     }, RELOAD_DEBOUNCE_MS)
   }
 
+  // One watcher per teammate directory; workspace switches add directories
+  // already observed by a session, so each directory is watched once.
+  const watchers = new Map<string, FSWatcher>()
+  const watchDir = (dir: string): void => {
+    if (watchers.has(dir)) return
+    try {
+      const watcher = watch(dir, { persistent: false }, (_eventType, filename) => {
+        if (filename && filename.endsWith('.md')) {
+          scheduleReload()
+        }
+      })
+      watcher.on('error', () => {
+        // Directory may not exist or become inaccessible — ignore
+      })
+      watchers.set(dir, watcher)
+    } catch {
+      // Directory does not exist yet — not an error
+    }
+  }
+
   installSettingsSection(ctx, TEAM_ENABLEMENT_SETTINGS_NAMESPACE, TeamEnablementSettingsSchema, {}, {
     setSource: (source) => {
       enablement = source
@@ -152,32 +200,29 @@ export function apply(ctx: Context, config: Config): void {
     if (ns === TEAM_ENABLEMENT_SETTINGS_NAMESPACE) scheduleReload()
   })
 
-  // Initial load
-  load()
+  // A preset's standing mount outlives any one session: each agent created
+  // under a new session cwd re-points the workspace scan at that session's
+  // `.dsh/teammates/` and reloads. Agents without a session cwd (or under
+  // the already-resolved workspace) leave the current set untouched.
+  ctx.on('agent/created', ({ agent }) => {
+    const cwd = agent.session.header.cwd
+    if (cwd === undefined || cwd === '' || cwd === workspacePath) return
+    log.info(`Session workspace changed to "${cwd}", reloading team definitions…`)
+    workspacePath = cwd
+    watchDir(join(cwd, '.dsh', 'teammates'))
+    load()
+  })
 
-  // Watch definition directories for changes
-  const watchers: FSWatcher[] = []
-  for (const dir of resolveWatchDirs(config.homePath, config.workspacePath)) {
-    try {
-      const watcher = watch(dir, { persistent: false }, (_eventType, filename) => {
-        if (filename && filename.endsWith('.md')) {
-          scheduleReload()
-        }
-      })
-      watcher.on('error', () => {
-        // Directory may not exist or become inaccessible — ignore
-      })
-      watchers.push(watcher)
-    } catch {
-      // Directory does not exist yet — not an error
-    }
-  }
+  // Initial load and watches
+  if (homePath) watchDir(join(homePath, 'teammates'))
+  watchDir(join(workspacePath, '.dsh', 'teammates'))
+  load()
 
   ctx.effect(() => {
     return () => {
       controller.abort()
       if (reloadTimer !== undefined) clearTimeout(reloadTimer)
-      for (const watcher of watchers) watcher.close()
+      for (const watcher of watchers.values()) watcher.close()
     }
   }, 'team-local load+watch')
 }

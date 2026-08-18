@@ -67,11 +67,13 @@ export async function discoverTeamMembers(
 }
 
 /**
- * Deduplicate definitions by id. When the same id appears in multiple files,
- * the last one wins (workspace overrides home).
+ * Deduplicate definitions by id: when the same id appears in multiple files,
+ * the last one wins. When the surviving definitions still declare more than
+ * one leader, only the last discovered leader is kept, so exactly one leader
+ * reaches validation.
  *
  * @param results - parse results to deduplicate.
- * @returns deduplicated definitions (only those with successful parses).
+ * @returns deduplicated definitions (only those with successful parses), with at most one leader.
  */
 export function deduplicateDefinitions(
   results: readonly ParseResult[],
@@ -82,5 +84,9 @@ export function deduplicateDefinitions(
       byId.set(result.definition.id, result.definition)
     }
   }
-  return [...byId.values()]
+  const definitions = [...byId.values()]
+  const leaders = definitions.filter(d => d.role === 'leader')
+  if (leaders.length <= 1) return definitions
+  const survivingLeaderId = leaders.at(-1)?.id
+  return definitions.filter(d => d.role !== 'leader' || d.id === survivingLeaderId)
 }

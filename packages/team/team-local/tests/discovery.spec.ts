@@ -174,6 +174,30 @@ describe('deduplicateDefinitions', () => {
     expect(definitions[0]!.sourcePath).toBe('/workspace/.dsh/teammates/dup.md')
   })
 
+  it('keeps only the last discovered leader when home and workspace each define one', () => {
+    const homeLeader = parseTeamMemberMarkdown(
+      memberMarkdown('aieo-leader', 'Home leader prompt.', 'leader'),
+      '/home/teammates/aieo-leader.md',
+    )
+    const homeTeammate = parseTeamMemberMarkdown(
+      memberMarkdown('alpha-dev', 'Alpha prompt.'),
+      '/home/teammates/alpha.md',
+    )
+    const workspaceLeader = parseTeamMemberMarkdown(
+      memberMarkdown('leader', 'Workspace leader prompt.', 'leader'),
+      '/workspace/.dsh/teammates/leader.md',
+    )
+
+    const definitions = deduplicateDefinitions([homeLeader, homeTeammate, workspaceLeader])
+
+    const leaders = definitions.filter(d => d.role === 'leader')
+    expect(definitions).toHaveLength(2)
+    expect(leaders).toHaveLength(1)
+    expect(leaders[0]!.id).toBe('leader')
+    expect(leaders[0]!.prompt).toBe('Workspace leader prompt.')
+    expect(definitions.some(d => d.id === 'alpha-dev')).toBe(true)
+  })
+
   it('prefers the workspace definition when the same id exists in both roots', async () => {
     const home = await tempRoot('dsh-team-discovery-precedence-')
     const workspace = await tempRoot('dsh-team-discovery-precedence-')

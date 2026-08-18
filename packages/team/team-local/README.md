@@ -37,7 +37,16 @@ You are a senior backend developer...
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `homePath` | `string` | `$DSH_HOME` | Path for global definitions |
-| `workspacePath` | `string` | — | Path for project-level definitions |
+| `workspacePath` | `string` | `$DSH_CWD`, then the process cwd | Initial path for project-level definitions; live sessions override it (below) |
+
+## Session Workspace Tracking
+
+A preset's standing mount is shared by every session joined under it, so mount-time process state alone cannot know which workspace's `.dsh/teammates/` to scan. team-local therefore tracks the workspace at runtime:
+
+- The initial workspace is the configured `workspacePath`, then `$DSH_CWD`, then the process cwd.
+- Every `agent/created` event whose session header carries a different non-empty `cwd` re-points the workspace at that session directory and reloads immediately.
+- A workspace that defines members under `.dsh/teammates/` is self-contained: those definitions form the complete team for that workspace, so global home definitions never merge into a project team. Home definitions apply only to workspaces that define none of their own.
+- Each observed workspace's `.dsh/teammates/` directory gains a watcher, so later edits there reload through the normal debounce.
 
 ## Teammate Enablement
 
@@ -52,7 +61,7 @@ team-enablement:
 - An absent section, workspace, or teammate means enabled; only an explicit `false` disables.
 - Only `role: teammate` definitions are filtered. The leader is never disabled: a valid team requires exactly one leader, and the leader is metadata only, composed by its own preset rather than the registry.
 - A committed settings change reloads the definitions, so enabling and disabling takes effect without a restart.
-- The workspace key is the exact `workspacePath` string from the plugin config; no path normalization is applied.
+- The workspace key is the currently tracked workspace path: the initial resolution (configured `workspacePath`, then `$DSH_CWD`, then the process cwd) until a session under a different cwd re-points it; no path normalization is applied.
 
 ## Startup Diagnostic
 
@@ -69,3 +78,4 @@ No effect.
 ## Known Limitations and Deferred Work
 
 - The YAML parser is minimal; complex YAML constructs (anchors, multi-line strings) may not parse correctly.
+- The team registry holds one flat definition set per standing mount. Concurrent sessions under different workspaces therefore share it, and the most recently created agent's workspace determines the registered set; per-workspace registry views are deferred until the orchestrator and progress store are session-scoped.
