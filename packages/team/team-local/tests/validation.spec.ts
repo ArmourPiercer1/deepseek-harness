@@ -74,4 +74,25 @@ describe('validateTeamDefinitions', () => {
       },
     ]) }).toThrow(/not in member/)
   })
+
+  it('accepts a member with a valid skills list', () => {
+    expect(() => { validateTeamDefinitions([
+      makeDef('leader', 'leader'),
+      { ...makeDef('backend', 'teammate'), skills: ['codebase-design', 'tdd'] },
+    ]) }).not.toThrow()
+  })
+
+  it('throws when skills contains an empty string', () => {
+    expect(() => { validateTeamDefinitions([
+      makeDef('leader', 'leader'),
+      { ...makeDef('backend', 'teammate'), skills: ['codebase-design', ''] },
+    ]) }).toThrow(/skills on member "backend" must be an array of non-empty strings/)
+  })
+
+  it('throws when skills is not an array', () => {
+    expect(() => { validateTeamDefinitions([
+      makeDef('leader', 'leader'),
+      { ...makeDef('backend', 'teammate'), skills: 'codebase-design' as unknown as readonly string[] },
+    ]) }).toThrow(/must be an array of non-empty strings/)
+  })
 })

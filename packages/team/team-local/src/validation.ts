@@ -12,7 +12,8 @@ import { TEAMMATE_DENIED_TOOLS } from '@deepseek-ai/dsh-team'
  *
  * @param definitions - all loaded definitions.
  * @throws when duplicate ids exist, no leader is defined, multiple leaders
- *   exist, or a member's `requiresApproval` names a denied or disallowed tool.
+ *   exist, a member's `skills` is not an array of non-empty strings, or a
+ *   member's `requiresApproval` names a denied or disallowed tool.
  */
 export function validateTeamDefinitions(
   definitions: readonly TeamMemberDefinition[],
@@ -54,6 +55,15 @@ export function validateTeamDefinitions(
       if (allow !== undefined && !allow.includes(tool)) {
         throw new Error(`requiresApproval names tool "${tool}" not in member "${def.id}" allow list`)
       }
+    }
+  }
+
+  // skills, when defined, must name loadable skills: an empty or non-string
+  // entry cannot be matched by the skill filter installed on the member's child.
+  for (const def of definitions) {
+    if (def.skills === undefined) continue
+    if (!Array.isArray(def.skills) || def.skills.some(s => typeof s !== 'string' || s.length === 0)) {
+      throw new Error(`skills on member "${def.id}" must be an array of non-empty strings`)
     }
   }
 }

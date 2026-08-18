@@ -106,6 +106,8 @@ Host-level registry of pending control requests, keyed by leader session id.
 
 Flow: 1. Teammate calls a `requiresApproval` tool 2. The teammate's `tools/pre-execute` listener calls `create` 3. Request is logged as `team/control-request` session event 4. Leader receives the request via `reportFrom` wakeup 5. Leader calls `team_control` tool with decision 6. Decision is logged as `team/control-decision` session event 7. The suspended `tools/pre-execute` Promise resolves → tool proceeds or is denied
 
+Orphaned pending requests — whose suspended execution has already been torn down — are auto-denied through three settlement paths: `sweep` (timeout), `dispose` (leader session teardown), and `reconcilePending` (cold resume of a resuming child, or an aborted execution settling its own entry).
+
 ```ts cordis-catalog
 /**
  * Create a pending request under a leader session and return its settlement promise.
@@ -143,6 +145,24 @@ list(leaderSessionId: string): readonly TeamControlRequestData[]
 sweep(now: number, timeoutMs: number): void
 
 /**
+ * Reconcile persisted requests against the live registry, auto-denying the
+ * still-pending entries.
+ *
+ * A request whose suspended execution has already been torn down (child
+ * activation disposal, execution abort, or a process restart in between)
+ * can never drive a tool again, so it is settled with 'deny' and dropped
+ * from the pending list. Requests with no live entry — already decided, or
+ * lost with a restart — are a no-op. A concurrent `decide` on the same
+ * request is safe: it removes the entry first and this method skips it.
+ *
+ * @param leaderSessionId - the leader session the requests are addressed to.
+ * @param requests - the persisted requests to reconcile, e.g. every
+ *   `team/control-request` logged by a resuming child.
+ * @returns the ids of the requests that were still pending and were denied.
+ */
+reconcilePending(leaderSessionId: string, requests: readonly TeamControlRequestData[]): string[]
+
+/**
  * Dispose all pending requests for one leader, auto-denying each.
  *
  * @param leaderSessionId - the leader session whose pending requests to dispose.
@@ -150,5 +170,5 @@ sweep(now: number, timeoutMs: number): void
 dispose(leaderSessionId: string): void
 ```
 
-Source: [`packages/team/team-channels/src/control-coordinator.ts:47`](../../packages/team/team-channels/src/control-coordinator.ts)
+Source: [`packages/team/team-channels/src/control-coordinator.ts:52`](../../packages/team/team-channels/src/control-coordinator.ts)
 <!-- END GENERATED cordis-surface -->

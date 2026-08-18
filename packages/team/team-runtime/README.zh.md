@@ -6,7 +6,7 @@ DeepSeek Harness 团队插件的团队运行时编排、委托与每个成员的
 
 ## 角色
 
-**Consumer** —— 编排 teammate 生命周期，并在可继续的子作用域上安装每个成员的组合（MCP guard + 审批钩子）。
+**Consumer** —— 编排 teammate 生命周期，并在可继续的子作用域上安装每个成员的组合（skill guard、MCP guard + 审批钩子）。
 
 ## 关键导出
 
@@ -14,9 +14,10 @@ DeepSeek Harness 团队插件的团队运行时编排、委托与每个成员的
 |---|---|
 | `TeamOrchestrator` | 会话作用域的激活管理器 |
 | `createMcpGuard` | 动态 MCP 工具 guard 工厂 |
+| `createSkillGuard` | 动态 skill 工具 guard 工厂 |
 | `installMemberComposition` | 从绑定数据进行的复合成员设置 |
-| `installApprovalHook` | 针对 `requiresApproval` 工具的作用域 `tools/pre-execute` 挂起 |
-| `teamMemberSetupContribution` | 读取 `team/member-bound` 的 `registerContinuableSetup` 贡献 |
+| `installApprovalHook` | 针对 `requiresApproval` 工具的作用域 `tools/pre-execute` 挂起；中止、无法联系 leader 或超时时以 deny 结束 |
+| `teamMemberSetupContribution` | 读取 `team/member-bound` 的 `registerContinuableSetup` 贡献，并在冷恢复时对账待处理的控制请求 |
 
 ## 模型体验
 

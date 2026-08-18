@@ -7,6 +7,7 @@
     { "path": "../../../vendor/cordis" },
     { "path": "../../util/brand" },
     { "path": "../../core/tools" },
+    { "path": "../../settings/settings" },
     { "path": "../team" },
     { "path": "../../runtime-diagnostics/invariants" }
   ]

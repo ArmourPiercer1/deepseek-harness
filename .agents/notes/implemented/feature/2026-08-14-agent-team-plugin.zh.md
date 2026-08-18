@@ -28,7 +28,7 @@ agent-team 插件以 `packages/team/` 下的六个包加上 `packages/bundle/tea
 - **leader 定义仅为元数据。** 根 agent 由其 preset 组合，绝不由注册表组合；`DEFAULT_LEADER_TOOLS` 记录预期的 leader 暴露面，但不在运行时强制约束。
 - **成员绑定是持久且可重建的。** `delegate_to_teammate` 通过 subagent 接缝的 `delegationEvents` 字段植入一条 `team/member-bound` 事件；`registerContinuableSetup` 贡献项在全新创建和冷恢复时读取它以重新安装 MCP guard 和审批钩子。参见[委托事件植入说明](../architecture/2026-08-15-continuable-delegation-event-seeding.md)。
 - **leader 审批门禁挂起 `requiresApproval` 工具**：通过作用域内 `tools/pre-execute` 监听器在宿主级 `TeamControlRegistry`（按 leader 会话键控）上创建请求，通过 `reportFrom` 唤醒 leader，并在做出决策后恢复或拒绝。
-- **移除了技能过滤**：该字段虽被记录但从未执行，且不存在可用于执行过滤的逐作用域技能目录 API。
+- **技能过滤待恢复**：首次交付记录了该字段但未强制执行，理由是不存在逐作用域技能目录 API；2026-08-18 审计确认 skill 注册表是 scope 分层的，证伪了该理由，scoped guard 强制已列入[第二轮开发计划](../../../../AGENT_TEAM_PLUGIN_ROUND2_PLAN.md)。
 
 ## 备选方案
 

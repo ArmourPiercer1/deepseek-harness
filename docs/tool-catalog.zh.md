@@ -1985,11 +1985,13 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
     },
     "decision": {
       "type": "string",
-      "description": "The decision for the request.",
+      "description": "The decision for the request: \"allow_once\", \"deny\", \"escalate_to_user\", \"approve_plan\", or \"request_revision\".",
       "enum": [
         "allow_once",
         "deny",
-        "escalate_to_user"
+        "escalate_to_user",
+        "approve_plan",
+        "request_revision"
       ]
     },
     "reason": {

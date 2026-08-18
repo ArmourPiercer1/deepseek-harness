@@ -6,6 +6,11 @@
  * `ctx.team`. Watches definition directories for changes and reloads
  * automatically with a debounce window.
  *
+ * Per-workspace teammate enablement persists in the `team-enablement`
+ * settings namespace (see `enablement.ts`): disabled teammates are filtered
+ * before registration, and a committed settings change triggers a reload, so
+ * enabling and disabling takes effect without a restart.
+ *
  * @module @deepseek-ai/dsh-team-local
  */
 
@@ -13,13 +18,31 @@ import { watch, type FSWatcher } from 'node:fs'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { installSettingsSection } from '@deepseek-ai/dsh-settings'
 import { discoverTeamMembers, deduplicateDefinitions } from './discovery.ts'
+import { diagnoseLeaderTools } from './diagnostic.ts'
 import { validateTeamDefinitions } from './validation.ts'
+import {
+  DEFAULT_TEAM_ENABLEMENT,
+  TEAM_ENABLEMENT_SETTINGS_NAMESPACE,
+  TeamEnablementSettingsSchema,
+  filterDisabledTeammates,
+  type TeamEnablementSettings,
+} from './enablement.ts'
+
+export {
+  DEFAULT_TEAM_ENABLEMENT,
+  TEAM_ENABLEMENT_SETTINGS_NAMESPACE,
+  TeamEnablementSettingsSchema,
+  filterDisabledTeammates,
+  isTeammateEnabled,
+} from './enablement.ts'
+export type { TeamEnablementSettings } from './enablement.ts'
 
 export const name = 'team-local'
 export const inject = ['team']
 
-/** Debounce window for file-change reloads (ms). */
+/** Debounce window for definition-change and enablement-change reloads (ms). */
 const RELOAD_DEBOUNCE_MS = 500
 
 /** Plugin configuration controlling where local team member definitions are discovered and watched. */
@@ -36,17 +59,21 @@ export const Config: z<Config> = z.object({
 })
 
 /**
- * Load team member definitions from the filesystem and register them.
+ * Load team member definitions from the filesystem, drop the teammates
+ * disabled for the workspace, register the remainder, then run the leader
+ * tool diagnostic against the registered tools.
  *
  * @param ctx - plugin context.
  * @param homePath - DSH home path.
  * @param workspacePath - workspace root path.
+ * @param getEnablement - source of the resolved `team-enablement` section.
  * @param signal - abort signal for cancellation.
  */
 async function loadDefinitions(
   ctx: Context,
   homePath: string,
   workspacePath: string,
+  getEnablement: () => TeamEnablementSettings,
   signal?: AbortSignal,
 ): Promise<void> {
   const results = await discoverTeamMembers({
@@ -56,8 +83,10 @@ async function loadDefinitions(
   })
   const definitions = deduplicateDefinitions(results)
   if (definitions.length > 0) {
-    validateTeamDefinitions(definitions)
-    ctx.team.register(definitions)
+    const enabled = filterDisabledTeammates(definitions, getEnablement(), workspacePath)
+    validateTeamDefinitions(enabled)
+    ctx.team.register(enabled)
+    diagnoseLeaderTools(ctx)
   }
 }
 
@@ -77,55 +106,75 @@ function resolveWatchDirs(homePath: string, workspacePath: string): string[] {
 }
 
 export function apply(ctx: Context, config: Config): void {
-  // Load definitions asynchronously during plugin initialization,
-  // then watch the definition directories for changes and reload.
-  ctx.effect(function* () {
-    const controller = new AbortController()
-    const log = ctx.logger('team-local')
+  const controller = new AbortController()
+  const log = ctx.logger('team-local')
+  let reloadTimer: ReturnType<typeof setTimeout> | undefined
 
-    // Initial load
-    loadDefinitions(ctx, config.homePath, config.workspacePath, controller.signal).catch((e: unknown) => {
+  // Resolved enablement section: the live settings scope while a settings
+  // service is mounted, the empty default otherwise.
+  let enablement: () => TeamEnablementSettings = () => DEFAULT_TEAM_ENABLEMENT
+
+  const load = (): void => {
+    loadDefinitions(ctx, config.homePath, config.workspacePath, enablement, controller.signal).catch((e: unknown) => {
       if (!controller.signal.aborted) {
         log.error('Failed to load team definitions:', e)
       }
     })
+  }
 
-    // Watch definition directories for changes
-    const watchers: FSWatcher[] = []
-    let reloadTimer: ReturnType<typeof setTimeout> | undefined
-
-    const scheduleReload = (): void => {
+  // Debounce every reload trigger — a watched .md change or a committed
+  // enablement change — into one re-scan.
+  const scheduleReload = (): void => {
+    if (controller.signal.aborted) return
+    if (reloadTimer !== undefined) clearTimeout(reloadTimer)
+    reloadTimer = setTimeout(() => {
+      reloadTimer = undefined
       if (controller.signal.aborted) return
-      if (reloadTimer !== undefined) clearTimeout(reloadTimer)
-      reloadTimer = setTimeout(() => {
-        reloadTimer = undefined
-        if (controller.signal.aborted) return
-        log.info('Teammate definition change detected, reloading…')
-        loadDefinitions(ctx, config.homePath, config.workspacePath, controller.signal).catch((e: unknown) => {
-          if (!controller.signal.aborted) {
-            log.error('Failed to reload team definitions:', e)
-          }
-        })
-      }, RELOAD_DEBOUNCE_MS)
-    }
+      log.info('Teammate definition or enablement change detected, reloading…')
+      load()
+    }, RELOAD_DEBOUNCE_MS)
+  }
 
-    for (const dir of resolveWatchDirs(config.homePath, config.workspacePath)) {
-      try {
-        const watcher = watch(dir, { persistent: false }, (_eventType, filename) => {
-          if (filename && filename.endsWith('.md')) {
-            scheduleReload()
-          }
-        })
-        watcher.on('error', () => {
-          // Directory may not exist or become inaccessible — ignore
-        })
-        watchers.push(watcher)
-      } catch {
-        // Directory does not exist yet — not an error
-      }
-    }
+  installSettingsSection(ctx, TEAM_ENABLEMENT_SETTINGS_NAMESPACE, TeamEnablementSettingsSchema, {}, {
+    setSource: (source) => {
+      enablement = source
+    },
+    // Mounting loads the persisted section; detaching falls back to all
+    // enabled. Both make the registered set stale, so both reload.
+    onChange: () => {
+      scheduleReload()
+    },
+  })
 
-    yield () => {
+  // A committed change to the enablement section makes the registered set
+  // stale; reload through the shared debounce.
+  ctx.on('settings/updated', (ns) => {
+    if (ns === TEAM_ENABLEMENT_SETTINGS_NAMESPACE) scheduleReload()
+  })
+
+  // Initial load
+  load()
+
+  // Watch definition directories for changes
+  const watchers: FSWatcher[] = []
+  for (const dir of resolveWatchDirs(config.homePath, config.workspacePath)) {
+    try {
+      const watcher = watch(dir, { persistent: false }, (_eventType, filename) => {
+        if (filename && filename.endsWith('.md')) {
+          scheduleReload()
+        }
+      })
+      watcher.on('error', () => {
+        // Directory may not exist or become inaccessible — ignore
+      })
+      watchers.push(watcher)
+    } catch {
+      // Directory does not exist yet — not an error
+    }
+  }
+
+  ctx.effect(() => {
+    return () => {
       controller.abort()
       if (reloadTimer !== undefined) clearTimeout(reloadTimer)
       for (const watcher of watchers) watcher.close()

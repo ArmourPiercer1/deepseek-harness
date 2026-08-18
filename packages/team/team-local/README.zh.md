@@ -39,6 +39,25 @@ You are a senior backend developer...
 | `homePath` | `string` | `$DSH_HOME` | 全局定义的路径 |
 | `workspacePath` | `string` | — | 项目级定义的路径 |
 
+## Teammate 启用
+
+按工作区划分的 teammate 启用状态持久化在 `team-enablement` 设置命名空间中，为工作区路径到 teammate id、再到启用标志的记录：
+
+```yaml
+team-enablement:
+  C:/projects/demo:
+    backend-dev: false
+```
+
+- 缺失的设置小节、工作区或 teammate 一律视为启用；只有显式的 `false` 会禁用。
+- 只有 `role: teammate` 的定义会被过滤。leader 永不会被禁用：有效的团队要求恰好一个 leader，且 leader 仅为元数据，由自己的 preset 组合，而非注册表。
+- 已提交的设置变更会重新加载定义，因此启用与禁用无需重启即可生效。
+- 工作区键为插件配置中 `workspacePath` 的原始字符串；不做任何路径归一化。
+
+## 启动诊断
+
+每次成功加载后，team-local 会通过 `ctx.logger('team-local')` 记录警告：当已注册的 leader 期望的 `DEFAULT_LEADER_TOOLS` 未被 `ctx.tools` 注册时，并逐一列出缺失的工具。该警告仅作诊断：加载不会失败，也不会依据 leader 定义执行任何工具策略。
+
 ## 模型体验
 
 无，因为文件系统加载器只填充注册表，没有提示词、schema 或结果。

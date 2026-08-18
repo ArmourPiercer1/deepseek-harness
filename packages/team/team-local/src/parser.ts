@@ -137,6 +137,17 @@ export function parseTeamMemberMarkdown(
     requiresApproval = (rawApproval as unknown[]).map(String)
   }
 
+  // Skill allowlist (skill names the member may load; absence means unrestricted)
+  let skills: readonly string[] | undefined
+  const rawSkills = frontmatter['skills']
+  if (rawSkills !== undefined) {
+    if (!Array.isArray(rawSkills) || !rawSkills.every(s => typeof s === 'string' && s.length > 0)) {
+      diagnostics.push({ severity: 'error', message: 'skills must be an array of non-empty strings' })
+      return { diagnostics }
+    }
+    skills = rawSkills as readonly string[]
+  }
+
   // MCP policy
   let mcpServers: TeamMcpPolicy | undefined
   const rawMcp = frontmatter['mcpServers']
@@ -172,6 +183,7 @@ export function parseTeamMemberMarkdown(
     ...(maxTokens !== undefined ? { maxTokens } : {}),
     ...(tools !== undefined ? { tools } : {}),
     ...(requiresApproval !== undefined ? { requiresApproval } : {}),
+    ...(skills !== undefined ? { skills } : {}),
     ...(mcpServers !== undefined ? { mcpServers } : {}),
     ...(contextPolicy !== undefined ? { contextPolicy } : {}),
     sourcePath,

@@ -51,6 +51,8 @@ export interface TeamMemberDefinition {
   readonly tools?: TeamToolPolicy
   /** Tool names whose execution requires leader approval (teammate only). */
   readonly requiresApproval?: readonly string[]
+  /** Skill names this member may load. Absence means no restriction. */
+  readonly skills?: readonly string[]
   /** MCP server access policy. */
   readonly mcpServers?: TeamMcpPolicy
   /** Context window reload strategy. Defaults to 'persistent'. */
@@ -96,6 +98,8 @@ export interface TeamMemberBoundData {
   readonly tools?: TeamToolPolicy
   /** Tool names whose execution requires leader approval. */
   readonly requiresApproval?: readonly string[]
+  /** Effective skill allowlist snapshot. Absence means unrestricted. */
+  readonly skills?: readonly string[]
   /** Effective MCP policy snapshot. */
   readonly mcpServers?: TeamMcpPolicy
   /** Context policy for this member. */
@@ -114,10 +118,12 @@ export interface TeamControlRequestData {
   readonly reason: string
   /** Tool arguments, if relevant. */
   readonly arguments?: Record<string, unknown>
+  /** Optional request kind, distinguishing tool execution from plan approval. Defaults to 'tool'. */
+  readonly kind?: 'tool' | 'plan'
 }
 
 /** Possible leader decisions on a control request. */
-export type TeamControlDecision = 'allow_once' | 'deny' | 'escalate_to_user'
+export type TeamControlDecision = 'allow_once' | 'deny' | 'escalate_to_user' | 'approve_plan' | 'request_revision'
 
 /** Leader's decision on a teammate control request. */
 export interface TeamControlDecisionData {

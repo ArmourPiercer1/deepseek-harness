@@ -12,7 +12,7 @@ Team messaging, progress tracking, and approval coordination for the DeepSeek Ha
 
 | Export | Description |
 |---|---|
-| `TeamControlRegistry` | Host-level pending-approval registry keyed by leader session, with timeout sweep |
+| `TeamControlRegistry` | Host-level pending-approval registry keyed by leader session, with timeout sweep, dispose auto-deny, and cold-resume reconciliation |
 | `TeamProgressStore` | In-memory progress store keyed by leader session, with session-event restore |
 
 ## Config
@@ -31,5 +31,5 @@ No effect.
 
 ## Known Limitations and Deferred Work
 
-- Control request persistence across process restart is not implemented; cold resume auto-denies pending requests.
+- Control request state is in-memory only: a request lost with a process restart is not restored and remains as log history. A cold resume auto-denies the resuming child's persisted requests that are still pending in the registry, as do the timeout sweep and leader session dispose.
 - The progress store is in-memory only; session events provide durability and are replayed on `list`.

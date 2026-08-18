@@ -235,6 +235,7 @@ export function registerDelegateTool(
           ...(member.maxTokens !== undefined ? { maxTokens: member.maxTokens } : {}),
           ...(member.tools !== undefined ? { tools: member.tools } : {}),
           ...(member.requiresApproval !== undefined ? { requiresApproval: member.requiresApproval } : {}),
+          ...(member.skills !== undefined ? { skills: member.skills } : {}),
           ...(member.mcpServers !== undefined ? { mcpServers: member.mcpServers } : {}),
           ...(member.contextPolicy !== undefined ? { contextPolicy: member.contextPolicy } : {}),
         }

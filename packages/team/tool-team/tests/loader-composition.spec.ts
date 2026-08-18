@@ -156,5 +156,31 @@ describe('tool-team real Loader composition through cordis.yml', () => {
     })
     expect(decide.isError).toBe(false)
     await expect(promise).resolves.toBe('allow_once')
+
+    const planPromise = ctx.teamControl.create(owner.id, {
+      requestId: 'req-plan', memberId: TeamMemberId('backend'), toolName: 'exit_plan_mode', reason: 'plan',
+    })
+    const decidePlan = await ctx.tools.execute({
+      signal: new AbortController().signal,
+      callId: CallId('ctl-decide-plan'),
+      name: 'team_control',
+      arguments: { action: 'decide', request_id: 'req-plan', decision: 'approve_plan' },
+      agent: owner,
+    })
+    expect(decidePlan.isError).toBe(false)
+    await expect(planPromise).resolves.toBe('approve_plan')
+
+    const revPromise = ctx.teamControl.create(owner.id, {
+      requestId: 'req-rev', memberId: TeamMemberId('backend'), toolName: 'exit_plan_mode', reason: 'plan',
+    })
+    const decideRev = await ctx.tools.execute({
+      signal: new AbortController().signal,
+      callId: CallId('ctl-decide-rev'),
+      name: 'team_control',
+      arguments: { action: 'decide', request_id: 'req-rev', decision: 'request_revision', reason: 'needs more steps' },
+      agent: owner,
+    })
+    expect(decideRev.isError).toBe(false)
+    await expect(revPromise).resolves.toBe('request_revision')
   }, 30_000)
 })

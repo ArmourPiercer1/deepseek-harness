@@ -6,7 +6,7 @@ Team runtime orchestration, delegation, and per-member capability filtering for 
 
 ## Role
 
-**Consumer** — orchestrates teammate lifecycles and installs per-member composition (MCP guard + approval hook) on continuable child scopes.
+**Consumer** — orchestrates teammate lifecycles and installs per-member composition (skill guard, MCP guard + approval hook) on continuable child scopes.
 
 ## Key Exports
 
@@ -14,9 +14,10 @@ Team runtime orchestration, delegation, and per-member capability filtering for 
 |---|---|
 | `TeamOrchestrator` | Session-scoped activation manager |
 | `createMcpGuard` | Dynamic MCP tool guard factory |
+| `createSkillGuard` | Dynamic skill tool guard factory |
 | `installMemberComposition` | Composite member setup from bound data |
-| `installApprovalHook` | Scoped `tools/pre-execute` hang for `requiresApproval` tools |
-| `teamMemberSetupContribution` | `registerContinuableSetup` contribution reading `team/member-bound` |
+| `installApprovalHook` | Scoped `tools/pre-execute` hang for `requiresApproval` tools; settles with deny on abort, leader unreachability, or timeout |
+| `teamMemberSetupContribution` | `registerContinuableSetup` contribution reading `team/member-bound` and reconciling pending control requests on cold resume |
 
 ## Model Experience
 

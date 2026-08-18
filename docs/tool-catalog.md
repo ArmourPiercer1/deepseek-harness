@@ -1980,11 +1980,13 @@ Review and decide on pending teammate permission requests. Only the leader may u
     },
     "decision": {
       "type": "string",
-      "description": "The decision for the request.",
+      "description": "The decision for the request: \"allow_once\", \"deny\", \"escalate_to_user\", \"approve_plan\", or \"request_revision\".",
       "enum": [
         "allow_once",
         "deny",
-        "escalate_to_user"
+        "escalate_to_user",
+        "approve_plan",
+        "request_revision"
       ]
     },
     "reason": {

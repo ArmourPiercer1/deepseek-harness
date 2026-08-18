@@ -9,7 +9,8 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { TeamMemberId } from '@deepseek-ai/dsh-team'
-import type { TeamMemberBoundData } from '@deepseek-ai/dsh-team'
+import type { TeamMemberBoundData, TeamMemberDefinition } from '@deepseek-ai/dsh-team'
+import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 import type { TeamOrchestrator } from '@deepseek-ai/dsh-team-runtime'
 
 /** Read the durable member binding from an agent's own session, if present. */
@@ -18,6 +19,73 @@ function memberBindingOf(agent: Agent): TeamMemberBoundData | undefined {
     if (event.type === 'team/member-bound') return event.data
   }
   return undefined
+}
+
+/** One completed `send_team_message` delivery: a direct send, a leader relay, or an error. */
+type TeamMessageDelivery =
+  | { readonly status: 'sent'; readonly message: string }
+  | { readonly status: 'relayed'; readonly message: string }
+  | { readonly status: 'error'; readonly message: string }
+
+/**
+ * Deliver one team message from the calling member to the target.
+ *
+ * Picks the transport from the roles: the leader follows up on the target
+ * teammate's session, a teammate reports to its direct parent, and a teammate
+ * addressing a peer reports to the leader with a wakeup so the leader forwards
+ * the message. This is the single point where a team message meets its
+ * transport, so a future structured cross-member queue replaces only this
+ * function.
+ *
+ * @param subagents - subagent runtime providing the followup and reportFrom transports.
+ * @param orchestrator - the session-scoped orchestrator resolving teammate sessions.
+ * @param me - the calling agent.
+ * @param senderIsTeammate - whether the caller is bound to a teammate.
+ * @param target - the resolved target member definition.
+ * @param message - the message content to deliver.
+ * @param signal - caller cancellation forwarded to the transport.
+ * @returns the delivery outcome; an error outcome when the target has no session.
+ * @throws when the transport rejects the delivery.
+ */
+async function deliverTeamMessage(
+  subagents: SubagentRuntime,
+  orchestrator: TeamOrchestrator,
+  me: Agent,
+  senderIsTeammate: boolean,
+  target: TeamMemberDefinition,
+  message: string,
+  signal: AbortSignal,
+): Promise<TeamMessageDelivery> {
+  if (senderIsTeammate && target.role === 'teammate') {
+    // Teammate → peer: a teammate cannot address peers directly, so the
+    // report wakes the leader, which forwards the message.
+    await subagents.reportFrom(
+      me,
+      [{ type: 'text', text: `[Message to ${target.name}]: ${message}` }],
+      { delivery: 'wakeup', signal },
+    )
+    return { status: 'relayed', message: `Message to ${target.name} relayed to leader for forwarding.` }
+  }
+  if (senderIsTeammate) {
+    // Teammate → leader: report into the direct parent's next turn.
+    await subagents.reportFrom(me, [{ type: 'text', text: message }], { delivery: 'wakeup', signal })
+    return { status: 'sent', message: `Message delivered to ${target.name}.` }
+  }
+  // Leader → teammate: deliver the next turn to the teammate's session.
+  // followup cold-resumes settled and disposed children from their
+  // persisted sessions, so only a never-delegated teammate is unreachable.
+  const activation = orchestrator.get(target.id)
+  if (!activation) {
+    return { status: 'error', message: `No active session for "${target.id}". Delegate first.` }
+  }
+  await subagents.followup(me, SessionId(activation.childSessionId), [{ type: 'text', text: message }], {
+    source: { kind: 'coordinator' as const, form: 'relay' as const, senderSessionId: me.id },
+    signal,
+  })
+  if (activation.status !== 'running') {
+    orchestrator.recordActivation(target.id, activation.childSessionId)
+  }
+  return { status: 'sent', message: `Message delivered to ${target.name}.` }
 }
 
 /**
@@ -79,39 +147,21 @@ export function registerSendMessageTool(
         return { status: 'error', message: `Unknown team member: "${args.target_id}"` }
       }
 
-      const content = [{ type: 'text' as const, text: args.message }]
       const binding = memberBindingOf(me)
-      const amTeammate = binding?.role === 'teammate'
+      const senderIsTeammate = binding?.role === 'teammate'
 
+      let delivery: TeamMessageDelivery
       try {
-        if (amTeammate) {
-          // Teammate → leader: report into the direct parent's next turn.
-          await subagents.reportFrom(me, content, { delivery: 'wakeup', signal: exec.signal })
-        } else {
-          // Leader → teammate: deliver the next turn to the teammate's active session.
-          const activation = orchestrator.get(targetId)
-          if (!activation || activation.status === 'disposed') {
-            return {
-              status: 'error',
-              message: `No active session for "${args.target_id}". Delegate first.`,
-            }
-          }
-          await subagents.followup(me, SessionId(activation.childSessionId), content, {
-            source: { kind: 'coordinator' as const, form: 'relay' as const, senderSessionId: me.id },
-            signal: exec.signal,
-          })
-        }
+        delivery = await deliverTeamMessage(subagents, orchestrator, me, senderIsTeammate, target, args.message, exec.signal)
       } catch (e: unknown) {
-        return {
-          status: 'error',
-          message: `Delivery failed: ${e instanceof Error ? e.message : String(e)}`,
-        }
+        delivery = { status: 'error', message: `Delivery failed: ${e instanceof Error ? e.message : String(e)}` }
       }
+      if (delivery.status === 'error') return delivery
 
       const fromId = binding?.memberId ?? team.getLeader()?.id ?? TeamMemberId('leader')
       me.session.append('team/message', { from: fromId, to: targetId, message: args.message })
 
-      return { status: 'sent', message: `Message delivered to ${target.name}.` }
+      return delivery
     },
   }))
 }

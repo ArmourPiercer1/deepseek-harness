@@ -28,5 +28,5 @@ DeepSeek Harness 团队插件的面向模型的团队工具。
 
 ## 已知限制与暂缓事项
 
-- 通过 `followup()`/`reportFrom()` 的 `send_team_message` 传递尚未完全打通；消息意图已被记录，但未投递到目标 agent loop。
+- teammate 到 teammate 的直接投递尚不可用：teammate 向 peer 发送的 `send_team_message` 会报告给 leader，由被唤醒的 leader 转发该消息。结构化的跨成员消息队列暂缓。
 - 工具结果内容块使用纯文本；富结构化渲染暂缓。

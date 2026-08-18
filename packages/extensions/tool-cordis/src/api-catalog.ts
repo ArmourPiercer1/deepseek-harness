@@ -1794,7 +1794,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
     key: 'teamControl',
     summary: 'Host-level registry of pending control requests, keyed by leader session id.',
-    description: 'Host-level registry of pending control requests, keyed by leader session id.\n\nFlow: 1. Teammate calls a `requiresApproval` tool 2. The teammate\'s `tools/pre-execute` listener calls `create` 3. Request is logged as `team/control-request` session event 4. Leader receives the request via `reportFrom` wakeup 5. Leader calls `team_control` tool with decision 6. Decision is logged as `team/control-decision` session event 7. The suspended `tools/pre-execute` Promise resolves → tool proceeds or is denied',
+    description: 'Host-level registry of pending control requests, keyed by leader session id.\n\nFlow: 1. Teammate calls a `requiresApproval` tool 2. The teammate\'s `tools/pre-execute` listener calls `create` 3. Request is logged as `team/control-request` session event 4. Leader receives the request via `reportFrom` wakeup 5. Leader calls `team_control` tool with decision 6. Decision is logged as `team/control-decision` session event 7. The suspended `tools/pre-execute` Promise resolves → tool proceeds or is denied\n\nOrphaned pending requests — whose suspended execution has already been torn down — are auto-denied through three settlement paths: `sweep` (timeout), `dispose` (leader session teardown), and `reconcilePending` (cold resume of a resuming child, or an aborted execution settling its own entry).',
     methods: [
       {
         signature: 'create(leaderSessionId: string, data: TeamControlRequestData): Promise<TeamControlDecision>',
@@ -1818,6 +1818,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'sweep(now: number, timeoutMs: number): void',
         description: 'Time out and auto-deny expired requests across every leader.',
         parameters: [{ name: 'now', description: 'current epoch ms.' }, { name: 'timeoutMs', description: 'maximum age in ms.' }],
+      },
+      {
+        signature: 'reconcilePending(leaderSessionId: string, requests: readonly TeamControlRequestData[]): string[]',
+        description: 'Reconcile persisted requests against the live registry, auto-denying the still-pending entries.\n\nA request whose suspended execution has already been torn down (child activation disposal, execution abort, or a process restart in between) can never drive a tool again, so it is settled with \'deny\' and dropped from the pending list. Requests with no live entry — already decided, or lost with a restart — are a no-op. A concurrent `decide` on the same request is safe: it removes the entry first and this method skips it.',
+        parameters: [{ name: 'leaderSessionId', description: 'the leader session the requests are addressed to.' }, { name: 'requests', description: 'the persisted requests to reconcile, e.g. every `team/control-request` logged by a resuming child.' }],
+        returns: 'the ids of the requests that were still pending and were denied.',
       },
       {
         signature: 'dispose(leaderSessionId: string): void',
@@ -4373,11 +4379,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamControlDecision',
-    declaration: 'export type TeamControlDecision = \'allow_once\' | \'deny\' | \'escalate_to_user\';',
+    declaration: 'export type TeamControlDecision = \'allow_once\' | \'deny\' | \'escalate_to_user\' | \'approve_plan\' | \'request_revision\';',
   },
   {
     name: 'TeamControlRequestData',
-    declaration: 'export interface TeamControlRequestData {\n    readonly requestId: string;\n    readonly memberId: TeamMemberId;\n    readonly toolName: string;\n    readonly reason: string;\n    readonly arguments?: Record<string, unknown>;\n}',
+    declaration: 'export interface TeamControlRequestData {\n    readonly requestId: string;\n    readonly memberId: TeamMemberId;\n    readonly toolName: string;\n    readonly reason: string;\n    readonly arguments?: Record<string, unknown>;\n    readonly kind?: \'tool\' | \'plan\';\n}',
   },
   {
     name: 'TeamMcpPolicy',
@@ -4385,7 +4391,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamMemberDefinition',
-    declaration: 'export interface TeamMemberDefinition {\n    readonly id: TeamMemberId;\n    readonly role: TeamMemberRole;\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider?: string;\n    readonly model?: string;\n    readonly maxTokens?: number;\n    readonly tools?: TeamToolPolicy;\n    readonly requiresApproval?: readonly string[];\n    readonly mcpServers?: TeamMcpPolicy;\n    readonly contextPolicy?: TeamContextPolicy;\n    readonly sourcePath?: string;\n}',
+    declaration: 'export interface TeamMemberDefinition {\n    readonly id: TeamMemberId;\n    readonly role: TeamMemberRole;\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider?: string;\n    readonly model?: string;\n    readonly maxTokens?: number;\n    readonly tools?: TeamToolPolicy;\n    readonly requiresApproval?: readonly string[];\n    readonly skills?: readonly string[];\n    readonly mcpServers?: TeamMcpPolicy;\n    readonly contextPolicy?: TeamContextPolicy;\n    readonly sourcePath?: string;\n}',
   },
   {
     name: 'TeamMemberId',

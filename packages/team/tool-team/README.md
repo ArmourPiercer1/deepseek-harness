@@ -28,5 +28,5 @@ No effect.
 
 ## Known Limitations and Deferred Work
 
-- `send_team_message` delivery via `followup()`/`reportFrom()` is not fully wired; message intent is logged but not delivered to the target agent loop.
+- Direct teammate-to-teammate delivery is not available: `send_team_message` from a teammate to a peer reports to the leader, which is woken to forward the message. A structured cross-member message queue is deferred.
 - Tool result content blocks use plain text; rich structured rendering is deferred.

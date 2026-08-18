@@ -196,3 +196,38 @@ describe('registerDelegateTool run action context policy', () => {
     expect(orch.get(memberId)?.childSessionId).toBe('child-fresh')
   })
 })
+
+describe('registerDelegateTool member-bound payload', () => {
+  it('includes the skills allowlist in the member-bound payload when the member defines skills', async () => {
+    const { ctx, subagents, invoke } = makeCtx([member({ skills: ['codebase-design', 'tdd'] })])
+    const orch = new TeamOrchestrator()
+    registerDelegateTool(ctx, orch)
+
+    const result = await invoke({ teammate_id: 'B1', prompt: 'go' })
+
+    expect(result.status).toBe('dispatched')
+    expect(subagents.startContinuable).toHaveBeenCalledTimes(1)
+    const [options] = subagents.startContinuable.mock.calls[0]! as [
+      { delegationEvents: readonly { type: string; data: Record<string, unknown> }[] },
+    ]
+    expect(options.delegationEvents[0]).toMatchObject({
+      type: 'team/member-bound',
+      data: { skills: ['codebase-design', 'tdd'] },
+    })
+  })
+
+  it('omits the skills key from the member-bound payload when the member defines no skills', async () => {
+    const { ctx, subagents, invoke } = makeCtx()
+    const orch = new TeamOrchestrator()
+    registerDelegateTool(ctx, orch)
+
+    const result = await invoke({ teammate_id: 'B1', prompt: 'go' })
+
+    expect(result.status).toBe('dispatched')
+    expect(subagents.startContinuable).toHaveBeenCalledTimes(1)
+    const [options] = subagents.startContinuable.mock.calls[0]! as [
+      { delegationEvents: readonly { type: string; data: Record<string, unknown> }[] },
+    ]
+    expect(options.delegationEvents[0]!.data.skills).toBeUndefined()
+  })
+})

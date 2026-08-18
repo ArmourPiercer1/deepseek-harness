@@ -35,8 +35,8 @@ export function registerControlTool(
       },
       decision: {
         type: 'string',
-        enum: ['allow_once', 'deny', 'escalate_to_user'] as const,
-        description: 'The decision for the request.',
+        enum: ['allow_once', 'deny', 'escalate_to_user', 'approve_plan', 'request_revision'] as const,
+        description: 'The decision for the request: "allow_once", "deny", "escalate_to_user", "approve_plan", or "request_revision".',
       },
       reason: {
         type: 'string',

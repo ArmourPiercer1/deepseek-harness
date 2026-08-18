@@ -2274,7 +2274,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-local/src/index.ts:26`](../packages/team/team-local/src/index.ts)
+Source: [`packages/team/team-local/src/index.ts:49`](../packages/team/team-local/src/index.ts)
 
 <a id="deepseek-aidsh-terminal-bash"></a>
 

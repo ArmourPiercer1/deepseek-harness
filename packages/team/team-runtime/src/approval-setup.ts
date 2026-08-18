@@ -21,6 +21,11 @@ import { assertNever } from '@deepseek-ai/dsh-llm'
 /**
  * Install a scoped approval hook on a teammate's child context.
  *
+ * The suspended wait can only end in a settlement: the leader's decision,
+ * the registry's timeout sweep, a failed leader wakeup, or the execution
+ * abort — each path returns a deny or ask decision and leaves no pending
+ * request behind.
+ *
  * @param childCtx - the teammate's scoped child context.
  * @param ctx - the host context carrying `teamControl` and `subagents`.
  * @param bound - the member-bound policy snapshot.
@@ -82,17 +87,45 @@ export function installApprovalHook(
       return { kind: 'deny', reason: 'could not reach the leader for approval' }
     }
 
-    const resolved = await decision
-    switch (resolved) {
+    // Execution cancellation is a denial path of its own: settle the entry
+    // with a deny the moment the abort lands so neither the sweep nor a later
+    // cold resume has to reconcile an orphaned request. A leader decision
+    // landing in the same tick already removed the entry, making the
+    // reconciliation a no-op.
+    let onAbort: (() => void) | undefined
+    const aborted = new Promise<true>((resolve) => {
+      if (exec.signal.aborted) {
+        registry.reconcilePending(leaderSessionId, [requestData])
+        resolve(true)
+        return
+      }
+      onAbort = () => {
+        registry.reconcilePending(leaderSessionId, [requestData])
+        resolve(true)
+      }
+      exec.signal.addEventListener('abort', onAbort, { once: true })
+    })
+    const outcome = await Promise.race([
+      decision.then(value => ({ kind: 'decided' as const, value })),
+      aborted.then(() => ({ kind: 'aborted' as const })),
+    ])
+    if (onAbort !== undefined) exec.signal.removeEventListener('abort', onAbort)
+    if (outcome.kind === 'aborted') {
+      return { kind: 'deny', reason: 'execution cancelled before the leader decided' }
+    }
+    switch (outcome.value) {
       case 'allow_once':
+      case 'approve_plan':
         return next()
+      case 'request_revision':
+        return { kind: 'deny', reason: 'leader requested revision: please revise plan' }
       case 'deny':
         return { kind: 'deny', reason: 'leader denied this tool' }
       case 'escalate_to_user':
         return { kind: 'ask', reason: 'leader escalated this request to the user' }
       /* v8 ignore next -- closed union exhaustiveness */
       default:
-        return assertNever(resolved, 'team approval decision')
+        return assertNever(outcome.value, 'team approval decision')
     }
   })
 }

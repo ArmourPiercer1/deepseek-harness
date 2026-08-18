@@ -28,7 +28,7 @@ Key design decisions:
 - **The leader definition is metadata only.** The root agent is composed by its preset, never by the registry; `DEFAULT_LEADER_TOOLS` documents the intended leader surface but is not enforced at runtime.
 - **Member binding is durable and reconstructable.** `delegate_to_teammate` seeds one `team/member-bound` event through the subagent seam's `delegationEvents` field; a `registerContinuableSetup` contribution reads it on fresh creation and cold resume to reinstall the MCP guard and approval hook. See the [delegation-event-seeding note](../architecture/2026-08-15-continuable-delegation-event-seeding.md).
 - **The leader approval gate suspends `requiresApproval` tools** via a scoped `tools/pre-execute` listener that creates a request on the host-level `TeamControlRegistry` (keyed by leader session), wakes the leader through `reportFrom`, and resumes or denies on the decision.
-- **Skill filtering was removed**: the field was recorded but never enforced, and there is no per-scope skill-catalog API to enforce it against.
+- **Skill filtering is pending restoration**: the initial delivery recorded the field without enforcement, citing a nonexistent per-scope skill-catalog API; the 2026-08-18 audit showed the skill registry is scope-layered, disproving that rationale, and scoped-guard enforcement is scheduled in the [second round plan](../../../../AGENT_TEAM_PLUGIN_ROUND2_PLAN.md).
 
 ## Alternatives considered
 

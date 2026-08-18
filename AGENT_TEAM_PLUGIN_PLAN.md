@@ -264,7 +264,7 @@ oh-my-opencode（源码位于 `references/oh-my-opencode`）是 OpenCode 的插�
 |---|---|---|
 | 1.1 定义 `TeamMemberDefinition` 类型 | 统一类型，`role`(`"leader"` \| `"teammate"`)、`id`、`name`、`description`、`prompt`、`model`、`maxTokens`、`tools`(allow/deny)、`skills[]`、`mcpServers[]`、`contextPolicy`、源文件路径。Leader 和 teammate 共用同一类型，仅 `role` 字段区分 | G1 |
 | 1.2 Markdown 解析器 | YAML frontmatter (`---` 分隔) + Markdown body → `TeamMemberDefinition`；校验 schemaVersion、必填字段、字段类型 | G1 |
-| 1.3 Team member registry service | `ctx.teamDefinitions` Service — `list()` / `get(id)` / `getLeader()` / `validate()`；effect-scoped，HMR-safe | G1 |
+| 1.3 Team member registry service | `ctx.team` Service（shipped 名称，原名 `ctx.teamDefinitions` 已追认变更）— `list()` / `get(id)` / `getLeader()` / `validate()`；effect-scoped，HMR-safe | G1 |
 | 1.4 Filesystem discovery provider | 从 `$DSH_HOME/teammates/` 和项目级 `.dsh/teammates/` 扫描 `.md` 文件加载（leader 定义可放在同一目录，以 `role: leader` 区分） | G1 |
 | 1.5 Leader 定义 | Leader 采用与 teammate 相同的 Markdown 定义格式，支持全部配置字段。Leader 默认自动获得 10 个 team 控制 tools（`DEFAULT_LEADER_TOOLS` 常量），用户配置的 `tools` 字段与默认 tools 合并（`effectiveTools = DEFAULT_LEADER_TOOLS ∪ definition.tools`），确保 team 控制能力不可被误移除 | G1 |
 | 1.6 Workspace enablement | 利用 `ctx.settings` 存储 per-workspace teammate enablement（启用/禁用/tool profile 覆盖）| G10 |
@@ -304,7 +304,7 @@ oh-my-opencode（源码位于 `references/oh-my-opencode`）是 OpenCode 的插�
 | 3.2 `team_progress` tool | 读写结构化任务进度 (items: `{ id, subject, status, summary, teammateId }`)；持久化为 session event | G8 |
 | 3.3 `team_control` tool (leader-only) | Leader 处理 teammate 的权限/plan 审批请求：list/read/decide(allow_once/deny/approve_plan/request_revision/escalate_to_user) | G6 |
 | 3.4 Team control coordinator | Teammate 的 `tools/pre-execute` listener → 匹配 per-teammate constraints → 创建 control request → 挂起等待 → leader followup → resume/reject | G6 |
-| 3.5 Team message session events | `SessionEventMap` 声明：`team/message-sent`, `team/progress-updated`, `team/control-requested`, `team/control-decided` | G7 |
+| 3.5 Team message session events | `SessionEventMap` 声明（shipped 名称，已追认）：`team/message`, `team/progress`, `team/control-request`, `team/control-decision`（另有委派所需的 `team/member-bound`） | G7 |
 
 **测试**: unit tests (control coordinator state machine, message routing) + REAL-composition test (teammate hits permission → leader approves → teammate resumes)
 
@@ -1347,3 +1347,16 @@ Teammate 定义的 `provider: Qiyuan-Inter` + `model: deepseek-v4-flash-0731` �
 - `gpt-5.6-luna`：**辅助模型**，适合模板化编码（解析器、guard、tool 定义、文档）
 
 **Runtime 校验**：`dsh-team-runtime` 在首次委派时调用 `ctx.llm.resolveModelInfo(provider, model)` 验证 route 可用。失败时抛出明确错误，而非静默回退到默认 provider。
+
+---
+
+## 七、进度审计与阶段计划（索引）
+
+主文档保留完整的代码设计与 Phase 设计；阶段性审计、决策与执行计划存放于附属文档，按时间线索引：
+
+| 日期 | 文档 | 内容 |
+|---|---|---|
+| 2026-08-18 | [进度审计与偏离登记](AGENT_TEAM_PLUGIN_AUDIT_2026-08-18.md) | Phase 状态审计、偏离登记表（D1-D5）、用户决策记录 |
+| 2026-08-18 | [第二轮开发计划](AGENT_TEAM_PLUGIN_ROUND2_PLAN.md) | Phase 1/3 缺失项补齐、偏离纠正、子任务切分与分发策略 |
+
+已追认的实现偏离（详见审计文档偏离登记表）：服务名为 `ctx.team`（原计划 `ctx.teamDefinitions`）；session 事件名为 `team/message`、`team/progress`、`team/control-request`、`team/control-decision`（原计划 §3.5 的 `team/message-sent` 等名称未采用）。

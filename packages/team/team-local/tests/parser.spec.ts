@@ -26,12 +26,27 @@ maxTokens: 16384
 tools:
   allow: [read, edit, write, grep, glob, pwsh]
 requiresApproval: [write, pwsh]
+skills: [codebase-design, tdd]
 mcpServers:
   servers: [postgres-mcp]
 contextPolicy: persistent
 ---
 
 You are a senior backend developer specializing in Node.js and TypeScript.
+`
+
+const VALID_SKILLS_BLOCK = `---
+schemaVersion: 1
+id: docs-writer
+role: teammate
+name: Docs Writer
+description: Writes documentation.
+skills:
+  - codebase-design
+  - tdd
+---
+
+You write documentation for the team.
 `
 
 describe('parseTeamMemberMarkdown', () => {
@@ -54,8 +69,74 @@ describe('parseTeamMemberMarkdown', () => {
     expect(result.definition!.provider).toBe('Qiyuan-Inter')
     expect(result.definition!.tools?.allow).toEqual(['read', 'edit', 'write', 'grep', 'glob', 'pwsh'])
     expect(result.definition!.requiresApproval).toEqual(['write', 'pwsh'])
+    expect(result.definition!.skills).toEqual(['codebase-design', 'tdd'])
     expect(result.definition!.mcpServers?.servers).toEqual(['postgres-mcp'])
     expect(result.definition!.contextPolicy).toBe('persistent')
+  })
+
+  it('parses skills given as a block list', () => {
+    const result = parseTeamMemberMarkdown(VALID_SKILLS_BLOCK, '/test/skills-block.md')
+    expect(result.definition).toBeDefined()
+    expect(result.definition!.skills).toEqual(['codebase-design', 'tdd'])
+    expect(result.diagnostics.filter(d => d.severity === 'error')).toHaveLength(0)
+  })
+
+  it('leaves skills undefined when the frontmatter has no skills key', () => {
+    const result = parseTeamMemberMarkdown(VALID_LEADER, '/test/leader.md')
+    expect(result.definition).toBeDefined()
+    expect(result.definition!.skills).toBeUndefined()
+    expect(result.diagnostics.filter(d => d.severity === 'error')).toHaveLength(0)
+  })
+
+  it('reports error when skills is not an array', () => {
+    const content = `---
+schemaVersion: 1
+id: test
+role: teammate
+name: Test
+description: Test
+skills: codebase-design
+---
+
+Test prompt
+`
+    const result = parseTeamMemberMarkdown(content, '/test/bad-skills.md')
+    expect(result.definition).toBeUndefined()
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('skills'))).toBe(true)
+  })
+
+  it('reports error when skills contains an empty string', () => {
+    const content = `---
+schemaVersion: 1
+id: test
+role: teammate
+name: Test
+description: Test
+skills: [codebase-design, '']
+---
+
+Test prompt
+`
+    const result = parseTeamMemberMarkdown(content, '/test/bad-skills.md')
+    expect(result.definition).toBeUndefined()
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('skills'))).toBe(true)
+  })
+
+  it('reports error when skills contains a non-string entry', () => {
+    const content = `---
+schemaVersion: 1
+id: test
+role: teammate
+name: Test
+description: Test
+skills: [codebase-design, 123]
+---
+
+Test prompt
+`
+    const result = parseTeamMemberMarkdown(content, '/test/bad-skills.md')
+    expect(result.definition).toBeUndefined()
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('skills'))).toBe(true)
   })
 
   it('reports error for missing frontmatter', () => {
