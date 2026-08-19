@@ -1926,7 +1926,7 @@ web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可�
 
 ### `list_teammates`
 
-列出所有可用队友及其角色、能力和当前状态。
+列出全部团队成员——leader 与每一位队友——及其角色、能力和当前状态。
 
 ```json
 {

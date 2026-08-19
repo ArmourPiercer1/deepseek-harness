@@ -2271,12 +2271,12 @@ export interface Config {
 export interface Config {
   /** DSH home path for global teammate definitions. Defaults to $DSH_HOME. */
   homePath: string
-  /** Workspace path for project-level teammate definitions. */
+  /** Initial workspace path for project-level teammate definitions. Defaults to $DSH_CWD, then the process cwd. */
   workspacePath: string
 }
 ```
 
-来源：[`packages/team/team-local/src/index.ts:26`](../packages/team/team-local/src/index.ts)
+来源：[`packages/team/team-local/src/index.ts:60`](../packages/team/team-local/src/index.ts)
 
 <a id="deepseek-aidsh-terminal-bash"></a>
 

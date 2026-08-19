@@ -1921,7 +1921,7 @@ Source: [`packages/team/tool-team/src/tool-delegate.ts`](../packages/team/tool-t
 
 ### `list_teammates`
 
-List all available teammates with their roles, capabilities, and current status.
+List all team members — the leader and every teammate — with their roles, capabilities, and current status.
 
 ```json
 {
