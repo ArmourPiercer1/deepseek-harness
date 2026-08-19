@@ -1358,5 +1358,6 @@ Teammate 定义的 `provider: Qiyuan-Inter` + `model: deepseek-v4-flash-0731` �
 |---|---|---|
 | 2026-08-18 | [进度审计与偏离登记](AGENT_TEAM_PLUGIN_AUDIT_2026-08-18.md) | Phase 状态审计、偏离登记表（D1-D5）、用户决策记录 |
 | 2026-08-18 | [第二轮开发计划](AGENT_TEAM_PLUGIN_ROUND2_PLAN.md) | Phase 1/3 缺失项补齐、偏离纠正、子任务切分与分发策略 |
+| 2026-08-19 | [第三轮开发计划（产品化轮）](AGENT_TEAM_PLUGIN_ROUND3_PLAN.md) | Phase 4（permission seam Stage 1）+ 5.1–5.4 任务包切分（M1–M9）、路由与升级策略；2026-08-19 确认 |
 
 已追认的实现偏离（详见审计文档偏离登记表）：服务名为 `ctx.team`（原计划 `ctx.teamDefinitions`）；session 事件名为 `team/message`、`team/progress`、`team/control-request`、`team/control-decision`（原计划 §3.5 的 `team/message-sent` 等名称未采用）。
