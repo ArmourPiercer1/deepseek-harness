@@ -12,6 +12,7 @@ The `dsh` command is the product launcher for profiles: ordered stacks of plugin
 | `dsh --profile headless "job"` | Run one fresh persisted session, print the final answer, and exit. |
 | `dsh web` | Alias of `--profile web`. |
 | `dsh plugin --profile <name> <pnpm args>` | Manage a profile's plugins by forwarding to pnpm in the profile directory. |
+| `dsh teammate list\|add\|enable\|disable` | Manage teammate definitions and per-workspace enablement; boots no profile. |
 
 The invoking directory is the default workspace root. The `web` and `headless` profiles auto-initialize on first use from shipped templates; any other profile must be created through `dsh plugin`.
 
@@ -40,7 +41,7 @@ Bundles named in `dsh.profile.bundles` resolve from the dsh installation first (
 
 Use `--dump-default-config` and `--dump-config` to inspect the composed tree without booting it.
 
-The [CLI behavior reference](reference/README.md) owns exact layer precedence, flags, shutdown behavior, deployment defaults, and source execution.
+The [CLI behavior reference](reference/README.md) owns exact layer precedence, flags, shutdown behavior, deployment defaults, source execution, and the teammate command family.
 
 ## Development
 

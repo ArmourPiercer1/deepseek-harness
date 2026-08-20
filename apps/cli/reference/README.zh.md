@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-本参考定义 profile 启动、web 别名、插件管理和配置 dump 等命令模式。argv 由 [`src/args.ts`](../src/args.ts) 统一解析一次，[`src/bin.ts`](../src/bin.ts) 只会动态导入选中的运行器。
+本参考定义 profile 启动、web 别名、插件管理、teammate 管理和配置 dump 等命令模式。argv 由 [`src/args.ts`](../src/args.ts) 统一解析一次，[`src/bin.ts`](../src/bin.ts) 只会动态导入选中的运行器。
 
 ## Profile 启动
 
@@ -49,6 +49,23 @@ dsh --profile tui
 ```
 
 随源码发布的 Git 托管插件会在安装期间通过 `prepare` 脚本构建，而 pnpm ≥10 默认会阻止该脚本，直到使用方明确允许。首次运行 `add` 会失败，并显示 pnpm 的 `allowBuilds` 提示；dsh 还会提示应修改该 profile 的 `pnpm-workspace.yaml`。将输出的键复制到该文件后，重新运行命令即可。安装已经构建好的 tarball 或本地 checkout 时，无需加入 `allowBuilds`。
+
+## Teammate 管理
+
+`dsh teammate` 在不启动 profile、不需要 API key 的情况下管理 teammate 定义与按工作区的启用状态。定义是位于 `$DSH_HOME/teammates/` 或工作区 `.dsh/teammates/` 下的 Markdown 文件，可见性遵循 team-local 加载器：工作区自己的 `.dsh/teammates/` 中只要含至少一个定义，就完全隐藏 home 定义。workspace 根目录取 `DSH_CWD` 环境变量；未设置时取运行命令所在的目录。
+
+- `dsh teammate list` 打印每个可见定义的角色、启用状态、能力摘要（provider、model、tools、skills、mcpServers、requiresApproval、contextPolicy）与来源（`home` 或 `workspace`）。加载器无法解析的文件以警告形式列于 stderr，命令仍以 0 退出；`team-enablement` 段非法或 `$DSH_HOME/settings.yaml` 无法解析时以 1 退出。
+- `dsh teammate add <file>` 按 team-local 解析器的精确规则校验文件 frontmatter，并将其原样安装到 `$DSH_HOME/teammates/<basename>`，加 `-w, --workspace` 时安装到 `<workspace>/.dsh/teammates/<basename>`。文件缺失、非 `.md` 文件、frontmatter 非法或目标已存在，都以 1 退出且不写入任何内容；`add` 从不覆盖。
+- `dsh teammate disable <id>` 在 `$DSH_HOME/settings.yaml` 的 `team-enablement[<workspace>][<id>]` 处存入加载器过滤所依赖的显式 `false`；`dsh teammate enable <id>` 清除显式 `false`（缺省即启用状态，从不存储显式 `true`）。team leader 永不可禁用，未知 id 以 1 退出，幂等空操作有报告且以 0 退出不写入。文档的其他命名空间被保留，注释不被保留；写入是临时文件加重命名替换。
+
+```sh
+dsh teammate list
+dsh teammate add ./my-dev.md
+dsh teammate disable my-dev
+dsh teammate enable my-dev
+```
+
+解析器镜像与 settings 写入的决策见 [teammate Agent Note](../../../.agents/notes/implemented/feature/2026-08-19-dsh-teammate-cli.md)。
 
 ## Web 别名
 

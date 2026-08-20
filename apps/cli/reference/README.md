@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-This reference defines the profile, web-alias, plugin-management, and config-dump command modes. Argv is parsed once through [`src/args.ts`](../src/args.ts), and [`src/bin.ts`](../src/bin.ts) dynamically imports only the selected runner.
+This reference defines the profile, web-alias, plugin-management, teammate-management, and config-dump command modes. Argv is parsed once through [`src/args.ts`](../src/args.ts), and [`src/bin.ts`](../src/bin.ts) dynamically imports only the selected runner.
 
 ## Profile boot
 
@@ -49,6 +49,23 @@ dsh --profile tui
 ```
 
 Git-hosted plugins that ship sources build during install through their `prepare` script, which pnpm ≥10 blocks until the consumer allows it: the first `add` fails with pnpm's `allowBuilds` hint (and a dsh pointer at the profile's `pnpm-workspace.yaml`); copy the printed key there and re-run. Installing a built tarball or a local checkout needs no allowance.
+
+## Teammate management
+
+`dsh teammate` manages teammate definitions and per-workspace enablement without booting a profile and without an API key. Definitions are Markdown files under `$DSH_HOME/teammates/` or under the workspace's `.dsh/teammates/`, and visibility follows the team-local loader: a workspace whose own `.dsh/teammates/` contains at least one definition hides the home definitions entirely. The workspace root is the `DSH_CWD` environment variable, or the invoking directory when it is unset.
+
+- `dsh teammate list` prints every visible definition with its role, enablement status, a capability summary (provider, model, tools, skills, mcpServers, requiresApproval, contextPolicy), and its source (`home` or `workspace`). Files the loader cannot parse are named on stderr as warnings while the command still exits 0; a malformed `team-enablement` section or an unparseable `$DSH_HOME/settings.yaml` exits 1.
+- `dsh teammate add <file>` validates the file's frontmatter against the team-local parser's exact rules and installs it unchanged under `$DSH_HOME/teammates/<basename>`, or under `<workspace>/.dsh/teammates/<basename>` with `-w, --workspace`. A missing file, a non-`.md` file, invalid frontmatter, or an existing target exits 1 without writing anything; `add` never overwrites.
+- `dsh teammate disable <id>` stores the explicit `false` at `team-enablement[<workspace>][<id>]` in `$DSH_HOME/settings.yaml`, the value the loader filters on; `dsh teammate enable <id>` clears an explicit `false` (absent is the enabled state, so an explicit `true` is never stored). The team leader can never be disabled, an unknown id exits 1, and a no-op reports and exits 0 without writing. The document's other namespaces are preserved, its comments are not, and the write is a temp-file-plus-rename swap.
+
+```sh
+dsh teammate list
+dsh teammate add ./my-dev.md
+dsh teammate disable my-dev
+dsh teammate enable my-dev
+```
+
+The [teammate Agent Note](../../../.agents/notes/implemented/feature/2026-08-19-dsh-teammate-cli.md) owns the parser-mirror and settings-write decisions.
 
 ## Web alias
 

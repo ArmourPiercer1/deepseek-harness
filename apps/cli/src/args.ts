@@ -44,8 +44,18 @@ interface PluginInvocation {
   args: string[]
 }
 
+/** Manage teammate definitions and per-workspace enablement (see `dsh teammate`). */
+interface TeammateInvocation {
+  mode: 'teammate'
+  sub: 'list' | 'add' | 'enable' | 'disable'
+  /** The subcommand's positional: the file for add, the id for enable/disable. */
+  args: string[]
+  /** add only: install into the workspace's `.dsh/teammates/` instead of the harness home. */
+  workspaceInstall: boolean
+}
+
 /** The resolved `dsh` invocation. Help, version, and errors exit inside {@link parseDshArgs}. */
-export type DshInvocation = ProfileInvocation | DumpConfigInvocation | PluginInvocation
+export type DshInvocation = ProfileInvocation | DumpConfigInvocation | PluginInvocation | TeammateInvocation
 
 /** Launcher flags shared by the default command and the `web` alias. */
 interface BootOptions {
@@ -69,6 +79,8 @@ Examples:
   dsh --profile tui --resume <session>       arguments after the launcher flags reach the app
   dsh --profile web --help                   the web app's own flags and help
   dsh plugin --profile tui add <package>     install a plugin into the tui profile
+  dsh teammate list                          list the visible teammate definitions
+  dsh teammate add <file>                    validate and install a teammate definition
 `
 
 /**
@@ -179,6 +191,44 @@ export function parseDshArgs(argv: readonly string[], version: string): DshInvoc
       if (args.length === 0) program.error('error: plugin needs pnpm arguments to forward (e.g. add <package>)')
       resolved = { mode: 'plugin', profile: options.profile, args }
     })
+
+  // Boot-free: the teammate subcommands touch only the harness home and the
+  // current workspace, never a profile, so they mount no plugin tree.
+  // helpOption(true) everywhere: the root's helpOption(false) is inherited by
+  // subcommands, and a management command that cannot show its own help is a
+  // dead end.
+  const teammate = program.command('teammate').description('manage teammate definitions and per-workspace enablement')
+  teammate.helpOption(true)
+  teammate
+    .command('list')
+    .description('list the teammate definitions visible from the current workspace')
+    .action(() => {
+      rejectParentOptions('teammate')
+      resolved = { mode: 'teammate', sub: 'list', args: [], workspaceInstall: false }
+    })
+  teammate
+    .command('add <file>')
+    .description('validate a teammate definition file and install it under the harness home')
+    .option('-w, --workspace', 'install into the workspace .dsh/teammates directory instead of the harness home')
+    .action((file: string, options: { workspace?: boolean }) => {
+      rejectParentOptions('teammate')
+      resolved = { mode: 'teammate', sub: 'add', args: [file], workspaceInstall: options.workspace === true }
+    })
+  teammate
+    .command('enable <id>')
+    .description('enable a teammate for the current workspace (clears an explicit disable)')
+    .action((id: string) => {
+      rejectParentOptions('teammate')
+      resolved = { mode: 'teammate', sub: 'enable', args: [id], workspaceInstall: false }
+    })
+  teammate
+    .command('disable <id>')
+    .description('disable a teammate for the current workspace')
+    .action((id: string) => {
+      rejectParentOptions('teammate')
+      resolved = { mode: 'teammate', sub: 'disable', args: [id], workspaceInstall: false }
+    })
+  for (const nested of teammate.commands) nested.helpOption(true)
 
   try {
     program.parse(argv, { from: 'user' })
