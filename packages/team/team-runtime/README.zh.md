@@ -29,5 +29,4 @@ DeepSeek Harness 团队插件的团队运行时编排、委托与每个成员的
 
 ## 已知限制与暂缓事项
 
-- 条件工具约束（`pathWithin`、`executableEquals`）推迟到 Phase 4。
 - `maxTokens` 只在全新委托时应用；冷恢复的 teammate 会回退到其路由默认值，因为可继续描述符按设计省略了每次激活的预算。

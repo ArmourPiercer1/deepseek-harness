@@ -32,4 +32,3 @@ DeepSeek Harness 的 agent 团队 Service Definition。
 ## 已知限制与暂缓事项
 
 - `maxContextTokens` 未在 `TeamMemberDefinition` 中建模；上下文窗口限制推迟到压缩层集成。
-- 条件工具约束（`pathWithin`、`executableEquals`）不属于 `TeamToolPolicy`；推迟到 Phase 4。

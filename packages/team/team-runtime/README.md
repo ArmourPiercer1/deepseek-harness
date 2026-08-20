@@ -29,5 +29,4 @@ No effect.
 
 ## Known Limitations and Deferred Work
 
-- Conditional tool constraints (`pathWithin`, `executableEquals`) are deferred to Phase 4.
 - `maxTokens` is applied on fresh delegation only; a cold-resumed teammate falls back to its route default because the continuable descriptor omits per-activation budgets by design.

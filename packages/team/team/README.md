@@ -32,4 +32,3 @@ No effect.
 ## Known Limitations and Deferred Work
 
 - `maxContextTokens` is not modeled in `TeamMemberDefinition`; context-window limiting is deferred to compaction-layer integration.
-- Conditional tool constraints (`pathWithin`, `executableEquals`) are not part of `TeamToolPolicy`; deferred to Phase 4.
