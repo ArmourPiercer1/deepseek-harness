@@ -42,6 +42,12 @@ switch (invocation.mode) {
     process.exit(runPlugin(invocation.profile, invocation.args))
     break
   }
+  case 'teammate': {
+    const { runTeammate } = await import('./teammate.ts')
+    const options = invocation.workspaceInstall ? { workspaceInstall: true } : undefined
+    process.exit(await runTeammate(invocation.sub, invocation.args, options))
+    break
+  }
   case 'dump-config': {
     const { runDumpConfig } = await import('./dump-config.ts')
     runDumpConfig(invocation.profile, invocation.defaultOnly, invocation.patches)
