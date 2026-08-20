@@ -246,7 +246,9 @@
     - id: ui-message-feedback
       name: '@deepseek-ai/dsh-client-ui-message-feedback'
 
-    # Team configuration settings section.
+    # Team configuration settings section plus the in-conversation team
+    # panel (task progress board and teammate status over team/progress and
+    # delegate_to_teammate events).
     - id: ui-team
       name: '@deepseek-ai/dsh-client-ui-team'
 

@@ -14,6 +14,21 @@ export type TeamKey =
   | 'field.tools'
   | 'field.mcp'
   | 'field.context'
+  | 'panel.title'
+  | 'panel.teammates'
+  | 'panel.teammates.empty'
+  | 'panel.tasks'
+  | 'panel.tasks.empty'
+  | 'panel.members.count'
+  | 'panel.tasks.count'
+  | 'panel.member.bound'
+  | 'panel.member.running'
+  | 'panel.member.settled'
+  | 'panel.task.pending'
+  | 'panel.task.in_progress'
+  | 'panel.task.completed'
+  | 'panel.task.blocked'
+  | 'panel.assignee'
 
 /** Simplified Chinese UI strings for every {@link TeamKey}. */
 export const zh: Record<TeamKey, string> = {
@@ -30,6 +45,21 @@ export const zh: Record<TeamKey, string> = {
   'field.tools': '工具',
   'field.mcp': 'MCP 服务器',
   'field.context': '上下文策略',
+  'panel.title': '团队',
+  'panel.teammates': '队员',
+  'panel.teammates.empty': '暂无队员会话',
+  'panel.tasks': '任务',
+  'panel.tasks.empty': '暂无任务进度',
+  'panel.members.count': '{count} 名队员',
+  'panel.tasks.count': '{count} 项任务',
+  'panel.member.bound': '已绑定',
+  'panel.member.running': '运行中',
+  'panel.member.settled': '已交接',
+  'panel.task.pending': '待开始',
+  'panel.task.in_progress': '进行中',
+  'panel.task.completed': '已完成',
+  'panel.task.blocked': '受阻',
+  'panel.assignee': '负责人 {member}',
 }
 
 /** English UI strings for every {@link TeamKey}. */
@@ -47,4 +77,19 @@ export const en: Record<TeamKey, string> = {
   'field.tools': 'Tools',
   'field.mcp': 'MCP Servers',
   'field.context': 'Context Policy',
+  'panel.title': 'Team',
+  'panel.teammates': 'Teammates',
+  'panel.teammates.empty': 'No teammate sessions yet',
+  'panel.tasks': 'Tasks',
+  'panel.tasks.empty': 'No task progress yet',
+  'panel.members.count': '{count} teammates',
+  'panel.tasks.count': '{count} tasks',
+  'panel.member.bound': 'Bound',
+  'panel.member.running': 'Running',
+  'panel.member.settled': 'Settled',
+  'panel.task.pending': 'Pending',
+  'panel.task.in_progress': 'In progress',
+  'panel.task.completed': 'Completed',
+  'panel.task.blocked': 'Blocked',
+  'panel.assignee': 'Assignee {member}',
 }
