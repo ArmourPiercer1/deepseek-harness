@@ -4,6 +4,15 @@
 
 dsh agent 团队组合包：在可继续的 subagent 之上进行 leader-teammate 协调。
 
+## 挂载 team 模式
+
+相同的五个包有两个挂载面，一个部署只选其一：
+
+- **shipped 的 `team` 预设**（`apps/cli/config/agent-presets/team/`）是标准 dsh 部署的选择。它是 agent 平面组装：team 组位于 `isolate` realm（`team`、`teamControl`）之内，每个运行该预设的会话通过 scope 父级共享同一份注册表与协调器；teammate 所运行的 `subagents` 注册表仍在宿主平面。
+- **本组合包**是不组装 preset 名册的自定义 profile（headless 或自动化部署）的 opt-in 宿主平面入口。它的行把 `team` 与 `teamControl` 注册进 root realm，因此是进程全局的。
+
+同时使用两者会让各自保留一份注册表：预设的 agent 解析 realm 内实例，宿主侧的行保持惰性。
+
 ## 安装
 
 把团队组合包添加到你 profile 的 `cordis.patch.yml` 中：

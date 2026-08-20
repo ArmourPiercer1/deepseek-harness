@@ -194,11 +194,16 @@ describe('the shipped Web composition', () => {
     }
   })
 
-  it('supplies both shipped presets, and only those, from the system root', async () => {
+  it('supplies the five shipped presets, and only those, from the system root', async () => {
     const listed = await ctx.agentPresets.list()
 
-    expect(listed.map(preset => preset.id).sort()).toEqual(['code', 'cordis', 'minimal', 'standard'])
+    expect(listed.map(preset => preset.id).sort()).toEqual(['code', 'cordis', 'minimal', 'standard', 'team'])
     expect(listed.every(preset => preset.trust === 'system')).toBe(true)
+    // The picker renders name and description from this row: a shipped preset
+    // that published neither would show as a bare id in every locale.
+    const team = listed.find(preset => preset.id === 'team')
+    expect(team?.name).toBeDefined()
+    expect(team?.description).toBeDefined()
     expect(ctx.agentPresets.defaultId).toBe('standard')
   })
 
@@ -219,6 +224,38 @@ describe('the shipped Web composition', () => {
         'subagent', 'subagent_fork', 'todo_write', 'update_goal', 'web_search',
         'workflow', 'write',
       ])
+    } finally {
+      await handle.dispose()
+    }
+  })
+
+  it('composes the full agent plus team mode from `team`, with no host-side leak', async () => {
+    // Read before the mount: the host composition carries no team rows, so a
+    // defined host-level service after the mount is a realm leak — the risk
+    // that makes the team group's `isolate` boundary load-bearing.
+    expect(ctx.get('team')).toBeUndefined()
+    expect(ctx.get('teamControl')).toBeUndefined()
+
+    const handle = await ctx.agents.create({
+      sessionId: SessionId('preset-team'),
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'team').then(() => undefined),
+    })
+    try {
+      // The exact catalog: the five team tools beside `standard`'s, not
+      // instead of it. `glob`/`grep` excluded as in the `standard` test.
+      expect(toolNames(ctx, handle.agent).filter(name => name !== 'glob' && name !== 'grep')).toEqual([
+        'ask_user_question', 'bash', 'create_goal', 'delegate_to_teammate', 'edit', 'exit_plan_mode',
+        'get_goal', 'interrupt_agent', 'job_kill', 'job_list', 'job_output', 'list_agents', 'list_teammates',
+        'ralph', 'read', 'read_image', 'send_message', 'send_team_message', 'skill',
+        'subagent', 'subagent_fork', 'team_control', 'team_progress', 'todo_write', 'update_goal',
+        'web_search', 'workflow', 'write',
+      ])
+      // The realm is the mount's own: the joined agent resolves its services,
+      // the host never does.
+      expect(ctx.agentPresets.serviceFor(handle.agent, 'team')).toBeDefined()
+      expect(ctx.agentPresets.serviceFor(handle.agent, 'teamControl')).toBeDefined()
+      expect(ctx.get('team')).toBeUndefined()
+      expect(ctx.get('teamControl')).toBeUndefined()
     } finally {
       await handle.dispose()
     }
