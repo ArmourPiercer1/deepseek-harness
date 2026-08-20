@@ -27,6 +27,29 @@ export interface TeamMcpPolicy {
 }
 
 /**
+ * Teammate inline permission rules as authored in the definition frontmatter.
+ * The rule strings use the permission engine's rule syntax (e.g.
+ * `Bash(git push:*)`); the permission engine parses and matches them. Absent
+ * arrays declare no rules of that stance; deny is absolute across layers.
+ */
+export interface TeamPermissionRules {
+  /** The `deny` rule strings. */
+  readonly deny?: readonly string[]
+  /** The `ask` rule strings. */
+  readonly ask?: readonly string[]
+  /** The `allow` rule strings. */
+  readonly allow?: readonly string[]
+}
+
+/**
+ * The permission mode a team member declares for its scope. `enforce` denies
+ * an unmatched call (the controlled-teammate default); `default` allows it.
+ * `readonly` and `bypass` are reserved by the permission engine and rejected
+ * here until they are implemented.
+ */
+export type TeamPermissionMode = 'enforce' | 'default'
+
+/**
  * Unified definition for a team member (leader or teammate).
  * Leader and teammate share the same schema; only `role` differs.
  */
@@ -55,6 +78,10 @@ export interface TeamMemberDefinition {
   readonly skills?: readonly string[]
   /** MCP server access policy. */
   readonly mcpServers?: TeamMcpPolicy
+  /** Teammate inline permission rules (frontmatter `permissions`). */
+  readonly permissions?: TeamPermissionRules
+  /** The member's declared permission mode (frontmatter `permissionMode`). */
+  readonly permissionMode?: TeamPermissionMode
   /** Context window reload strategy. Defaults to 'persistent'. */
   readonly contextPolicy?: TeamContextPolicy
   /** Source file path (diagnostic only, not persisted). */
@@ -102,6 +129,20 @@ export interface TeamMemberBoundData {
   readonly skills?: readonly string[]
   /** Effective MCP policy snapshot. */
   readonly mcpServers?: TeamMcpPolicy
+  /**
+   * Snapshot of the teammate inline permission rules at bind time, so a cold
+   * resume reconstructs them without the member file. Absent in logs written
+   * before the field existed.
+   */
+  readonly rules?: TeamPermissionRules
+  /** The member's declared permission mode at bind time. */
+  readonly permissionMode?: TeamPermissionMode
+  /**
+   * Whether the managed rule file was present at bind time. A cold resume that
+   * expected it refuses to recover when the file is now missing: a lapsed
+   * managed policy is not run. Absent in logs written before the field existed.
+   */
+  readonly managedPresent?: boolean
   /** Context policy for this member. */
   readonly contextPolicy?: TeamContextPolicy
 }

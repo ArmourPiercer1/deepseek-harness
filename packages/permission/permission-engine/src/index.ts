@@ -6,6 +6,9 @@
  * {@link CompiledPolicy}; {@link PermissionEngine.evaluate} resolves a tool call
  * against a policy. Both stay pure — a consumer appends the `permission/decision`
  * audit event at its commit point via {@link appendPermissionDecision}.
+ * {@link PermissionEngine.loadRuleLayers} loads the managed/project rule files
+ * (read-only) and merges them with the teammate inline rules; it is the
+ * cold-recovery re-read, and it fails loud on a lapsed managed file.
  *
  * @module @deepseek-ai/dsh-permission-engine
  */
@@ -14,6 +17,8 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {
   CompiledPolicy,
+  LoadedRuleLayers,
+  LoadRuleLayersOptions,
   PermissionContext,
   PermissionDecision,
   PermissionMode,
@@ -23,6 +28,7 @@ import type {
 } from '@deepseek-ai/dsh-permission'
 import type { PathMatchBases } from './match-path.ts'
 import { parseRule, type CompiledRule } from './parse.ts'
+import { loadRuleLayers } from './load.ts'
 import { resolveDecision } from './resolve.ts'
 
 export type {
@@ -39,13 +45,25 @@ export { matchesRule, resolveDecision, toRuleIR } from './resolve.ts'
 export type { ResolveInput } from './resolve.ts'
 export type { PathMatchBases } from './match-path.ts'
 export type { RuleIR, RuleKind, RuleLayer, MatcherKind, PermissionMode } from '@deepseek-ai/dsh-permission'
+export {
+  ManagedRulesMissingError,
+  RuleFileError,
+  loadRuleLayers,
+  mergeRuleSources,
+  parseRuleFileText,
+  readRuleLayer,
+} from './load.ts'
+export type { RuleLayerLoad, RuleLayerRules } from './load.ts'
 export { appendPermissionDecision, toPermissionDecisionData } from './audit.ts'
 
 export type {
   CompiledPolicy,
+  LoadedRuleLayers,
+  LoadRuleLayersOptions,
   PermissionContext,
   PermissionDecision,
   PermissionDecisionData,
+  PermissionRules,
   PermissionService,
   RuleSource,
   ToolCallView,
@@ -137,5 +155,19 @@ export class PermissionEngine extends Service implements PermissionService {
       mode: context.mode,
       pathBases: context.pathBases,
     })
+  }
+
+  /**
+   * Load the managed/project rule files (read-only) and merge them with the
+   * optional teammate inline rules. Fails loud on a lapsed managed file or a
+   * malformed layer file — never on a silently skipped layer.
+   *
+   * @param options - the layer file paths and the optional teammate snapshot.
+   * @returns the merged rule sources plus each layer's presence.
+   * @throws {ManagedRulesMissingError} when the managed file a bound scope expected is missing.
+   * @throws {RuleFileError} when a present layer file cannot be read or parsed.
+   */
+  loadRuleLayers(options: LoadRuleLayersOptions): Promise<LoadedRuleLayers> {
+    return loadRuleLayers(options)
   }
 }

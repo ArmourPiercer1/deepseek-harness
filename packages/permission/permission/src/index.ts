@@ -13,11 +13,12 @@
 import type {} from '@deepseek-ai/dsh-session/types'
 import type {
   CompiledPolicy,
+  LoadRuleLayersOptions,
+  LoadedRuleLayers,
   PermissionContext,
   PermissionDecision,
   PermissionDecisionData,
-  RuleKind,
-  RuleLayer,
+  RuleSource,
   ToolCallView,
 } from './types.ts'
 
@@ -27,6 +28,10 @@ export type {
   RuleKind,
   MatcherKind,
   RuleIR,
+  RuleSource,
+  PermissionRules,
+  LoadRuleLayersOptions,
+  LoadedRuleLayers,
   ToolCallView,
   CompiledPolicy,
   PathBases,
@@ -35,16 +40,6 @@ export type {
   PermissionDecision,
   PermissionDecisionData,
 } from './types.ts'
-
-/** One authored rule string with the kind and layer it was declared under. */
-export interface RuleSource {
-  /** The authored rule string (e.g. `Bash(rm -rf *)`). */
-  readonly raw: string
-  /** Whether the rule allows, prompts, or denies. */
-  readonly kind: RuleKind
-  /** The layer the rule was declared in. */
-  readonly layer: RuleLayer
-}
 
 /**
  * The permission engine. Consumers `compile` a scope's authored rules once at
@@ -67,6 +62,17 @@ export interface PermissionService {
    * @returns the allow/ask/deny decision, with the matched rule when a rule decided it.
    */
   evaluate(call: ToolCallView, context: PermissionContext): PermissionDecision
+  /**
+   * Load the managed and project rule layers from disk (read-only), merge them
+   * with the optional teammate inline rules, and return the scope's full
+   * layer-tagged rule source set. A missing managed file is refused (not
+   * skipped) when the options record that the scope was bound with it present.
+   * @param options - the layer file paths and the optional teammate snapshot.
+   * @returns the merged rule sources plus each layer's presence.
+   * @throws when the managed file is missing but was present at bind time, or a
+   *   layer file cannot be read or is outside the supported rule-file format.
+   */
+  loadRuleLayers(options: LoadRuleLayersOptions): Promise<LoadedRuleLayers>
 }
 
 declare module '@deepseek-ai/cordis' {

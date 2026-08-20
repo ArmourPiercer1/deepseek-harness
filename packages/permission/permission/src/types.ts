@@ -56,6 +56,62 @@ export interface RuleIR {
   readonly raw: string
 }
 
+/** One authored rule string with the kind and layer it was declared under. */
+export interface RuleSource {
+  /** The authored rule string (e.g. `Bash(rm -rf *)`). */
+  readonly raw: string
+  /** Whether the rule allows, prompts, or denies. */
+  readonly kind: RuleKind
+  /** The layer the rule was declared in. */
+  readonly layer: RuleLayer
+}
+
+/**
+ * The authored rule strings of one stance (allow / ask / deny), as declared in
+ * a rule-layer file or a teammate definition's frontmatter. Absent arrays
+ * declare no rules of that stance.
+ */
+export interface PermissionRules {
+  /** The `deny` rule strings. */
+  readonly deny?: readonly string[]
+  /** The `ask` rule strings. */
+  readonly ask?: readonly string[]
+  /** The `allow` rule strings. */
+  readonly allow?: readonly string[]
+}
+
+/**
+ * The inputs to one {@link PermissionService.loadRuleLayers} call: the on-disk
+ * rule-layer file paths plus the optional teammate rule snapshot to merge in.
+ */
+export interface LoadRuleLayersOptions {
+  /** Path to the managed rule file; undefined when the scope has no resolvable home. */
+  readonly managedPath?: string
+  /** Path to the project rule file; undefined when the scope has no resolvable workspace. */
+  readonly projectPath?: string
+  /** The teammate inline rules (the live definition, or the durable snapshot on cold recovery). */
+  readonly teammateRules?: PermissionRules
+  /**
+   * Whether the managed rule file was present when this scope was bound. When
+   * `true` and the managed file is now missing, the load is refused: a lapsed
+   * managed policy is not run against the recovered scope.
+   */
+  readonly managedPresent?: boolean
+}
+
+/**
+ * The outcome of loading and merging the on-disk rule layers: the scope's full
+ * layer-tagged rule source set plus each layer's presence.
+ */
+export interface LoadedRuleLayers {
+  /** The merged, deduplicated rule sources (managed, project, and teammate). */
+  readonly rules: RuleSource[]
+  /** Whether the managed rule file was present. */
+  readonly managedPresent: boolean
+  /** Whether the project rule file was present. */
+  readonly projectPresent: boolean
+}
+
 /**
  * The minimal view of a tool call the engine needs: the tool name and its
  * frozen JSON arguments. This is an owned, lossless-JSON value — never a live

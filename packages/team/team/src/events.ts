@@ -20,7 +20,9 @@ declare module '@deepseek-ai/dsh-session/types' {
      * Durable binding of a child session to a team member definition.
      * Appended once in the child's initial turn. Carries the full effective
      * policy so cold resume reconstructs without the parent's live registry.
-     * @param data - the member id, role, and resolved policy snapshot.
+     * @param data - the member id, role, and resolved policy snapshot,
+     *   optionally including the member's inline permission rules, permission
+     *   mode, and the bind-time presence of the managed rule file.
      */
     'team/member-bound': TeamMemberBoundData
     /**

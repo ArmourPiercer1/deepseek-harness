@@ -12,6 +12,8 @@ import type {
   TeamContextPolicy,
   TeamToolPolicy,
   TeamMcpPolicy,
+  TeamPermissionRules,
+  TeamPermissionMode,
 } from '@deepseek-ai/dsh-team'
 
 /** Diagnostic from parsing a team member definition file. */
@@ -34,6 +36,8 @@ const FRONTMATTER_DELIMITER = '---'
 const SUPPORTED_SCHEMA_VERSION = 1
 const VALID_ROLES: readonly string[] = ['leader', 'teammate']
 const VALID_CONTEXT_POLICIES: readonly string[] = ['persistent', 'fresh_per_delegation']
+const VALID_PERMISSION_MODES: readonly string[] = ['enforce', 'default']
+const PERMISSION_KINDS: readonly ('deny' | 'ask' | 'allow')[] = ['deny', 'ask', 'allow']
 
 /**
  * Parse one Markdown file into a {@link TeamMemberDefinition}.
@@ -158,6 +162,50 @@ export function parseTeamMemberMarkdown(
     }
   }
 
+  // Inline permission rules (frontmatter `permissions`)
+  let permissions: TeamPermissionRules | undefined
+  const rawPermissions = frontmatter['permissions']
+  if (rawPermissions !== undefined) {
+    if (typeof rawPermissions !== 'object' || Array.isArray(rawPermissions)) {
+      diagnostics.push({
+        severity: 'error',
+        message: 'permissions must be an object with deny, ask, and allow string arrays',
+      })
+      return { diagnostics }
+    }
+    const p = rawPermissions as Record<string, unknown>
+    const parsed: { deny?: readonly string[]; ask?: readonly string[]; allow?: readonly string[] } = {}
+    for (const kind of PERMISSION_KINDS) {
+      const list = p[kind]
+      if (list === undefined) continue
+      if (!Array.isArray(list) || list.some(item => typeof item !== 'string' || item.length === 0)) {
+        diagnostics.push({
+          severity: 'error',
+          message: `permissions.${kind} must be an array of non-empty strings`,
+        })
+        return { diagnostics }
+      }
+      if (list.length > 0) parsed[kind] = list as readonly string[]
+    }
+    if (parsed.deny !== undefined || parsed.ask !== undefined || parsed.allow !== undefined) {
+      permissions = parsed
+    }
+  }
+
+  // Permission mode (frontmatter `permissionMode`)
+  let permissionMode: TeamPermissionMode | undefined
+  const rawPermissionMode = frontmatter['permissionMode']
+  if (rawPermissionMode !== undefined) {
+    if (typeof rawPermissionMode !== 'string' || !VALID_PERMISSION_MODES.includes(rawPermissionMode)) {
+      diagnostics.push({
+        severity: 'error',
+        message: `permissionMode must be 'enforce' or 'default' (got ${String(rawPermissionMode)}; 'readonly' and 'bypass' are reserved and unimplemented)`,
+      })
+      return { diagnostics }
+    }
+    permissionMode = rawPermissionMode as TeamPermissionMode
+  }
+
   // Context policy
   let contextPolicy: TeamContextPolicy | undefined
   const rawCtxPolicy = frontmatter['contextPolicy']
@@ -185,6 +233,8 @@ export function parseTeamMemberMarkdown(
     ...(requiresApproval !== undefined ? { requiresApproval } : {}),
     ...(skills !== undefined ? { skills } : {}),
     ...(mcpServers !== undefined ? { mcpServers } : {}),
+    ...(permissions !== undefined ? { permissions } : {}),
+    ...(permissionMode !== undefined ? { permissionMode } : {}),
     ...(contextPolicy !== undefined ? { contextPolicy } : {}),
     sourcePath,
   }
@@ -194,7 +244,8 @@ export function parseTeamMemberMarkdown(
 
 /**
  * Minimal YAML parser for frontmatter. Handles simple key-value pairs,
- * arrays, and nested objects one level deep.
+ * arrays (inline or block), and nested objects one level deep, including a
+ * block array under a nested key.
  */
 function parseSimpleYaml(content: string): Record<string, unknown> {
   const result: Record<string, unknown> = {}
@@ -202,19 +253,33 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
   let currentKey: string | undefined
   let currentArray: unknown[] | undefined
   let currentObject: Record<string, unknown> | undefined
+  // A nested key whose value is a block array the following "- " items fill.
+  let pendingNestedKey: string | undefined
+
+  const splitInlineArray = (value: string): unknown[] => {
+    const inner = value.slice(1, -1).trim()
+    return inner === '' ? [] : inner.split(',').map(s => parseYamlValue(s.trim()))
+  }
 
   for (const rawLine of lines) {
     const line = rawLine.trimEnd()
     if (line.trim().length === 0 || line.trim().startsWith('#')) continue
 
-    // Array item under current key
+    // Array item under current key (or under the pending nested key)
     if (/^\s+-\s/.test(line) && currentKey !== undefined) {
       const value = line.replace(/^\s+-\s+/, '').trim()
-      if (currentArray === undefined) {
-        currentArray = []
+      if (currentObject !== undefined && pendingNestedKey !== undefined) {
+        const existing = currentObject[pendingNestedKey]
+        if (Array.isArray(existing)) existing.push(parseYamlValue(value))
+        else currentObject[pendingNestedKey] = [parseYamlValue(value)]
+        result[currentKey] = currentObject
+      } else if (currentObject === undefined) {
+        if (currentArray === undefined) {
+          currentArray = []
+        }
+        currentArray.push(parseYamlValue(value))
+        result[currentKey] = currentArray
       }
-      currentArray.push(parseYamlValue(value))
-      result[currentKey] = currentArray
       continue
     }
 
@@ -222,19 +287,18 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
     if (/^\s+\w/.test(line) && currentKey !== undefined && currentArray === undefined) {
       const nestedMatch = /^\s+(\w+):\s*(.*)$/.exec(line)
       if (nestedMatch) {
-        const nestedKey = nestedMatch[1]
+        const key = nestedMatch[1]
         const nestedRaw = nestedMatch[2]?.trim() ?? ''
-        if (nestedKey === undefined) continue
+        if (key === undefined) continue
         if (currentObject === undefined) {
           currentObject = {}
         }
         if (nestedRaw.startsWith('[') && nestedRaw.endsWith(']')) {
-          currentObject[nestedKey] = nestedRaw
-            .slice(1, -1)
-            .split(',')
-            .map(s => parseYamlValue(s.trim()))
+          currentObject[key] = splitInlineArray(nestedRaw)
         } else if (nestedRaw.length > 0) {
-          currentObject[nestedKey] = parseYamlValue(nestedRaw)
+          currentObject[key] = parseYamlValue(nestedRaw)
+        } else {
+          pendingNestedKey = key
         }
         result[currentKey] = currentObject
         continue
@@ -246,6 +310,7 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
     if (topMatch) {
       currentArray = undefined
       currentObject = undefined
+      pendingNestedKey = undefined
       const topKey = topMatch[1]
       const topValue = topMatch[2]?.trim() ?? ''
       if (topKey === undefined) continue
@@ -253,10 +318,7 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
       if (topValue.length === 0) {
         result[topKey] = undefined
       } else if (topValue.startsWith('[') && topValue.endsWith(']')) {
-        result[topKey] = topValue
-          .slice(1, -1)
-          .split(',')
-          .map(s => parseYamlValue(s.trim()))
+        result[topKey] = splitInlineArray(topValue)
         currentKey = undefined
       } else {
         result[topKey] = parseYamlValue(topValue)

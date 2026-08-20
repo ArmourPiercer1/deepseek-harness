@@ -4,6 +4,7 @@
  * @module @deepseek-ai/dsh-tool-team
  */
 
+import { access } from 'node:fs/promises'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -11,7 +12,24 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 import { TeamMemberId } from '@deepseek-ai/dsh-team'
 import type { TeamMemberBoundData } from '@deepseek-ai/dsh-team'
-import { TeamOrchestrator } from '@deepseek-ai/dsh-team-runtime'
+import { TeamOrchestrator, resolveRuleLayerPaths } from '@deepseek-ai/dsh-team-runtime'
+
+/**
+ * Whether a path exists, treating every read failure (including permission
+ * errors) as absence.
+ *
+ * @param path - the path to probe.
+ * @returns true when the path exists and is accessible.
+ */
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path)
+    return true
+  } catch {
+    // Absence (or an inaccessible file) reads as "no managed policy here".
+    return false
+  }
+}
 
 /**
  * Deliver one prompt to a durable child session as a follow-up turn under
@@ -235,6 +253,12 @@ export function registerDelegateTool(
 
       try {
         const toolRestriction = team.effectiveToolPolicy(member)
+        // Record whether the managed rule file was present at bind time, so a
+        // cold resume can detect its later disappearance and fail closed. A
+        // plain existence probe (not a load): parse problems surface where the
+        // policy is actually read, not at delegation time.
+        const managedPath = resolveRuleLayerPaths(undefined, me.session.header.cwd).managedPath
+        const managedPresent = managedPath === undefined ? undefined : await pathExists(managedPath)
         const bound: TeamMemberBoundData = {
           memberId: member.id,
           role: member.role,
@@ -245,6 +269,9 @@ export function registerDelegateTool(
           ...(member.requiresApproval !== undefined ? { requiresApproval: member.requiresApproval } : {}),
           ...(member.skills !== undefined ? { skills: member.skills } : {}),
           ...(member.mcpServers !== undefined ? { mcpServers: member.mcpServers } : {}),
+          ...(member.permissions !== undefined ? { rules: member.permissions } : {}),
+          ...(member.permissionMode !== undefined ? { permissionMode: member.permissionMode } : {}),
+          ...(managedPresent !== undefined ? { managedPresent } : {}),
           ...(member.contextPolicy !== undefined ? { contextPolicy: member.contextPolicy } : {}),
         }
 

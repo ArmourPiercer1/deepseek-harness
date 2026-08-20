@@ -187,3 +187,90 @@ description: Test
     expect(result.diagnostics.some(d => d.severity === 'warning' && d.message.includes('Empty prompt body'))).toBe(true)
   })
 })
+
+describe('parseTeamMemberMarkdown permissions fields', () => {
+  const base = (extra: string) => `---
+schemaVersion: 1
+id: backend-dev
+role: teammate
+name: Backend Developer
+description: Handles server-side logic.
+${extra}---
+
+You are a senior backend developer.
+`
+
+  it('parses inline permission rules and mode', () => {
+    const result = parseTeamMemberMarkdown(base(`permissions:
+  deny: ["Bash(rm -rf *)", "Read(//**/.env)"]
+  ask: ["Bash(git push:*)"]
+permissionMode: enforce
+`), '/test/teammate.md')
+    expect(result.definition).toBeDefined()
+    expect(result.definition!.permissions).toEqual({
+      deny: ['Bash(rm -rf *)', 'Read(//**/.env)'],
+      ask: ['Bash(git push:*)'],
+    })
+    expect(result.definition!.permissionMode).toBe('enforce')
+  })
+
+  it('parses block-list permission rules', () => {
+    const result = parseTeamMemberMarkdown(base(`permissions:
+  deny:
+    - Bash(rm -rf *)
+    - "Read(//**/.env)"
+  allow:
+    - Bash(git status:*)
+permissionMode: default
+`), '/test/teammate.md')
+    expect(result.definition).toBeDefined()
+    expect(result.definition!.permissions).toEqual({
+      deny: ['Bash(rm -rf *)', 'Read(//**/.env)'],
+      allow: ['Bash(git status:*)'],
+    })
+    expect(result.definition!.permissionMode).toBe('default')
+  })
+
+  it('leaves permissions undefined when the frontmatter declares none', () => {
+    const result = parseTeamMemberMarkdown(base(''), '/test/teammate.md')
+    expect(result.definition).toBeDefined()
+    expect(result.definition!.permissions).toBeUndefined()
+    expect(result.definition!.permissionMode).toBeUndefined()
+  })
+
+  it('leaves permissions undefined when every stance is an empty array', () => {
+    const result = parseTeamMemberMarkdown(base('permissions:\n  deny: []\n'), '/test/teammate.md')
+    expect(result.definition).toBeDefined()
+    expect(result.definition!.permissions).toBeUndefined()
+  })
+
+  it('reports error when permissions is not an object', () => {
+    const result = parseTeamMemberMarkdown(base('permissions: Bash(rm *)\n'), '/test/bad.md')
+    expect(result.definition).toBeUndefined()
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('permissions'))).toBe(true)
+  })
+
+  it('reports error when a permission stance is not an array of strings', () => {
+    const result = parseTeamMemberMarkdown(base('permissions:\n  deny: [Bash(rm *), 123]\n'), '/test/bad.md')
+    expect(result.definition).toBeUndefined()
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('permissions.deny'))).toBe(true)
+  })
+
+  it('reports error when a permission stance contains an empty string', () => {
+    const result = parseTeamMemberMarkdown(base('permissions:\n  ask: [""]\n'), '/test/bad.md')
+    expect(result.definition).toBeUndefined()
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('permissions.ask'))).toBe(true)
+  })
+
+  it('reports error for an unsupported permissionMode', () => {
+    const result = parseTeamMemberMarkdown(base('permissionMode: bypass\n'), '/test/bad.md')
+    expect(result.definition).toBeUndefined()
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('permissionMode'))).toBe(true)
+  })
+
+  it('reports error for a non-string permissionMode', () => {
+    const result = parseTeamMemberMarkdown(base('permissionMode: 1\n'), '/test/bad.md')
+    expect(result.definition).toBeUndefined()
+    expect(result.diagnostics.some(d => d.severity === 'error' && d.message.includes('permissionMode'))).toBe(true)
+  })
+})

@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { TeamMemberId } from '@deepseek-ai/dsh-team'
@@ -25,7 +28,9 @@ function member(overrides: Partial<TeamMemberDefinition> = {}): TeamMemberDefini
   }
 }
 
-const leader = { id: 'leader-1' }
+// The spawn path reads the leader session's cwd for the rule-layer paths, so
+// the stand-in carries a header (an absent cwd reads as "no project layer").
+const leader = { id: 'leader-1', session: { header: {} } }
 
 function defaultSubagents(): SubagentStubs {
   return {
@@ -229,5 +234,90 @@ describe('registerDelegateTool member-bound payload', () => {
       { delegationEvents: readonly { type: string; data: Record<string, unknown> }[] },
     ]
     expect(options.delegationEvents[0]!.data.skills).toBeUndefined()
+  })
+})
+
+describe('registerDelegateTool member-bound rules snapshot', () => {
+  let home: string
+
+  beforeEach(async () => {
+    home = await mkdtemp(join(tmpdir(), 'dsh-team-rules-'))
+  })
+
+  afterEach(async () => {
+    vi.unstubAllEnvs()
+    await rm(home, { recursive: true, force: true })
+  })
+
+  it('snapshots the member permissions, mode, and managed presence into the payload', async () => {
+    vi.stubEnv('DSH_HOME', home)
+    const { ctx, subagents, invoke } = makeCtx([member({
+      permissions: { deny: ['Bash(rm -rf *)'], allow: ['Bash(git status:*)'] },
+      permissionMode: 'enforce',
+    })])
+    const orch = new TeamOrchestrator()
+    registerDelegateTool(ctx, orch)
+
+    const result = await invoke({ teammate_id: 'B1', prompt: 'go' })
+
+    expect(result.status).toBe('dispatched')
+    const [options] = subagents.startContinuable.mock.calls[0]! as [
+      { delegationEvents: readonly { type: string; data: Record<string, unknown> }[] },
+    ]
+    expect(options.delegationEvents[0]).toMatchObject({
+      type: 'team/member-bound',
+      data: {
+        rules: { deny: ['Bash(rm -rf *)'], allow: ['Bash(git status:*)'] },
+        permissionMode: 'enforce',
+        managedPresent: false,
+      },
+    })
+  })
+
+  it('records managedPresent true when the managed rule file exists at bind time', async () => {
+    vi.stubEnv('DSH_HOME', home)
+    await writeFile(join(home, 'permissions.yml'), 'permissions:\n  deny: []\n')
+    const { ctx, subagents, invoke } = makeCtx()
+    const orch = new TeamOrchestrator()
+    registerDelegateTool(ctx, orch)
+
+    const result = await invoke({ teammate_id: 'B1', prompt: 'go' })
+
+    expect(result.status).toBe('dispatched')
+    const [options] = subagents.startContinuable.mock.calls[0]! as [
+      { delegationEvents: readonly { type: string; data: Record<string, unknown> }[] },
+    ]
+    expect(options.delegationEvents[0]!.data.managedPresent).toBe(true)
+  })
+
+  it('omits the rules and permissionMode keys when the member declares no inline rules', async () => {
+    vi.stubEnv('DSH_HOME', home)
+    const { ctx, subagents, invoke } = makeCtx()
+    const orch = new TeamOrchestrator()
+    registerDelegateTool(ctx, orch)
+
+    const result = await invoke({ teammate_id: 'B1', prompt: 'go' })
+
+    expect(result.status).toBe('dispatched')
+    const [options] = subagents.startContinuable.mock.calls[0]! as [
+      { delegationEvents: readonly { type: string; data: Record<string, unknown> }[] },
+    ]
+    expect(options.delegationEvents[0]!.data.rules).toBeUndefined()
+    expect(options.delegationEvents[0]!.data.permissionMode).toBeUndefined()
+  })
+
+  it('omits managedPresent when the harness home is unresolvable', async () => {
+    vi.stubEnv('DSH_HOME', '')
+    const { ctx, subagents, invoke } = makeCtx()
+    const orch = new TeamOrchestrator()
+    registerDelegateTool(ctx, orch)
+
+    const result = await invoke({ teammate_id: 'B1', prompt: 'go' })
+
+    expect(result.status).toBe('dispatched')
+    const [options] = subagents.startContinuable.mock.calls[0]! as [
+      { delegationEvents: readonly { type: string; data: Record<string, unknown> }[] },
+    ]
+    expect(options.delegationEvents[0]!.data.managedPresent).toBeUndefined()
   })
 })
