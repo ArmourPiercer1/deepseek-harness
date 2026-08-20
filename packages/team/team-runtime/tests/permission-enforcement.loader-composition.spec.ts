@@ -142,7 +142,7 @@ async function waitFor(
     if (Date.now() >= deadline) {
       throw new Error(`permission-enforcement: timed out waiting for ${label}\n${diagnose?.() ?? ''}`)
     }
-    await new Promise(resolve => { setTimeout(resolve, 100) })
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
   }
 }
 

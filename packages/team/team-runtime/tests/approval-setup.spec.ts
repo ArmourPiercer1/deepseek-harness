@@ -65,6 +65,12 @@ function enforceDeny(_view: { name: string }): PermissionDecision {
   return { kind: 'deny', reason: 'no matching allow rule (enforce mode)', cause: 'mode' }
 }
 
+const ask = (): PermissionDecision => ({
+  kind: 'ask',
+  reason: 'requested by rule "probe" (teammate)',
+  matchedRule: { kind: 'ask', layer: 'teammate', tool: 'probe', matcher: 'param', raw: 'probe' },
+})
+
 function makeHostCtx(options: {
   evaluate?: (view: { name: string }) => PermissionDecision
   diagnostics?: string[]
@@ -266,12 +272,6 @@ describe('installApprovalHook — evaluation at the executor', () => {
 })
 
 describe('installApprovalHook — ask at the leader rendezvous', () => {
-  const ask = (): PermissionDecision => ({
-    kind: 'ask',
-    reason: 'requested by rule "probe" (teammate)',
-    matchedRule: { kind: 'ask', layer: 'teammate', tool: 'probe', matcher: 'param', raw: 'probe' },
-  })
-
   it('suspends an ask, wakes the leader, and resumes the executor on allow_once', async () => {
     withLayers()
     const { child, events, listener } = makeChildCtx()
@@ -434,12 +434,6 @@ describe('installApprovalHook — ask at the leader rendezvous', () => {
 })
 
 describe('installApprovalHook — abort race', () => {
-  const ask = (): PermissionDecision => ({
-    kind: 'ask',
-    reason: 'requested by rule "probe" (teammate)',
-    matchedRule: { kind: 'ask', layer: 'teammate', tool: 'probe', matcher: 'param', raw: 'probe' },
-  })
-
   it('denies and settles the entry when the execution aborts while awaiting the leader', async () => {
     withLayers()
     const { child, listener } = makeChildCtx()
@@ -474,7 +468,7 @@ describe('installApprovalHook — abort race', () => {
     const pending = listener()({ name: 'probe', arguments: {}, signal: controller.signal }, next)
     await vi.waitFor(() => expect(host.subagents.reportFrom).toHaveBeenCalledTimes(1))
     // Let the wakeup settle and the abort listener register.
-    await new Promise(resolve => { setImmediate(resolve) })
+    await new Promise((resolve) => { setImmediate(resolve) })
     controller.abort()
     const result = (await pending) as { kind: string; reason: string }
     expect(result.kind).toBe('deny')
