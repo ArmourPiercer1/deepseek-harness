@@ -26,7 +26,6 @@ model: deepseek-v4-flash
 maxTokens: 16384
 tools:
   allow: [read, edit, write, grep, glob, pwsh, send_team_message]
-requiresApproval: [pwsh]
 mcpServers:
   servers: [postgres-mcp]
 contextPolicy: persistent
@@ -41,7 +40,7 @@ You are a senior backend developer...
 | prompt body (after the frontmatter) | yes | the member's persona prompt; an empty body parses with a warning |
 | `provider`, `model`, `maxTokens` | no | the member's model route and output budget |
 | `tools` | no | `allow`/`deny` name lists; a teammate's `deny` always includes the team coordination tools |
-| `requiresApproval` | no | tool names whose execution suspends until the leader decides; must name tools the member may run |
+| `requiresApproval` | no | legacy: still parsed and snapshotted into `team/member-bound` for existing definitions, but it no longer gates execution — an `ask` rule (Step 4) suspends a tool until the leader decides |
 | `skills` | no | skill names the member may load; absence means unrestricted |
 | `mcpServers` | no | `servers` allowlist of MCP server names |
 | `contextPolicy` | no | `persistent` (default) reuses one child session across delegations; `fresh_per_delegation` starts a new session per `run` |
@@ -85,7 +84,7 @@ Verify: the delegation result reads `dispatched`, the settled report wakes the l
 
 ## 4. Gate what a teammate may do
 
-Tool-name allow/deny, `skills`, `mcpServers`, and `requiresApproval` (Step 1) bound what a member can invoke; parameter-level rules bound what each call does. Rules are authored as strings in three layers — a managed policy file, a project-level file, and the teammate's frontmatter — resolved `deny > ask > allow`, with a managed `deny` absolute in every mode:
+Tool-name allow/deny, `skills`, and `mcpServers` (Step 1) bound what a member can invoke; parameter-level rules bound what each call does. Rules are authored as strings in three layers — a managed policy file, a project-level file, and the teammate's frontmatter — resolved `deny > ask > allow`, with a managed `deny` absolute in every mode:
 
 ```yaml
 permissions:
@@ -95,7 +94,7 @@ permissions:
 permissionMode: enforce
 ```
 
-Four matcher families cover commands, paths, MCP tool prefixes, and generic `Tool(param:value)` arguments; an unmatched call falls back to the member's `permissionMode`, where `enforce` (the controlled teammate's default) denies and `default` allows. The full rule language and its failure modes live in the [permission seam proposal](../../.agents/notes/proposed/architecture/2026-08-15-permission-seam-and-mcp-fusion.md).
+Four matcher families cover commands, paths, MCP tool prefixes, and generic `Tool(param:value)` arguments; an unmatched call falls back to the member's `permissionMode`, where `enforce` (the controlled teammate's default) denies and `default` allows. The full rule language and its failure modes live in the [dsh-permission-engine README](../../packages/permission/permission-engine/README.md), and the team-side enforcement point in the [dsh-team-runtime README](../../packages/team/team-runtime/README.md).
 
 A teammate's inline rules are snapshotted into its `team/member-bound` event at first delegation, so a deleted definition file cannot break a cold resume; the managed and project layers are re-read at recovery, and a missing managed file refuses recovery rather than running under a lapsed policy.
 
@@ -103,7 +102,7 @@ Verify: a denied call is observable at the executor — the tool call fails with
 
 ## 5. Approve teammate requests
 
-An `ask` outcome — from `requiresApproval` or an `ask` rule — suspends the teammate's call and opens a control request:
+An `ask` outcome from an `ask` rule suspends the teammate's call and opens a control request:
 
 1. The runtime persists a `team/control-request` on the teammate's session and wakes the leader.
 2. The leader lists it through `team_control` (`action: "list"`) and decides (`action: "decide"` with the request id) with one of `allow_once`, `deny`, `escalate_to_user`, `approve_plan`, or `request_revision`.

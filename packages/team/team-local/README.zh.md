@@ -26,11 +26,24 @@ tools:
   allow: [read, edit, write, grep, glob, pwsh]
 mcpServers:
   servers: [postgres-mcp]
+permissions:
+  deny:
+    - Bash(rm -rf *)
+    - "Read(//**/.env)"
+  ask:
+    - "Bash(git push:*)"
+permissionMode: enforce
 contextPolicy: persistent
 ---
 
 You are a senior backend developer...
 ```
+
+权限字段：
+
+- `permissions`——成员面向权限引擎的内联规则：`deny` / `ask` / `allow` 为引擎规则格式的规则字符串数组（行内 `[a, b]` 或块状 `- a` 列表）。规则语法为 `Tool` 或 `Tool(specifier)`：裸名（或 `Tool(*)`）对引擎已知家族匹配整个工具——`Bash` / `pwsh` 按命令模式、`Read` / `Edit` / `Write` / `Grep` / `Glob` / `NotebookEdit` 按路径模式、`mcp__server` 按 server——而任何其他工具都取一个 `param:value` 说明符（带 `*` 通配符），作用于它的某个参数。解析不出匹配器的规则会被带诊断地丢弃，因此一条命名了不支持形式的规则不会静默地放行任何东西。这些列表在委派时被快照进成员持久的 `team/member-bound` 载荷，因此之后被删除的定义文件不会破坏冷恢复；引擎将它们与 managed/project 规则文件合并，其中 `deny` 跨层保持绝对。
+- `permissionMode`——成员的权限模式：`enforce` 或 `default`，省略该字段时为 `enforce`（受控 teammate 的未匹配调用在执行器处被拒绝，而非放行）。保留值 `readonly` 与 `bypass` 在解析期被拒绝。
+- `requiresApproval`——遗留字段，仍被解析并快照进 `team/member-bound` 载荷以兼容既有定义，但不再把关任何东西：强制钩子通过权限引擎评估每个 teammate 调用，因此该字段被同一工具的 `ask` 规则所取代。
 
 ## 配置
 

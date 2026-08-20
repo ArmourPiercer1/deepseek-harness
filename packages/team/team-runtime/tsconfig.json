@@ -13,6 +13,7 @@
     { "path": "../../subagent/subagent" },
     { "path": "../team" },
     { "path": "../team-channels" },
+    { "path": "../../permission/permission" },
     { "path": "../../runtime-diagnostics/invariants" }
   ]
 }

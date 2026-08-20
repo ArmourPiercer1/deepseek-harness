@@ -14,9 +14,13 @@ DeepSeek Harness 的权限 Service Definition。
 
 | 导出 | 说明 |
 |---|---|
-| `PermissionService` | 注册为 `ctx.permission` 的 `evaluate(call, context)` 契约 |
+| `PermissionService` | 注册为 `ctx.permission` 的 `evaluate(call, context)` 与 `loadRuleLayers(options)` 契约 |
 | `PermissionMode` | 每个 scope 未匹配调用的回退：`enforce` / `default`（`readonly` / `bypass` 保留） |
 | `RuleIR` | 解析后的规则：kind、layer、tool、matcher 判别项与作者写的 `raw` 字符串 |
+| `RuleSource` | 一条从某层来源加载的、带 kind 与声明层的作者规则 |
+| `PermissionRules` | 单个来源的按姿态分组的规则列表：可选的 `deny` / `ask` / `allow` 数组 |
+| `LoadRuleLayersOptions` | `loadRuleLayers` 输入：层文件路径、可选 teammate 快照、绑定期 managed 存在性 |
+| `LoadedRuleLayers` | `loadRuleLayers` 结果：合并后的层标记来源及各层存在性 |
 | `ToolCallView` | `evaluate` 据以决策的工具名与 JSON 参数 |
 | `PermissionContext` | 模式、执行成员与合并后的层标记规则集 |
 | `PermissionDecision` | `allow` / `deny{reason,cause}` / `ask`，附用于审计的匹配规则 |
@@ -25,6 +29,8 @@ DeepSeek Harness 的权限 Service Definition。
 ## 决策契约
 
 `evaluate` 按 `deny > ask > allow` 的顺序将调用与上下文的规则匹配，未匹配时回退到权限模式。`managed` 层的 `deny` 在任何模式下都是绝对的。`evaluate` 是其输入的纯函数：引擎在其提交点追加 `permission/decision`，消费者将 `ask` 路由到审批 seam 或 leader 会合点。
+
+`loadRuleLayers` 组装 `evaluate` 消费的合并规则集：它从磁盘只读地读取 managed 与 project 规则文件，合并调用方的 teammate 快照，并返回去重后的层标记来源及各层存在性。当调用方在 managed 策略下绑定、而该文件现在缺失时，它以（`ManagedRulesMissingError`）拒绝，而非跳过该层，因此恢复的 scope 要么受当前策略约束，要么被拒绝。
 
 ## 模型体验
 
@@ -46,5 +52,5 @@ DeepSeek Harness 的权限 Service Definition。
 
 - **未挂载到任何组合**——该行未出现在任何 bundle 或 profile 的 `cordis.yml` 中，因此在组合进提供方行之前 `ctx.permission` 都不存在。
 - **`readonly` 与 `bypass` 是保留但未实现的枚举值**——类型声明了它们，而第一阶段的引擎会以错误拒绝二者，而非对其采取行动。
-- **分层规则加载不属于 Definition**——合并后的层标记规则集是 `evaluate` 的输入；组装 managed/project/teammate 层的加载器被延迟。
+- **冷恢复强制点被延迟**——`loadRuleLayers` 定义了 scope 如何重读并重合并其各层，但从恢复策略对调用执行 deny 的成员钩子是权限 seam 的后续阶段。
 - **规则学习被延迟**——将已批准的 `ask` 写回目标地由权限 seam Agent Note 定型，但尚不属于本 Definition。

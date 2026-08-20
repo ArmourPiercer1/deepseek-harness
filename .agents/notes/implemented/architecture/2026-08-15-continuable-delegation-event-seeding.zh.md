@@ -12,7 +12,7 @@ Status: implemented
 
 `ContinuableStartSpec` 新增一个可选的 `delegationEvents` 字段：一个基于 `SessionEventMap` 的 `{ type, data }` 判别联合。`seedDescriptorTurn` 在 `subagent/descriptor` turn 与任何 fork seed 之后、按序把这些事件追加到子代理自己的 suffix 中，使 `coldResume` 的 `events.slice(seedLength)` 能逐字重建它们。`Session.append` 在追加点重新校验 lossless-JSON，因此坏载荷会在子代理建立之前拒绝 `startContinuable`。缺省为 no-op：既有的一次性（one-shot）与可续调用方保持不变；字段放在 `ContinuableStartSpec` 而非 `SubagentStartRequest` 上，使 one-shot 路径与 provider 能力面保持原样。
 
-team 插件消费这一机制的方式是：每次委派播种一个 `team/member-bound` 事件，并注册一个 `registerContinuableSetup` 贡献，该贡献从子代理 session 读取该事件，在首次创建与冷恢复时都安装成员的 MCP guard 与审批钩子。
+team 插件消费这一机制的方式是：每次委派播种一个 `team/member-bound` 事件，并注册一个 `registerContinuableSetup` 贡献，该贡献从子代理 session 读取该事件，在首次创建与冷恢复时都安装成员的 MCP guard 与权限强制钩子。
 
 ## Alternatives considered
 

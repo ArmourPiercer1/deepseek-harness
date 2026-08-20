@@ -1,8 +1,11 @@
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
+import { SessionId } from '@deepseek-ai/dsh-session'
 import { TeamMemberId } from '@deepseek-ai/dsh-team'
 import type { TeamMemberBoundData } from '@deepseek-ai/dsh-team'
 import { installMemberComposition, teamMemberSetupContribution } from '../src/member-setup.ts'
+import { getRecoveredRuleLayers } from '../src/rule-layers.ts'
 
 function bound(overrides: Partial<TeamMemberBoundData> = {}): TeamMemberBoundData {
   return {
@@ -16,14 +19,26 @@ function bound(overrides: Partial<TeamMemberBoundData> = {}): TeamMemberBoundDat
 function childCtx(events: readonly { type: string; data: unknown }[], header: { parentSession?: string } = {}) {
   const disposeGuard = vi.fn()
   const guard = vi.fn((_fn: unknown) => disposeGuard)
-  const ctx = { agent: { session: { events, header } }, tools: { guard } } as unknown as Context
-  return { ctx, guard, disposeGuard }
+  const on = vi.fn(() => vi.fn())
+  const ctx = {
+    agent: { session: { events, header } },
+    tools: { guard },
+    on,
+  } as unknown as Context
+  return { ctx, guard, disposeGuard, on }
 }
 
-/** Host context stand-in exposing an optional `teamControl` registry via `get`. */
+/**
+ * Host context stand-in exposing the `teamControl` registry via `get` and a
+ * `permission` service (a hard injection of the plugin) with a resolving load.
+ */
 function hostCtxWith(teamControl?: unknown) {
   const get = (name: string) => (name === 'teamControl' ? teamControl : undefined)
-  return { ctx: { get } as unknown as Context }
+  const permission = { loadRuleLayers: vi.fn().mockResolvedValue({ rules: [], managedPresent: false, projectPresent: false }) }
+  return {
+    ctx: { get, permission } as unknown as Context,
+    permission,
+  }
 }
 
 const hostCtx = hostCtxWith().ctx
@@ -205,5 +220,129 @@ describe('installMemberComposition', () => {
     expect(child.guard).toHaveBeenCalledTimes(2)
     dispose()
     expect(child.disposeGuard).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('rule-layer recovery on setup', () => {
+  const childSessionId = 'child-rules'
+  const home = '/tmp/dsh-rule-home'
+  const workspace = '/tmp/dsh-rule-ws'
+
+  /** A child-context stand-in with a session id, header cwd, and an observable guard. */
+  function ruleChild(overrides: Partial<TeamMemberBoundData> = {}) {
+    const disposeGuard = vi.fn()
+    const guard = vi.fn((_fn: unknown) => disposeGuard)
+    const on = vi.fn(() => vi.fn())
+    const ctx = {
+      agent: {
+        session: {
+          id: childSessionId,
+          events: [{ type: 'team/member-bound', data: bound(overrides) }],
+          header: { cwd: workspace },
+        },
+      },
+      tools: { guard },
+      on,
+    } as unknown as Context
+    return { ctx, guard, on }
+  }
+
+  /** A permission-service stand-in mirroring the structural contract. */
+  function permissionStub(loaded: {
+    readonly rules: readonly { raw: string; kind: string; layer: string }[]
+    readonly managedPresent: boolean
+    readonly projectPresent: boolean
+  } | Error) {
+    return {
+      loadRuleLayers: vi.fn().mockImplementation(() =>
+        loaded instanceof Error ? Promise.reject(loaded) : Promise.resolve(loaded)),
+    }
+  }
+
+  function permissionHost(permission: unknown) {
+    const get = (_name: string) => undefined
+    return { ctx: { get, permission } as unknown as Context, permission }
+  }
+
+  it('reconstructs the rule set from the durable snapshot plus a re-read of the file layers', async () => {
+    vi.stubEnv('DSH_HOME', home)
+    const loaded = {
+      rules: [
+        { raw: 'Bash(rm -rf *)', kind: 'deny', layer: 'managed' },
+        { raw: 'Bash(git status:*)', kind: 'allow', layer: 'project' },
+        { raw: 'Bash(git push:*)', kind: 'ask', layer: 'teammate' },
+      ],
+      managedPresent: true,
+      projectPresent: true,
+    }
+    const permission = permissionStub(loaded)
+    const host = permissionHost(permission)
+    const child = ruleChild({
+      rules: { ask: ['Bash(git push:*)'] },
+      permissionMode: 'enforce',
+      managedPresent: true,
+    })
+
+    const dispose = teamMemberSetupContribution(host.ctx)(child.ctx)
+
+    expect(permission.loadRuleLayers).toHaveBeenCalledTimes(1)
+    expect(permission.loadRuleLayers).toHaveBeenCalledWith({
+      managedPath: join(home, 'permissions.yml'),
+      projectPath: join(workspace, '.dsh', 'permissions.yml'),
+      teammateRules: { ask: ['Bash(git push:*)'] },
+      managedPresent: true,
+    })
+    const stored = getRecoveredRuleLayers(SessionId(childSessionId))
+    expect(stored).toBeDefined()
+    await expect(stored).resolves.toEqual(loaded)
+    dispose()
+    vi.unstubAllEnvs()
+  })
+
+  it('cold-resumes a pre-rules member-bound payload without a teammate snapshot', async () => {
+    vi.stubEnv('DSH_HOME', home)
+    const loaded = { rules: [], managedPresent: false, projectPresent: false }
+    const permission = permissionStub(loaded)
+    const host = permissionHost(permission)
+    // A payload written before the rules fields existed: no rules, no managedPresent.
+    const child = ruleChild()
+
+    const dispose = teamMemberSetupContribution(host.ctx)(child.ctx)
+
+    expect(permission.loadRuleLayers).toHaveBeenCalledTimes(1)
+    expect(permission.loadRuleLayers).toHaveBeenCalledWith({
+      managedPath: join(home, 'permissions.yml'),
+      projectPath: join(workspace, '.dsh', 'permissions.yml'),
+    })
+    await expect(getRecoveredRuleLayers(SessionId(childSessionId))).resolves.toEqual(loaded)
+    dispose()
+    vi.unstubAllEnvs()
+  })
+
+  it('holds a lapsed-managed rejection on the store instead of letting it escape', async () => {
+    vi.stubEnv('DSH_HOME', home)
+    const lapse = new Error('managed rule file is missing; refusing to run a session that was bound under it')
+    const permission = permissionStub(lapse)
+    const host = permissionHost(permission)
+    const child = ruleChild({ managedPresent: true })
+
+    const dispose = teamMemberSetupContribution(host.ctx)(child.ctx)
+
+    await expect(getRecoveredRuleLayers(SessionId(childSessionId))).rejects.toThrow(lapse.message)
+    dispose()
+    vi.unstubAllEnvs()
+  })
+
+  it('releases the rule state when the child disposes', async () => {
+    vi.stubEnv('DSH_HOME', home)
+    const permission = permissionStub({ rules: [], managedPresent: false, projectPresent: false })
+    const host = permissionHost(permission)
+    const child = ruleChild()
+
+    const dispose = teamMemberSetupContribution(host.ctx)(child.ctx)
+    expect(getRecoveredRuleLayers(SessionId(childSessionId))).toBeDefined()
+    dispose()
+    expect(getRecoveredRuleLayers(SessionId(childSessionId))).toBeUndefined()
+    vi.unstubAllEnvs()
   })
 })

@@ -1,0 +1,46 @@
+# Agent Note: Teammate permission enforcement at the executor
+
+Status: implemented
+
+English | [中文](2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md)
+
+## Problem
+
+Stage 1 of the [permission seam](2026-08-15-permission-seam-and-mcp-fusion.md) requires that a teammate's permission decisions be enforced at the operation that executes them: the deny path must be observable through the executor, not through schema absence or prompt filtering, because a caller holding the tool can bypass every other gate. The team approval hook that existed before this stage was a name-based filter keyed on the legacy `requiresApproval` frontmatter list: a tool named there suspended for the leader's decision, and every other tool passed unreviewed. That shape cannot express the engine's policy at all — no mode fallback for unmatched calls, no managed or project layer, no `deny` or `allow` rule for arbitrary tools — and a renamed tool escapes a name filter silently. The layered rule loading and the cold-recovery snapshot shipped in the [layered rule loading note](2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md) but nothing consumed them: the recovered rule state was stored and read by tests only.
+
+## Decision
+
+`dsh-team-runtime` hard-injects `permission` (`inject: ['permission']`) and installs its enforcement hook on every bound teammate child; the legacy `requiresApproval` list no longer gates anything.
+
+- **Injection is hard.** The [layered rule loading note](2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md) records the loose `ctx.get` read as the chosen side of this trade; this stage reverses that decision under the round's product decision that enforcement must be present wherever the team runs under a policy. The consequence is legible instead of silent: the plugin activates only where a permission engine row is composed, so a composition without the engine shows the team-runtime row as pending rather than running with an invisible policy gap. No shipped composition carries the engine row (no new dependencies were permitted this round), so the shipped team preset's team-runtime row stays inert until a deployment composes the engine alongside it.
+- **The hook is the decision point.** Every `tools/pre-execute` call on a bound child is evaluated by `permission.evaluate` against the member's recovered rule layers (the load the [member setup contribution](2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md) starts on fresh creation and cold resume) under the member's mode, `bound.permissionMode ?? 'enforce'`. The hook does not filter the tool schema: a denied call is a dispatched call the executor settles with the engine's model-visible reason.
+- **Evaluation inputs.** The mode comes from the durable `team/member-bound` snapshot (`enforce` when undeclared, so a payload written before the field exists reads as the controlled default). The path bases resolve the engine's anchors against the child's own scope: `/` against the session cwd (the scope's settings context), `~` against `$DSH_HOME`, `//` against the filesystem root. The policy compiles once per child; engine compile diagnostics route to `ctx.logger` (`error:` prefix to `error`, the rest to `warn`).
+- **Audit at the commit point.** Every evaluation appends the existing `permission/decision` session event (the engine's `PermissionDecisionData`, no new fields, no new event type): the outcome, tool, and mode always; the acting member, the deciding rule's raw string and layer, and the deny cause when they apply. A call that never reaches the engine — no rule state installed, or a rejected policy load (lapsed managed file, malformed layer file) — is denied without an audit, because there is no decision to record; the load failure is logged at the point that surfaced it.
+- **`ask` rides the leader rendezvous.** No new event types: the child logs `team/control-request`, a control-registry entry is created, and the leader is woken with the byte-stable review text the scripted leader tools parse. `allow_once` / `approve_plan` resume the suspended execution by continuing the pre-execute chain, `deny` and `request_revision` settle the call with the reason, and `escalate_to_user` surfaces the request to the user. An abort landing during the wait settles the call as a denial and reconciles the registry entry. When no leader is reachable at all — no parent session, no rendezvous services, or a failed wakeup — the ask settles as an audited deny with `cause: 'leader_unreachable'` whose reason states plainly that it is not a final verdict.
+- **`requiresApproval` is legacy.** It is still parsed by `dsh-team-local` and snapshotted into `team/member-bound` for existing definitions and cold-recovery compatibility, but the enforcement point never reads it; an `ask` rule for the same tool is the current mechanism.
+
+## Alternatives considered
+
+**Keep the name-based gate and extend it.** Adding `deny` / `allow` / mode handling around the `requiresApproval` list would preserve activation without an engine, but the gate would still enumerate only what asks: an unmatched call is the model's business, the managed and project layers have no place in the picture, and the gate's coverage is whatever one frontmatter list happens to name. Enforcement at the executor with the engine's full rule set is the stage's requirement; the name filter is retired.
+
+**Loose `ctx.get` with the hook installed only when present.** The composition without an engine would then activate and run its children with a silently unenforced policy — exactly the invisible gap the seam's acceptance criterion forbids. The hard injection moves the visibility to the composition itself.
+
+**A new session event for the ask flow.** The rendezvous already logs its request and decision durably and wakes the leader; a parallel event pair would duplicate that trail and violate the stage's no-new-event-types constraint.
+
+**Audit the fail-closed denials too.** A `permission/decision` record is the engine's decision record; the load-failure and no-policy denials precede any evaluation. Logging them (with the member id and the load error) keeps the failure diagnosable without pretending the engine decided.
+
+## Consequences
+
+- The deny path is observable at the executor under a real composition: the team-runtime `permission-enforcement` Loader-composition spec boots the full row set (session, llm, tools, system-prompt, agent, agent-loop, subagent + spawn provider, persistence, team, team-local, team-runtime, team-channels, tool-team, permission-engine, plus the test-only scripted LLM and probe tool) and asserts all three outcomes — an enforce-mode unmatched call denied with the mode reason while the tool stays in the child's schema, an `ask` rule suspending at the rendezvous and resuming after the leader's real `team_control` decision, and a managed `deny` piercing a teammate `allow` under `default` mode.
+- The rule-syntax restriction is a fixture-visible fact: a bare `Tool` name parses only for the engine's known families (command, path, `mcp__`), any other tool takes a `Tool(param:value)` specifier, and a rule that parses to no matcher is dropped with a diagnostic — documented in the `dsh-team-local` README.
+- Every teammate session with a bound event carries one `permission/decision` per evaluated call, required-on-read by the session-log rules.
+- Cold-resume compatibility is unchanged: a bound payload without `permissionMode` reads as `enforce`, and one without `rules` loads the file layers only.
+- The M6 team-agent e2e over the shipped profile is invalidated by the hard injection: that composition carries no engine row, so the team-runtime row is pending, its ask suspensions never happen, and its snapshot must be re-recorded once the round integration composes the engine row into the profile (manifest + lockfile wiring, outside this stage's file domain).
+- The composition-wiring gap is documented as a known limitation in the `dsh-team-runtime` and `dsh-permission-engine` READMEs.
+
+## Related
+
+- The [permission seam and MCP fusion](2026-08-15-permission-seam-and-mcp-fusion.md) proposal owns the wider seam; its stage 1 (decision plane) is complete with this note — evaluate at the executor, the ask over the leader rendezvous, the enforce default, and the audit at the commit point — and stays active for the later stages (MCP lifecycle, rule learning).
+- The [layered rule loading note](2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md) ships the loader, the file format, the fail-closed contract, and the durable snapshot this stage consumes; its loose-`ctx.get` decision is reversed by this note and its rejected hard-injection alternative is the design that shipped.
+- The [tool permission guard note](2026-08-20-tool-permission-guard-resolves-permission-per-call.md) owns the guard's per-call service resolution — the other `permission` consumer under the same hard-activation semantics.
+- The `dsh-team-runtime` README documents the enforcement point, the `dsh-team-local` README the frontmatter fields and rule syntax, and the [adding-agent-team cookbook](../../../../docs/cookbook/adding-agent-team.md) the step-by-step authoring path.

@@ -12,7 +12,7 @@ Continuable subagent children reconstruct their composition on cold resume from 
 
 `ContinuableStartSpec` gains an optional `delegationEvents` field: a discriminated union of `{ type, data }` pairs over `SessionEventMap`. `seedDescriptorTurn` appends these events to the child's own suffix after the `subagent/descriptor` turn and any fork seed, so `coldResume`'s `events.slice(seedLength)` reconstructs them verbatim. `Session.append` re-validates lossless-JSON at the append site, so a bad payload rejects `startContinuable` before the child is established. Absence is a no-op: existing one-shot and continuable callers are unchanged, and the field lives on `ContinuableStartSpec` rather than `SubagentStartRequest` so the one-shot path and provider capability surface are untouched.
 
-The team plugin consumes this by seeding one `team/member-bound` event per delegation and registering a `registerContinuableSetup` contribution that reads that event from the child's session and installs the member's MCP guard and approval hook on both fresh creation and cold resume.
+The team plugin consumes this by seeding one `team/member-bound` event per delegation and registering a `registerContinuableSetup` contribution that reads that event from the child's session and installs the member's MCP guard and permission enforcement hook on both fresh creation and cold resume.
 
 ## Alternatives considered
 

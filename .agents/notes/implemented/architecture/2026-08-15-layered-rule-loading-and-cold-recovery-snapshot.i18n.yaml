@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md
+2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md: be5a287d94e281adfdf308b3e99c1814c98451f2
+2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.zh.md: d6d0b546d83dfd02751dcdda12ca53ec3e28f759

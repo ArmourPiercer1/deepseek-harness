@@ -26,8 +26,8 @@ agent-team 插件以 `packages/team/` 下的六个包加上 `packages/bundle/tea
 - **`TeamRegistry` 是具体 Service**，而非抽象类：单一数据加载策略，无提供方多态。
 - **逐成员 MCP 过滤使用 `tools.guard()` 配合运行时 `mcp__<server>__` 前缀匹配**，而非启动时枚举，因而能覆盖后连接的 server。
 - **leader 定义仅为元数据。** 根 agent 由其 preset 组合，绝不由注册表组合；`DEFAULT_LEADER_TOOLS` 记录预期的 leader 暴露面，但不在运行时强制约束。
-- **成员绑定是持久且可重建的。** `delegate_to_teammate` 通过 subagent 接缝的 `delegationEvents` 字段植入一条 `team/member-bound` 事件；`registerContinuableSetup` 贡献项在全新创建和冷恢复时读取它以重新安装 MCP guard 和审批钩子。参见[委托事件植入说明](../architecture/2026-08-15-continuable-delegation-event-seeding.md)。
-- **leader 审批门禁挂起 `requiresApproval` 工具**：通过作用域内 `tools/pre-execute` 监听器在宿主级 `TeamControlRegistry`（按 leader 会话键控）上创建请求，通过 `reportFrom` 唤醒 leader，并在做出决策后恢复或拒绝。
+- **成员绑定是持久且可重建的。** `delegate_to_teammate` 通过 subagent 接缝的 `delegationEvents` 字段植入一条 `team/member-bound` 事件；`registerContinuableSetup` 贡献项在全新创建和冷恢复时读取它以重新安装 MCP guard 与权限强制钩子。参见[委托事件植入说明](../architecture/2026-08-15-continuable-delegation-event-seeding.md)。
+- **teammate 权限强制位于执行器**，经由作用域内 `tools/pre-execute` 监听器：每个调用都由 `permission` 服务评估，`ask` 结果在宿主级 `TeamControlRegistry`（按 leader 会话键控）上创建请求，通过 `reportFrom` 唤醒 leader，并在做出决策后恢复或拒绝——完整机制（含 `enforce` 默认与 `permission/decision` 审计）由[teammate 权限强制 note](../architecture/2026-08-20-teammate-permission-enforcement-at-the-executor.md)拥有。
 - **技能过滤待恢复**：首次交付记录了该字段但未强制执行，理由是不存在逐作用域技能目录 API；2026-08-18 审计确认 skill 注册表是 scope 分层的，证伪了该理由，scoped guard 强制已列入[第二轮开发计划](../../../../AGENT_TEAM_PLUGIN_ROUND2_PLAN.md)。
 
 ## 备选方案
@@ -40,6 +40,6 @@ agent-team 插件以 `packages/team/` 下的六个包加上 `packages/bundle/tea
 
 ## 后果
 
-teammate 是持久的可继续 subagent，其 persona、工具过滤、MCP 范围和审批门禁在委托时固定，并在冷恢复时重建。teammate 绝不会收到 `delegate_to_teammate`、`team_control` 或 `list_teammates`。这五个团队工具、键控注册表以及审批汇合点由单元测试、集成测试以及通过 Loader 启动的真实组合（REAL-composition）测试所固定。`maxTokens` 仅在全新委托时应用（描述符按设计省略了每次激活的预算）。
+teammate 是持久的可继续 subagent，其 persona、工具过滤、MCP 范围和权限强制在委托时固定，并在冷恢复时重建。teammate 绝不会收到 `delegate_to_teammate`、`team_control` 或 `list_teammates`。这五个团队工具、键控注册表以及审批汇合点由单元测试、集成测试以及通过 Loader 启动的真实组合（REAL-composition）测试所固定。`maxTokens` 仅在全新委托时应用（描述符按设计省略了每次激活的预算）。
 
 team 事件是持久的 `SessionEventMap` 成员，因此会并入 harness 生成的会话事件词汇表：持久化读取路径会拒绝包含其不认识、且未标记可忽略（ignorable）事件类型的日志，而 `team/member-bound` 是冷恢复所必需。因此该插件随 `@deepseek-ai/dsh-session` 版本耦合发布，而非作为独立包。它对基座唯一的运行时耦合就是这一词汇表，且被隔离在 `team/team/src/events.ts`；插件将该处保持为唯一接触面，以便在基座提供事件注册接口时迁移到运行时事件注册。

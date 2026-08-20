@@ -16,10 +16,12 @@ Provides `ctx.team` — the abstract contract for loading, querying, and validat
 |---|---|
 | `TeamRegistry` (default) | Abstract `Service` subclass registered as `ctx.team` |
 | `TeamMemberId` | Branded id type + factory for team members |
-| `TeamMemberDefinition` | Unified definition type for leaders and teammates |
+| `TeamMemberDefinition` | Unified definition type for leaders and teammates, including optional inline `permissions` rules and `permissionMode` |
+| `TeamPermissionRules` | A member's inline rule lists: optional `deny` / `ask` / `allow` rule strings |
+| `TeamPermissionMode` | A member's permission mode: `enforce` / `default` (`readonly` / `bypass` reserved and rejected) |
 | `DEFAULT_LEADER_TOOLS` | 10 irremovable leader tools |
 | `TEAMMATE_DENIED_TOOLS` | Tools teammates may never invoke |
-| Session events | `team/member-bound`, `team/progress`, `team/control-request`, `team/control-decision`, `team/message` |
+| Session events | `team/member-bound` (optionally carrying the member's rules snapshot and bind-time managed presence), `team/progress`, `team/control-request`, `team/control-decision`, `team/message` |
 
 ## Model Experience
 

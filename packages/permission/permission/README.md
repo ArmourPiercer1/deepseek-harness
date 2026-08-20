@@ -14,9 +14,13 @@ Provides `ctx.permission` — the abstract contract deciding whether a tool call
 
 | Export | Description |
 |---|---|
-| `PermissionService` | The `evaluate(call, context)` contract registered as `ctx.permission` |
+| `PermissionService` | The `evaluate(call, context)` and `loadRuleLayers(options)` contracts registered as `ctx.permission` |
 | `PermissionMode` | Per-scope unmatched-call fallback: `enforce` / `default` (`readonly` / `bypass` reserved) |
 | `RuleIR` | Parsed rule: kind, layer, tool, matcher discriminant, and authored `raw` string |
+| `RuleSource` | One authored rule with its kind and declaring layer, as loaded from a layer source |
+| `PermissionRules` | The stance-shaped rule list of one source: optional `deny` / `ask` / `allow` arrays |
+| `LoadRuleLayersOptions` | `loadRuleLayers` input: layer file paths, optional teammate snapshot, and the bind-time managed presence |
+| `LoadedRuleLayers` | `loadRuleLayers` result: the merged layer-tagged sources plus each layer's presence |
 | `ToolCallView` | The tool name and JSON arguments `evaluate` decides against |
 | `PermissionContext` | Mode, acting member, and merged layer-tagged rule set |
 | `PermissionDecision` | `allow` / `deny{reason,cause}` / `ask`, with the matched rule for audit |
@@ -25,6 +29,8 @@ Provides `ctx.permission` — the abstract contract deciding whether a tool call
 ## Decision contract
 
 `evaluate` matches a call against the context's rules in `deny > ask > allow` order and falls back to the permission mode when nothing matches. A `managed`-layer `deny` is absolute in every mode. `evaluate` is a pure function of its inputs: the engine appends `permission/decision` at its commit point, and a consumer routes an `ask` to the approval seam or the leader rendezvous.
+
+`loadRuleLayers` assembles the merged rule set `evaluate` consumes: it reads the managed and project rule files read-only from disk, merges in the caller's teammate snapshot, and returns the deduplicated, layer-tagged sources plus each layer's presence. When the caller was bound under a managed policy and that file is now missing, it rejects (`ManagedRulesMissingError`) rather than skipping the layer, so a recovered scope is constrained by the current policy or refused.
 
 ## Model Experience
 
@@ -46,5 +52,5 @@ Independent. The Definition adds no request-prefix tokens and cannot invalidate 
 
 - **Not mounted in any composition** — the row appears in no bundle or profile `cordis.yml`, so `ctx.permission` is absent until a provider row is composed.
 - **`readonly` and `bypass` are reserved, unimplemented enum values** — the type declares them, and the first-stage engine rejects either with an error rather than acting on it.
-- **Layered rule loading is not part of the Definition** — the merged, layer-tagged rule set is an input to `evaluate`; the loader that assembles managed/project/teammate layers is deferred.
+- **The cold-recovery enforcement point is deferred** — `loadRuleLayers` defines how a scope re-reads and re-merges its layers, but the teammate hook that denies calls against the recovered policy is a later stage of the permission seam.
 - **Rule learning is deferred** — writing an approved `ask` back to a destination is shaped by the permission seam Agent Note but is not part of this Definition yet.

@@ -1,5 +1,10 @@
 /**
- * Team runtime: orchestration, delegation, and per-member capability filtering.
+ * Team runtime: orchestration, delegation, and per-member capability
+ * filtering.
+ *
+ * `permission` is a hard injection: the teammate enforcement hook evaluates
+ * every bound child's tool calls through the `permission` service, so the
+ * plugin activates only in a composition that carries an engine row.
  *
  * @module @deepseek-ai/dsh-team-runtime
  */
@@ -14,9 +19,18 @@ export type { McpGuardFn } from './mcp-guard.ts'
 export { createSkillGuard } from './skill-guard.ts'
 export { installApprovalHook } from './approval-setup.ts'
 export { installMemberComposition, teamMemberSetupContribution } from './member-setup.ts'
+export {
+  MANAGED_RULE_FILE,
+  PROJECT_RULE_FILE,
+  getRecoveredRuleLayers,
+  releaseRecoveredRuleLayers,
+  resolveRuleLayerPaths,
+  setRecoveredRuleLayers,
+} from './rule-layers.ts'
+export type { RuleLayerPaths } from './rule-layers.ts'
 
 export const name = 'team-runtime'
-export const inject = ['team', 'tools', 'subagents']
+export const inject = ['team', 'tools', 'subagents', 'permission']
 
 export function apply(ctx: Context): void {
   // Install per-member composition (skill guard, MCP guard + approval hook)

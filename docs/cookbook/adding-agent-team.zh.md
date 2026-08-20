@@ -26,7 +26,6 @@ model: deepseek-v4-flash
 maxTokens: 16384
 tools:
   allow: [read, edit, write, grep, glob, pwsh, send_team_message]
-requiresApproval: [pwsh]
 mcpServers:
   servers: [postgres-mcp]
 contextPolicy: persistent
@@ -41,7 +40,7 @@ You are a senior backend developer...
 | 提示词正文（frontmatter 之后） | 是 | 成员的 persona 提示词；空正文以 warning 解析 |
 | `provider`、`model`、`maxTokens` | 否 | 成员的模型路由与输出预算 |
 | `tools` | 否 | `allow`/`deny` 名称列表；teammate 的 `deny` 恒含团队协调工具 |
-| `requiresApproval` | 否 | 执行挂起、待 leader 裁决的工具名列表；只能命名该成员可运行的工具 |
+| `requiresApproval` | 否 | 遗留：仍被解析并快照进 `team/member-bound` 以兼容既有定义，但不再把关执行——`ask` 规则（步骤 4）才挂起工具直至 leader 裁决 |
 | `skills` | 否 | 该成员可加载的 skill 名称；缺省表示不限制 |
 | `mcpServers` | 否 | MCP server 名称的 `servers` 允许列表 |
 | `contextPolicy` | 否 | `persistent`（默认）跨委派复用同一子会话；`fresh_per_delegation` 每次 `run` 新建会话 |
@@ -85,7 +84,7 @@ leader 通过五个工具协调（[dsh-tool-team](../../packages/team/tool-team/
 
 ## 4. 约束 teammate 可做的事
 
-工具名 allow/deny、`skills`、`mcpServers` 与 `requiresApproval`（步骤 1）约束成员能调用什么；参数级规则约束每个调用能做什么。规则以字符串编写于三层——managed 策略文件、项目级文件、teammate frontmatter——按 `deny > ask > allow` 解析，managed 层的 `deny` 在每种 mode 下绝对优先：
+工具名 allow/deny、`skills` 与 `mcpServers`（步骤 1）约束成员能调用什么；参数级规则约束每个调用能做什么。规则以字符串编写于三层——managed 策略文件、项目级文件、teammate frontmatter——按 `deny > ask > allow` 解析，managed 层的 `deny` 在每种 mode 下绝对优先：
 
 ```yaml
 permissions:
@@ -95,7 +94,7 @@ permissions:
 permissionMode: enforce
 ```
 
-四个 matcher 族覆盖命令、路径、MCP 工具前缀与通用 `Tool(param:value)` 参数；未匹配的调用回退到成员的 `permissionMode`，其中 `enforce`（受控 teammate 的默认）拒绝、`default` 放行。完整规则语言及其失败模式见 [permission seam 提案](../../.agents/notes/proposed/architecture/2026-08-15-permission-seam-and-mcp-fusion.md)。
+四个 matcher 族覆盖命令、路径、MCP 工具前缀与通用 `Tool(param:value)` 参数；未匹配的调用回退到成员的 `permissionMode`，其中 `enforce`（受控 teammate 的默认）拒绝、`default` 放行。完整规则语言及其失败模式见 [dsh-permission-engine README](../../packages/permission/permission-engine/README.md)，团队侧的强制点见 [dsh-team-runtime README](../../packages/team/team-runtime/README.md)。
 
 teammate 的内联规则在首次委派时快照进其 `team/member-bound` 事件，因此被删除的定义文件不会破坏冷恢复；恢复时重读 managed 与 project 层，缺失的 managed 文件拒绝恢复，而不是在过期策略下运行。
 
@@ -103,7 +102,7 @@ teammate 的内联规则在首次委派时快照进其 `team/member-bound` 事�
 
 ## 5. 审批 teammate 请求
 
-`ask` 结果——来自 `requiresApproval` 或 `ask` 规则——挂起 teammate 的调用并打开一个控制请求：
+来自 `ask` 规则的 `ask` 结果挂起 teammate 的调用并打开一个控制请求：
 
 1. 运行时在 teammate 会话上持久化 `team/control-request` 并唤醒 leader。
 2. leader 通过 `team_control` 列出（`action: "list"`）并裁决（`action: "decide"` 加请求 id），取 `allow_once`、`deny`、`escalate_to_user`、`approve_plan` 或 `request_revision` 之一。

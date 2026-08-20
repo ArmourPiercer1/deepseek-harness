@@ -26,11 +26,24 @@ tools:
   allow: [read, edit, write, grep, glob, pwsh]
 mcpServers:
   servers: [postgres-mcp]
+permissions:
+  deny:
+    - Bash(rm -rf *)
+    - "Read(//**/.env)"
+  ask:
+    - "Bash(git push:*)"
+permissionMode: enforce
 contextPolicy: persistent
 ---
 
 You are a senior backend developer...
 ```
+
+Permission fields:
+
+- `permissions` — the member's inline rules for the permission engine: `deny` / `ask` / `allow` arrays of rule strings in the engine's rule format (inline `[a, b]` or block `- a` lists). Rule syntax is `Tool` or `Tool(specifier)`: a bare name (or `Tool(*)`) matches the whole tool for the engine's known families — `Bash` / `pwsh` by command pattern, `Read` / `Edit` / `Write` / `Grep` / `Glob` / `NotebookEdit` by path pattern, and `mcp__server` by server — while any other tool takes a `param:value` specifier (`*` wildcards) over one of its arguments. Rules that parse to no matcher are dropped with a diagnostic, so a rule that names an unsupported form silently allows nothing. The lists are snapshotted into the member's durable `team/member-bound` payload at delegation time, so a later-deleted definition file does not break cold recovery; the engine merges them with the managed/project rule files, where `deny` stays absolute across layers.
+- `permissionMode` — the member's permission mode: `enforce` or `default`, `enforce` when the field is omitted (a controlled teammate's unmatched call is denied at the executor rather than allowed). The reserved values `readonly` and `bypass` are rejected at parse time.
+- `requiresApproval` — legacy field, still parsed and snapshotted into the `team/member-bound` payload for existing definitions, but no longer gates anything: the enforcement hook evaluates every teammate call through the permission engine, so the field is superseded by an `ask` rule for the same tool.
 
 ## Config
 
