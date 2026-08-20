@@ -11,7 +11,7 @@ The agent team plugin gained its productized surfaces in the round 3 plan — th
 ## Decision
 
 - [`docs/cookbook/adding-agent-team.md`](../../../../docs/cookbook/adding-agent-team.md) (bilingual pair) is the procedural home for team operations: teammate definition authoring, mount selection (shipped preset by default per decision D6, bundle opt-in otherwise), delegation through the five leader tools, the permission rule layers (`deny > ask > allow`, `enforce`/`default` modes, absolute managed deny), and the approval flow over `team/control-request` / `team/control-decision`.
-- The guide states the round 3 target state per the confirmed plan; mechanism detail stays linked, not restated — the subsystem page, the package READMEs, and the [permission seam proposal](../../proposed/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) own their facts.
+- The guide states the round 3 target state per the confirmed plan; mechanism detail stays linked, not restated — the subsystem page, the package READMEs, and the [permission seam proposal](../architecture/2026-08-15-permission-seam-and-mcp-fusion.md) own their facts.
 - The two "deferred to Phase 4" limitation bullets leave [dsh-team](../../../../packages/team/team/README.md) and [dsh-team-runtime](../../../../packages/team/team-runtime/README.md); both keep a remaining limitation (`maxContextTokens`, the `maxTokens` cold-resume fallback), so the `NO_LIMITATIONS` allowlist in `scripts/verify-package-readme-limitations.ts` is untouched. The M2/M3 code changes document their own behavior in the package READMEs as they land.
 
 ## Alternatives considered

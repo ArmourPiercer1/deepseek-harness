@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-20-tool-permission-guard-resolves-permission-per-call.md
-2026-08-20-tool-permission-guard-resolves-permission-per-call.md: 6127213f07ac3fdfa7b472a1a81a64183c751106
-2026-08-20-tool-permission-guard-resolves-permission-per-call.zh.md: 4b1713fa4874c395fdadafb228b0541eb0139f70
+2026-08-20-tool-permission-guard-resolves-permission-per-call.md: 5e0a6a78f90ecefe53dc5797bc90389b546f0a1a
+2026-08-20-tool-permission-guard-resolves-permission-per-call.zh.md: d490385d2858385c59682e8f1164d3a84e2345e4

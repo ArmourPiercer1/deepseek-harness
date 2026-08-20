@@ -97,3 +97,79 @@ describe('evaluatePermission', () => {
     expect(decision.matchedRule?.matcher).toBe('mcp')
   })
 })
+
+describe('compound command denial through evaluatePermission', () => {
+  const denyRule = commandRule('deny', 'managed', 'rm -rf *')
+  const allowAll = commandRule('allow', 'teammate', '*')
+
+  it('denies a Bash compound command when any subcommand matches a deny rule', () => {
+    const decision = evaluatePermission(
+      { name: 'Bash', arguments: { command: 'git status && rm -rf /var/data' } },
+      [allowAll, denyRule],
+      'default',
+      pathBases,
+    )
+    expect(decision.kind).toBe('deny')
+    if (decision.kind === 'deny') {
+      expect(decision.cause).toBe('rule')
+      expect(decision.matchedRule?.kind).toBe('deny')
+      expect(decision.matchedRule?.layer).toBe('managed')
+    }
+  })
+
+  it('denies a pwsh compound command when a subcommand matches a deny rule through alias canonicalization', () => {
+    const pwshDeny: CompiledRule = {
+      kind: 'deny',
+      layer: 'managed',
+      tool: 'pwsh',
+      raw: 'pwsh(Remove-Item *)',
+      matcher: { kind: 'command', tool: 'pwsh', pattern: 'Remove-Item *' },
+    }
+    const decision = evaluatePermission(
+      { name: 'pwsh', arguments: { command: 'Get-ChildItem x; del foo' } },
+      [commandRule('allow', 'teammate', '*'), pwshDeny],
+      'default',
+      pathBases,
+    )
+    expect(decision.kind).toBe('deny')
+    if (decision.kind === 'deny') {
+      expect(decision.cause).toBe('rule')
+      expect(decision.matchedRule?.kind).toBe('deny')
+    }
+  })
+
+  it('does not deny a compound command when no subcommand matches the deny rule', () => {
+    const decision = evaluatePermission(
+      { name: 'Bash', arguments: { command: 'git status && git diff' } },
+      [denyRule, allowAll],
+      'default',
+      pathBases,
+    )
+    expect(decision.kind).toBe('allow')
+    expect(decision.matchedRule?.kind).toBe('allow')
+  })
+})
+
+describe('a managed-layer deny over a project-layer allow', () => {
+  const projectAllow = commandRule('allow', 'project')
+  const managedDeny = commandRule('deny', 'managed')
+
+  it('wins in default mode with the managed rule as the deciding rule', () => {
+    const decision = evaluatePermission(bashCall, [projectAllow, managedDeny], 'default', pathBases)
+    expect(decision.kind).toBe('deny')
+    if (decision.kind === 'deny') {
+      expect(decision.cause).toBe('rule')
+      expect(decision.matchedRule?.kind).toBe('deny')
+      expect(decision.matchedRule?.layer).toBe('managed')
+    }
+  })
+
+  it('wins in enforce mode with the managed rule as the deciding rule', () => {
+    const decision = evaluatePermission(bashCall, [projectAllow, managedDeny], 'enforce', pathBases)
+    expect(decision.kind).toBe('deny')
+    if (decision.kind === 'deny') {
+      expect(decision.cause).toBe('rule')
+      expect(decision.matchedRule?.layer).toBe('managed')
+    }
+  })
+})

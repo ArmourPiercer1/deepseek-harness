@@ -149,6 +149,22 @@ describe('dsh-permission Service Definition through a real Loader composition', 
     expect(decision).toEqual({ kind: 'deny', reason: 'no matching allow rule (enforce mode)', cause: 'mode' })
   })
 
+  it('compile reports a primary content field param rule as a load-time warning and drops it', async () => {
+    const ctx = await boot()
+    const { policy, diagnostics } = ctx.permission.compile([
+      { raw: 'Bash(command:rm *)', kind: 'allow', layer: 'project' },
+    ])
+    expect(diagnostics).toEqual([
+      "warning: primary content field 'command' cannot be matched by a param:value rule; ignored",
+    ])
+    // The ignored rule is dropped: an otherwise-unmatched call falls through to the mode.
+    const decision = ctx.permission.evaluate(
+      { name: 'Bash', arguments: { command: 'rm leftover' } },
+      { policy, mode: 'enforce', pathBases },
+    )
+    expect(decision).toEqual({ kind: 'deny', reason: 'no matching allow rule (enforce mode)', cause: 'mode' })
+  })
+
   it('permission/decision is a live session-log event carrying the durable payload', async () => {
     const ctx = await boot()
     const { policy } = ctx.permission.compile([

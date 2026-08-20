@@ -1,6 +1,6 @@
 # 实施计划：`permission` 能力接缝 + MCP 融合挂载
 
-> 配套文档：设计决策见 Agent Note `proposed/architecture/2026-08-15-permission-seam-and-mcp-fusion.md`（含中文版）。
+> 配套文档：设计决策见 Agent Note `implemented/architecture/2026-08-15-permission-seam-and-mcp-fusion.md`（含中文版）。
 > 本文件是**任务级工序计划**（不属于 Agent Note——按 docs/AGENTS.md，acceptance-task checklist / migration steps 不进 Note 正文）。
 > 范围：特征差距文档 §9-A + §9-B。分三阶段；每阶段可独立评审、独立交付。
 > 约定：所有贡献走 `ctx.effect()`/`ctx.on()` 返回 disposer；每包 owns `./invariant`；每个产品可见插件配真实 cordis.yml 组合测试。

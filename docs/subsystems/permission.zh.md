@@ -2,7 +2,7 @@
 
 [English](permission.md) | 中文
 
-[packages/permission](../../packages/permission) 的权限能力决定某个工具调用是否可以发出。`ctx.permission`（[dsh-permission](../../packages/permission/permission/README.md)）是[服务定义](../../packages/permission/permission/README.md)：抽象的 `PermissionService` 契约，提供 `compile` 与 `evaluate`。提供方 [dsh-permission-engine](../../packages/permission/permission-engine/README.md) 通过解析作者编写的规则字符串、用四种 matcher 匹配工具调用、裁决分层规则集并追加 `permission/decision` 审计事件来实现 `evaluate`；[dsh-tool-permission-guard](../../packages/permission/tool-permission-guard/README.md) 与 team 插件是它的消费者。包 README 负责组合状态与限制；[权限 seam Agent Note](../../.agents/notes/proposed/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 负责设计决策依据。
+[packages/permission](../../packages/permission) 的权限能力决定某个工具调用是否可以发出。`ctx.permission`（[dsh-permission](../../packages/permission/permission/README.md)）是[服务定义](../../packages/permission/permission/README.md)：抽象的 `PermissionService` 契约，提供 `compile` 与 `evaluate`。提供方 [dsh-permission-engine](../../packages/permission/permission-engine/README.md) 通过解析作者编写的规则字符串、用四种 matcher 匹配工具调用、裁决分层规则集并追加 `permission/decision` 审计事件来实现 `evaluate`；[dsh-tool-permission-guard](../../packages/permission/tool-permission-guard/README.md) 与 team 插件是它的消费者。包 README 负责组合状态与限制；[权限 seam Agent Note](../../.agents/notes/implemented/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 负责设计决策依据。
 
 源码：[`packages/permission/permission/src/index.ts`](../../packages/permission/permission/src/index.ts)
 

@@ -31,5 +31,5 @@ At that first compile, the guard logs every diagnostic the engine's parser repor
 
 ## Related
 
-- The [permission seam and MCP fusion](../../proposed/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) proposal owns the wider seam — the guard row, the team plugin's leader-rendezvous `ask` route, and the MCP tool-name merge — while this note owns the guard's service-resolution timing.
+- The [permission seam and MCP fusion](2026-08-15-permission-seam-and-mcp-fusion.md) proposal owns the wider seam — the guard row, the team plugin's leader-rendezvous `ask` route, and the MCP tool-name merge — while this note owns the guard's service-resolution timing.
 - The guard's README documents the per-call resolution, the diagnostic logging, and the `pathBases` config field.

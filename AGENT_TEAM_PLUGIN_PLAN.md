@@ -312,6 +312,8 @@ oh-my-opencode（源码位于 `references/oh-my-opencode`）是 OpenCode 的插�
 
 ### Phase 4: 精细化权限约束 [对应 G11]
 
+> **状态（2026-08-20，M4）**：本节原设计（4.1–4.3 经 `tools/pre-execute` / `fs/write-intent` / `fs/edit-intent` waterfall 注入 per-teammate 决策）已被 [permission seam note](.agents/notes/implemented/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 取代：参数级规则引擎（path/command/MCP/param 四类 matcher、`deny > ask > allow` 分层解析、per-scope 权限模式）在 `tools/pre-execute` 执行器边界统一裁决，`fs-observation-policy` 的两个 waterfall 决策槽保持独占不动。Stage 1 已实现（逐条测试映射见 note 的 Testing 节）；Stage 2（MCP 融合）与 Stage 3（加固）暂缓。下文任务表保留作历史参照。
+
 **扩展**: `packages/team/team-runtime/` 内新增
 
 | 任务 | 描述 | 对应缺失 |

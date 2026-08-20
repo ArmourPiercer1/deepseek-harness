@@ -510,7 +510,7 @@ Source: [`packages/llm/llm-retry/src/types.ts:11`](../packages/llm/llm-retry/src
 'permission/decision': PermissionDecisionData
 ```
 
-Source: [`packages/permission/permission/src/index.ts:87`](../packages/permission/permission/src/index.ts)
+Source: [`packages/permission/permission/src/index.ts:93`](../packages/permission/permission/src/index.ts)
 
 <a id="permissionpreset--log-only"></a>
 
@@ -736,7 +736,7 @@ Source: [`packages/subagent/subagent/src/descriptor.ts:37`](../packages/subagent
 'team/control-decision': TeamControlDecisionData
 ```
 
-Source: [`packages/team/team/src/events.ts:40`](../packages/team/team/src/events.ts)
+Source: [`packages/team/team/src/events.ts:42`](../packages/team/team/src/events.ts)
 
 <a id="teamcontrol-request--log-only"></a>
 
@@ -750,7 +750,7 @@ Source: [`packages/team/team/src/events.ts:40`](../packages/team/team/src/events
 'team/control-request': TeamControlRequestData
 ```
 
-Source: [`packages/team/team/src/events.ts:35`](../packages/team/team/src/events.ts)
+Source: [`packages/team/team/src/events.ts:37`](../packages/team/team/src/events.ts)
 
 <a id="teammember-bound--log-only"></a>
 
@@ -761,12 +761,14 @@ Source: [`packages/team/team/src/events.ts:35`](../packages/team/team/src/events
  * Durable binding of a child session to a team member definition.
  * Appended once in the child's initial turn. Carries the full effective
  * policy so cold resume reconstructs without the parent's live registry.
- * @param data - the member id, role, and resolved policy snapshot.
+ * @param data - the member id, role, and resolved policy snapshot,
+ *   optionally including the member's inline permission rules, permission
+ *   mode, and the bind-time presence of the managed rule file.
  */
 'team/member-bound': TeamMemberBoundData
 ```
 
-Source: [`packages/team/team/src/events.ts:25`](../packages/team/team/src/events.ts)
+Source: [`packages/team/team/src/events.ts:27`](../packages/team/team/src/events.ts)
 
 <a id="teammessage--log-only"></a>
 
@@ -780,7 +782,7 @@ Source: [`packages/team/team/src/events.ts:25`](../packages/team/team/src/events
 'team/message': TeamMessageData
 ```
 
-Source: [`packages/team/team/src/events.ts:45`](../packages/team/team/src/events.ts)
+Source: [`packages/team/team/src/events.ts:47`](../packages/team/team/src/events.ts)
 
 <a id="teamprogress--log-only"></a>
 
@@ -794,7 +796,7 @@ Source: [`packages/team/team/src/events.ts:45`](../packages/team/team/src/events
 'team/progress': TeamProgressData
 ```
 
-Source: [`packages/team/team/src/events.ts:30`](../packages/team/team/src/events.ts)
+Source: [`packages/team/team/src/events.ts:32`](../packages/team/team/src/events.ts)
 
 ### `todo/*`
 

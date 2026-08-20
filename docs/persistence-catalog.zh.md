@@ -512,7 +512,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'permission/decision': PermissionDecisionData
 ```
 
-来源：[`packages/permission/permission/src/index.ts:87`](../packages/permission/permission/src/index.ts)
+来源：[`packages/permission/permission/src/index.ts:93`](../packages/permission/permission/src/index.ts)
 
 <a id="permissionpreset--log-only"></a>
 
@@ -738,7 +738,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'team/control-decision': TeamControlDecisionData
 ```
 
-来源：[`packages/team/team/src/events.ts:40`](../packages/team/team/src/events.ts)
+来源：[`packages/team/team/src/events.ts:42`](../packages/team/team/src/events.ts)
 
 <a id="teamcontrol-request--log-only"></a>
 
@@ -752,7 +752,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'team/control-request': TeamControlRequestData
 ```
 
-来源：[`packages/team/team/src/events.ts:35`](../packages/team/team/src/events.ts)
+来源：[`packages/team/team/src/events.ts:37`](../packages/team/team/src/events.ts)
 
 <a id="teammember-bound--log-only"></a>
 
@@ -763,12 +763,14 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
  * Durable binding of a child session to a team member definition.
  * Appended once in the child's initial turn. Carries the full effective
  * policy so cold resume reconstructs without the parent's live registry.
- * @param data - the member id, role, and resolved policy snapshot.
+ * @param data - the member id, role, and resolved policy snapshot,
+ *   optionally including the member's inline permission rules, permission
+ *   mode, and the bind-time presence of the managed rule file.
  */
 'team/member-bound': TeamMemberBoundData
 ```
 
-来源：[`packages/team/team/src/events.ts:25`](../packages/team/team/src/events.ts)
+来源：[`packages/team/team/src/events.ts:27`](../packages/team/team/src/events.ts)
 
 <a id="teammessage--log-only"></a>
 
@@ -782,7 +784,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'team/message': TeamMessageData
 ```
 
-来源：[`packages/team/team/src/events.ts:45`](../packages/team/team/src/events.ts)
+来源：[`packages/team/team/src/events.ts:47`](../packages/team/team/src/events.ts)
 
 <a id="teamprogress--log-only"></a>
 
@@ -796,7 +798,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'team/progress': TeamProgressData
 ```
 
-来源：[`packages/team/team/src/events.ts:30`](../packages/team/team/src/events.ts)
+来源：[`packages/team/team/src/events.ts:47`](../packages/team/team/src/events.ts)
 
 ### `todo/*`
 

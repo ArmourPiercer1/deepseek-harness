@@ -1,12 +1,12 @@
 # Agent Team 插件第三轮开发计划（产品化轮）
 
-制订日期：2026-08-19。本文档是 [主开发计划](AGENT_TEAM_PLUGIN_PLAN.md) 的附属文档，依据 [2026-08-18 进度审计](AGENT_TEAM_PLUGIN_AUDIT_2026-08-18.md)、[第二轮计划](AGENT_TEAM_PLUGIN_ROUND2_PLAN.md) 的排除清单（决策 6"留待产品化轮次"项）与 [permission seam 提案](.agents/notes/proposed/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 制订。**2026-08-19 已确认**：三个决策项均采纳建议方案；批次不变；任务包路由按"任务包路由与升级"执行。
+制订日期：2026-08-19。本文档是 [主开发计划](AGENT_TEAM_PLUGIN_PLAN.md) 的附属文档，依据 [2026-08-18 进度审计](AGENT_TEAM_PLUGIN_AUDIT_2026-08-18.md)、[第二轮计划](AGENT_TEAM_PLUGIN_ROUND2_PLAN.md) 的排除清单（决策 6"留待产品化轮次"项）与 [permission seam 提案](.agents/notes/implemented/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 制订。**2026-08-19 已确认**：三个决策项均采纳建议方案；批次不变；任务包路由按"任务包路由与升级"执行。
 
 ## 制订前勘察结论
 
 以下事实来自 2026-08-19 对合并后代码库的实地勘察，是任务切分的前提：
 
-1. **Phase 4 的原设计已被 permission seam 提案取代。** 主计划 §三 Phase 4 设想在 `fs/write-intent` / `fs/edit-intent` waterfall 注入 per-teammate 决策；勘察确认 `fs-observation-policy` 独占这两个 waterfall 的唯一决策槽且不调用 `next()`（`packages/fs/fs-observation-policy/src/index.ts` 注释与"第二个 decider 不可达"测试为证），原路径不可行。[permission seam 提案](.agents/notes/proposed/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 以参数级规则引擎（path/command/MCP/param 四类 matcher、`deny > ask > allow` 分层解析、per-scope permission mode）覆盖了 4.1/4.2/4.3 的全部意图，本轮按其 Stage 1 执行。
+1. **Phase 4 的原设计已被 permission seam 提案取代。** 主计划 §三 Phase 4 设想在 `fs/write-intent` / `fs/edit-intent` waterfall 注入 per-teammate 决策；勘察确认 `fs-observation-policy` 独占这两个 waterfall 的唯一决策槽且不调用 `next()`（`packages/fs/fs-observation-policy/src/index.ts` 注释与"第二个 decider 不可达"测试为证），原路径不可行。[permission seam 提案](.agents/notes/implemented/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 以参数级规则引擎（path/command/MCP/param 四类 matcher、`deny > ask > allow` 分层解析、per-scope permission mode）覆盖了 4.1/4.2/4.3 的全部意图，本轮按其 Stage 1 执行。
 2. **permission 包已部分建成（本地工作，上游没有）。** `packages/permission/` 三个包均已存在：`permission-engine` 完整（解析、四类 matcher、resolve、audit，8 个测试文件）；`permission`（Service Definition）与 `tool-permission-guard`（Consumer）有源码与 README 但无测试；team 插件尚未接入（`team-runtime` 无任何 permission 引用）。note 状态为 proposed。
 3. **审计事件类型已在词汇表内。** 上游 `interaction/permission-presets` 已声明 `permission/decision` 与 `permission/preset` 两个 `SessionEventMap` 成员，生成词汇表已含二者——Stage 1 的审计事件可复用，**无需新增 session 事件类型**（payload 兼容性需在设计阶段验证，见 D8）。
 4. **Web 面板已有起点。** `packages/client/ui-team` 已存在（本地提交 `584cd8e73f`），但只有 `TeamSettingsSection`（设置页 teammate 启用面）；进度面板、teammate 状态、消息时间线未做。可参照的同类 client 包：`ui-subagent`、`ui-workflow-run`、`ui-goal`。
@@ -134,4 +134,4 @@
 | `AGENT_TEAM_PLUGIN_PLAN.md` | §七索引已追加本文档行；Phase 4/5 状态更新随 M4/M9 |
 | `AGENT_TEAM_PLUGIN_AUDIT_2026-08-18.md` | 不动（时点记录），本轮进展记入本文档与后续 Agent Note |
 | `AGENT_TEAM_PLUGIN_ROUND3_PLAN.md` | 本文档，2026-08-19 确认 |
-| permission seam note（proposed） | 不动；状态推进随 M4 接线完成 |
+| permission seam note（implemented） | M4 已将状态推进为 implemented（Stage 1 完成，Stage 2/3 暂缓）；逐条测试映射见 note 的 Testing 节 |
