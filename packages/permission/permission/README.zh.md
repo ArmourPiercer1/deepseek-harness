@@ -48,4 +48,3 @@ DeepSeek Harness 的权限 Service Definition。
 - **`readonly` 与 `bypass` 是保留但未实现的枚举值**——类型声明了它们，而第一阶段的引擎会以错误拒绝二者，而非对其采取行动。
 - **分层规则加载不属于 Definition**——合并后的层标记规则集是 `evaluate` 的输入；组装 managed/project/teammate 层的加载器被延迟。
 - **规则学习被延迟**——将已批准的 `ask` 写回目标地由权限 seam Agent Note 定型，但尚不属于本 Definition。
-- **尚无会话日志组合测试**——deny 到 `permission/decision` 的关系由一个尚不存在的组合测试断言。

@@ -48,4 +48,3 @@ Independent. The Definition adds no request-prefix tokens and cannot invalidate 
 - **`readonly` and `bypass` are reserved, unimplemented enum values** — the type declares them, and the first-stage engine rejects either with an error rather than acting on it.
 - **Layered rule loading is not part of the Definition** — the merged, layer-tagged rule set is an input to `evaluate`; the loader that assembles managed/project/teammate layers is deferred.
 - **Rule learning is deferred** — writing an approved `ask` back to a destination is shaped by the permission seam Agent Note but is not part of this Definition yet.
-- **No session-log composition test yet** — the deny-to-`permission/decision` relation is asserted by a composition test that does not exist yet.

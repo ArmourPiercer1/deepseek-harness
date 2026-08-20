@@ -8,7 +8,7 @@ A `tools/pre-execute` listener that applies `ctx.permission.evaluate` for the ma
 
 ## Role
 
-**Consumer** — reads `ctx.permission` (from `@deepseek-ai/dsh-permission`), provides no service. It sits loose in a composition and resolves the host permission engine. The team plugin is a separate consumer that routes an `ask` to the leader rendezvous instead.
+**Consumer** — reads `ctx.permission` (from `@deepseek-ai/dsh-permission`), provides no service. It sits loose in a composition: the service is resolved per tool call, not at apply time, because the Loader activates rows in parallel and an apply-time read could permanently disable the guard; when the service is absent the call proceeds unguarded. A rule the engine drops or ignores at compile is logged through the guard's logger at the first evaluated call, so a dropped deny cannot vanish silently. The team plugin is a separate consumer that routes an `ask` to the leader rendezvous instead.
 
 ## Config
 
@@ -16,6 +16,7 @@ A `tools/pre-execute` listener that applies `ctx.permission.evaluate` for the ma
 |---|---|
 | `mode` | The scope's permission mode (`enforce` / `default`). |
 | `rules` | The authored rule strings for this scope, by kind. |
+| `pathBases` | Resolution bases for path-rule anchors (`settingsDir` / `homeDir` / `cwd`). |
 
 Rule-source layering and cold-recovery snapshots are the loader's concern; this consumer receives the resolved mode and rules.
 
@@ -39,4 +40,4 @@ Independent. The guard adds no request-prefix tokens and cannot invalidate an ot
 
 - **Not mounted in any composition** — the listener row appears in no bundle or profile `cordis.yml`, so the guard is inactive until a row is composed and `ctx.permission` is present.
 - **Rule-source layering and cold-recovery snapshots are not implemented** — the guard receives the resolved mode and rules; the loader that assembles managed/project/teammate layers and cold-resume snapshots is deferred.
-- **The `ask` path depends on the approval seam** — the guard routes an `ask` to the approval seam; the team plugin routes one to the leader rendezvous instead, and no session-log composition test proves either path yet.
+- **The `ask` path depends on the approval seam** — the guard routes an `ask` to the approval seam, proven by a composition test against a real `ApprovalService`; without the service the seam denies the call. The team plugin's leader-rendezvous route is a separate consumer's concern.

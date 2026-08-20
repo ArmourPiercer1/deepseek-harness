@@ -26,13 +26,16 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "lib/**/*.js",
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
   "dependencies": {},
   "peerDependencies": {
     "@deepseek-ai/dsh-permission": "workspace:^",
+    "@deepseek-ai/dsh-permission-engine": "workspace:^",
     "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",
     "@deepseek-ai/dsh-tools": "workspace:^",
@@ -40,10 +43,17 @@
     "@deepseek-ai/cordis": "workspace:^"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis-plugin-include": "workspace:^",
+    "@deepseek-ai/cordis-plugin-loader": "workspace:^",
+    "@deepseek-ai/dsh-agent": "workspace:^",
+    "@deepseek-ai/dsh-llm": "workspace:^",
     "@deepseek-ai/dsh-permission": "workspace:^",
+    "@deepseek-ai/dsh-permission-engine": "workspace:^",
     "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",
+    "@deepseek-ai/dsh-system-prompt": "workspace:^",
     "@deepseek-ai/dsh-tools": "workspace:^",
+    "@deepseek-ai/dsh-user-approval": "workspace:^",
     "@deepseek-ai/schemastery": "workspace:^",
     "@deepseek-ai/cordis": "workspace:^",
     "vitest": "^3.2.1"
