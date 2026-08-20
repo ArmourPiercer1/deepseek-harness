@@ -1,0 +1,7 @@
+{
+  "name": "team-agent-example",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Runnable demo: one leader delegating to teammates with approval, cold recovery, and workspace discovery"
+}
