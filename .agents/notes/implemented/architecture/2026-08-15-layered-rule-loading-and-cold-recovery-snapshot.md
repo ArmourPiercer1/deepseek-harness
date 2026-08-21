@@ -45,7 +45,7 @@ The stored promise can reject before any consumer awaits it (a lapsed managed fi
 - Backward compatibility is structural: pre-rules `team/member-bound` payloads (no `rules`, no `managedPresent`) cold-resume exactly as before, and the member setup test asserts the snapshot-less load call.
 - The engine stays pure and path-agnostic; `resolveRuleLayerPaths` in `dsh-team-runtime` is the single owner of the file path convention, and the engine's tests use their own temp trees.
 - The bind-time probe reads the ambient `$DSH_HOME`; tests stub it to temp directories.
-- The enforcement point that compiles the recovered policy and denies calls (settling a stored rejection into a deny) is described by the [teammate permission enforcement note](2026-08-20-teammate-permission-enforcement-at-the-executor.md); the remaining gap is documented as a known limitation in the `dsh-permission-engine` and `dsh-team-runtime` READMEs: no shipped composition carries the engine row, so the team rows stay inert there.
+- The enforcement point that compiles the recovered policy and denies calls (settling a stored rejection into a deny) is described by the [teammate permission enforcement note](2026-08-20-teammate-permission-enforcement-at-the-executor.md); the engine row it requires ships in the base bundle per the [base-composition wiring note](../bug-fix/2026-08-21-base-composition-carries-the-permission-engine.md), so every shipped preset's team rows resolve the hard injection.
 
 ## Related
 

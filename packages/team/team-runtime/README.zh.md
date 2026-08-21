@@ -46,4 +46,4 @@ DeepSeek Harness 团队插件的团队运行时编排、委托与每个成员的
 ## 已知限制与暂缓事项
 
 - `maxTokens` 只在全新委托时应用；冷恢复的 teammate 会回退到其路由默认值，因为可继续描述符按设计省略了每次激活的预算。
-- 硬 `permission` 注入意味着插件只在携带 permission engine 行的组合中激活，而没有任何已发布的组合携带该 engine 行：已发布 team 预设的 team-runtime 行保持惰性（pending），直到某个部署把 engine 组合进来，因此强制只在两者被组装到一起的地方生效。把 engine 接入某个已发布预设（manifest + lockfile）暂缓。
+- 硬 `permission` 注入意味着插件只在携带 permission engine 行的组合中激活。已发布的 base bundle 携带该行，因此每个已发布预设都能解析该注入；不带 engine 行的自定义组合会把 team-runtime 行显示为 pending，而不是带着看不见的策略缺口运行。

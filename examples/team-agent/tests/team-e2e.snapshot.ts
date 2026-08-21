@@ -163,10 +163,13 @@ describe('team-agent keyless snapshot', () => {
         writer: scrubRequestHeaders(normalizeSessionLog(writer, normalization)),
         sentry: scrubRequestHeaders(normalizeSessionLog(sentry, normalization)),
       }
-      // World state: the approved write landed in the workspace.
+      // World state: both approved writes landed in the workspace.
       expect(await readFile(join(cwd, 'workspace-a', 'notes', 'hello.txt'), 'utf8')).toBe('hello from writer\n')
+      expect(await readFile(join(cwd, 'workspace-a', 'notes', 'watch.txt'), 'utf8')).toBe('watch recorded\n')
     } finally {
-      await rm(cwd, { recursive: true, force: true })
+      // On Windows the killed phase process can keep the directory locked
+      // briefly; a cleanup failure must not swallow the scenario error.
+      await rm(cwd, { recursive: true, force: true }).catch(() => undefined)
     }
 
     const scenario = logs
@@ -202,7 +205,7 @@ describe('team-agent keyless snapshot', () => {
     expect(scenario.sentry.split('SENTRY_FOLLOWUP').at(0)).not.toContain('team/control-decision')
     // cold recovery: the interrupted call is repaired, the skill guard holds
     // on the resumed child, and the fresh request decides and executes
-    // The crash leaves sentry's `todo_write` call recorded but undelivered, so
+    // The crash leaves sentry's `write` call recorded but undelivered, so
     // repair closes it as unknown rather than not started.
     expect(scenario.sentry).toContain('TOOL_OUTCOME_UNKNOWN')
     // (the skill name is JSON-escaped inside the log line)

@@ -31,17 +31,21 @@ const PATH_ARG_KEYS = ['file_path', 'path', 'target_path', 'notebook_path'] as c
  * Whether a {@link PathMatcher} matches a tool call's extracted file path.
  *
  * The file path is read from `args` as the first string among `file_path`,
- * `path`, `target_path`, `notebook_path`. Matching applies only when
- * `toolName === matcher.tool`. The pattern's anchor resolves against `bases`
- * (`//` root, `~` home, `/` settings, relative/`./` cwd), both the resolved
- * pattern and the input path are normalized to POSIX form, and they are
- * compared under gitignore rules: `*` matches within one segment, `**` across
- * segments, and a bare name matches at any depth.
+ * `path`, `target_path`, `notebook_path`, then resolved to an absolute POSIX
+ * path: an already-absolute input keeps its form, and a relative input joins
+ * the scope's session cwd (`bases.cwd`), mirroring how the pattern's own
+ * relative/`./` anchor resolves. Matching applies only when `toolName` equals
+ * `matcher.tool` case-insensitively (harness tool names are lowercase; rule
+ * spellings may be capitalized). The pattern's anchor resolves against `bases`
+ * (`//` root, `~` home, `/` settings, relative/`./` cwd), and the resolved
+ * pattern and input path are compared under gitignore rules: `*` matches
+ * within one segment, `**` across segments, and a bare name matches at any
+ * depth.
  *
  * @param matcher - the compiled path matcher.
  * @param toolName - the invoked tool name.
  * @param args - the tool's JSON arguments.
- * @param bases - resolution bases for the pattern's anchors.
+ * @param bases - resolution bases for the pattern's anchors and relative inputs.
  * @returns true when the input path matches the resolved pattern.
  */
 export function matchPath(
@@ -50,12 +54,14 @@ export function matchPath(
   args: JsonValue,
   bases: PathMatchBases,
 ): boolean {
-  if (toolName !== matcher.tool) return false
+  if (toolName.toLowerCase() !== matcher.tool.toLowerCase()) return false
   const raw = extractPath(args)
   if (raw === null) return false
+  const input = toPosix(raw)
+  const absolute = input.startsWith('/') ? input : joinPosix(toPosix(bases.cwd), input)
   return matchSegments(
     toSegments(resolvePattern(matcher.pattern, bases)),
-    toSegments(toPosix(raw)),
+    toSegments(absolute),
   )
 }
 

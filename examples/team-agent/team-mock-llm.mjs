@@ -12,7 +12,7 @@
  *   calls the approval-gated `write` tool, verifies the file, and settles;
  * - the leader delegates SENTRY_TASK to `sentry` when the writer settles;
  *   sentry warms up with a read and suspends on its approval-gated
- *   `todo_write` (the boot-1 crash point — the leader declines to decide);
+ *   `write` (the boot-1 crash point — the leader declines to decide);
  * - after the restart, the leader lists teammates, discovers its stale
  *   decision no longer resolves, approves the fresh request once sentry is
  *   re-driven, and the team settles.
@@ -30,8 +30,8 @@ const HIGH = ReasoningEffortId('high')
 const OFF = ReasoningEffortId('off')
 
 const WRITER_PROMPT = 'WRITER_TASK: create notes/hello.txt with the greeting.'
-const SENTRY_PROMPT = 'SENTRY_TASK: record the watch with todo_write.'
-const WATCH_TODOS = [{ content: 'Watch the inbox', status: 'in_progress' }]
+const SENTRY_PROMPT = 'SENTRY_TASK: record the watch by writing notes/watch.txt.'
+const WATCH_FILE = { file_path: 'notes/watch.txt', content: 'watch recorded\n' }
 const WRITER_WARMUP = '.dsh/teammates/writer.md'
 const SENTRY_WARMUP = '.dsh/teammates/sentry.md'
 
@@ -117,10 +117,10 @@ function pendingApprovals(messages) {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i]
     if (message.role !== 'user' || message.source.kind === 'tool') continue
-    const match = textOf(message).match(/requests approval to run "([^"]+)" \(request ([0-9a-f-]+)\)/)
-    if (match === null || match[1] === undefined || match[2] === undefined) continue
-    if (decidedRequestId(messages, match[2])) continue
-    pending.push({ toolName: match[1], requestId: match[2] })
+    const match = textOf(message).match(/Teammate "([^"]+)" requests approval to run "([^"]+)" \(request ([0-9a-f-]+)\)/)
+    if (match === null || match[1] === undefined || match[2] === undefined || match[3] === undefined) continue
+    if (decidedRequestId(messages, match[3])) continue
+    pending.push({ memberId: match[1], toolName: match[2], requestId: match[3] })
   }
   return pending
 }
@@ -166,7 +166,7 @@ function toolCallOrdinal(messages, toolName) {
 /**
  * Script the leader's response for one visible history. The leader serializes
  * the team: it addresses the writer's approval first, dispatches sentry only
- * when the writer settles, and declines to decide the `todo_write` request
+ * when the writer settles, and declines to decide sentry's watch request
  * until the restart marker says the pre-restart window is over.
  */
 function scriptLeader(messages, lastCall, toolResponse) {
@@ -179,12 +179,13 @@ function scriptLeader(messages, lastCall, toolResponse) {
     if (resumed && !actedSinceResume(messages)) {
       return toolResponse('list_teammates', {})
     }
-    // Pre-restart, the leader never decides the watch's `todo_write` request;
-    // it decides everything else, so a declined request only ever coexists
-    // with already-decided ones.
+    // Pre-restart, the leader never decides sentry's watch request; it
+    // decides everything else, so a declined request only ever coexists
+    // with already-decided ones. Both gated calls are `write` (the rule
+    // language cannot target `todo_write`), so the decline keys on the member.
     const actionable = resumed
       ? pending[0]
-      : pending.find(request => request.toolName !== 'todo_write')
+      : pending.find(request => request.memberId !== 'sentry')
     if (actionable === undefined) {
       return { final: 'Sentry request noted; it will be reviewed after the restart.' }
     }
@@ -260,21 +261,21 @@ function scriptWriter(lastCall, toolResponse) {
 
 /**
  * Script sentry. Pre-restart: warm-up read, then the approval-gated
- * `todo_write` (the crash point). After the re-drive: the repaired call's
+ * `write` (the crash point). After the re-drive: the repaired call's
  * `TOOL_OUTCOME_UNKNOWN` result falls through to the `skill` probe, which the
- * member guard denies; the fresh `todo_write` then decides and settles.
+ * member guard denies; the fresh `write` then decides and settles.
  */
 function scriptSentry(messages, lastCall, toolResponse) {
   if (!historyHasMarker(messages, 'SENTRY_FOLLOWUP')) {
     if (lastCall?.name === 'read' && !lastCall.isError && lastCall.arguments?.file_path === SENTRY_WARMUP) {
-      return toolResponse('todo_write', { todos: WATCH_TODOS })
+      return toolResponse('write', WATCH_FILE)
     }
     return toolResponse('read', { file_path: SENTRY_WARMUP })
   }
   if (lastCall?.name === 'skill') {
-    return toolResponse('todo_write', { todos: WATCH_TODOS })
+    return toolResponse('write', WATCH_FILE)
   }
-  if (lastCall?.name === 'todo_write' && !lastCall.isError) {
+  if (lastCall?.name === 'write' && !lastCall.isError) {
     return toolResponse('read', { file_path: SENTRY_WARMUP })
   }
   if (lastCall?.name === 'read' && !lastCall.isError) {

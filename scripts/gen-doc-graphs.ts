@@ -589,7 +589,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'seam',
     implementations: ['permission-engine'],
     consumers: ['tool-permission-guard'],
-    note: 'The Service Definition declares evaluate and policy types; engine and guard packages implement adjudication and execution gating, though neither is yet composed in a shipped profile.',
+    note: 'The Service Definition declares evaluate and policy types; the engine package implements adjudication and ships in the base bundle, while the guard package implements execution gating and remains an opt-in consumer.',
   },
 ]
 

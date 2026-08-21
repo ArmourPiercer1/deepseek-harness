@@ -51,7 +51,19 @@ compile(rules: readonly RuleSource[]): { readonly policy: CompiledPolicy; readon
  * @returns the allow/ask/deny decision, with the matched rule when a rule decided it.
  */
 evaluate(call: ToolCallView, context: PermissionContext): PermissionDecision
+
+/**
+ * Load the managed and project rule layers from disk (read-only), merge them
+ * with the optional teammate inline rules, and return the scope's full
+ * layer-tagged rule source set. A missing managed file is refused (not
+ * skipped) when the options record that the scope was bound with it present.
+ * @param options - the layer file paths and the optional teammate snapshot.
+ * @returns the merged rule sources plus each layer's presence.
+ * @throws when the managed file is missing but was present at bind time, or a
+ *   layer file cannot be read or is outside the supported rule-file format.
+ */
+loadRuleLayers(options: LoadRuleLayersOptions): Promise<LoadedRuleLayers>
 ```
 
-Source: [`packages/permission/permission/src/index.ts:56`](../../packages/permission/permission/src/index.ts)
+Source: [`packages/permission/permission/src/index.ts:51`](../../packages/permission/permission/src/index.ts)
 <!-- END GENERATED cordis-surface -->

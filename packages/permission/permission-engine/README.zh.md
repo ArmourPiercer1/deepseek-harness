@@ -19,6 +19,8 @@ DeepSeek Harness 的权限引擎提供方。
 | mcp | `mcp__server[__tool]` | 整个服务器、精确工具与 `mcp__*` 前缀 |
 | param | 任意工具 | `Tool(param:value)`，作用于顶层标量字段，绝不作用于主内容字段 |
 
+command、path 与 param 匹配器的工具名比较大小写不敏感——harness 工具名为小写，规则拼写为 Claude Code 风格的大写——`mcp__` 前缀是唯一精确匹配的例外。path 匹配器在 gitignore 比较前把相对输入路径解析到该 scope 的会话 cwd。
+
 ## 裁决
 
 `evaluate` 按 `deny → ask → allow → mode fallback` 顺序匹配；无论特异性如何，第一个匹配者胜出。`managed` 层的 `deny` 不能被较低层的 `allow` 覆盖。未匹配的调用由模式决定：`enforce` 拒绝，`default` 允许；`readonly` 与 `bypass` 被拒绝为未实现。
@@ -69,6 +71,5 @@ DeepSeek Harness 的权限引擎提供方。
 
 ## 已知局限与延迟工作
 
-- **未挂载到任何已发布的组合**——引擎行未出现在任何 bundle 或 profile 的 `cordis.yml` 中，因此已发布预设里 `ctx.permission` 缺席：团队运行时的硬 `permission` 注入使 team 预设的 team-runtime 行保持惰性（pending），直到某个部署把 engine 行与其组合到一起。
 - **`readonly` 与 `bypass` 模式是未实现的桩**——`resolveDecision` 会对这两个保留模式抛错，而非对其采取行动。
 - **规则学习与 MCP 生命周期被延迟**——权限 seam Agent Note 的后续阶段负责写回目标与 MCP 生命周期，此处未实现。

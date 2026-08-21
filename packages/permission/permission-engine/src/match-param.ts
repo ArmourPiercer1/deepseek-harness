@@ -4,10 +4,11 @@ import type { ParamMatcher } from './matchers.ts'
 /**
  * Whether a `Tool(param:value)` rule matches a tool call over a top-level
  * scalar argument field, replicating Claude Code's parameter-matching
- * semantics. The caller guarantees the rule was never built for a primary
- * content field (`command`, `file_path`, `path`, `notebook_path`, `url`),
- * which are rejected at parse time; matching here assumes the field is an
- * ordinary parameter.
+ * semantics. The tool name compares case-insensitively (harness tool names
+ * are lowercase; rule spellings may be capitalized). The caller guarantees the
+ * rule was never built for a primary content field (`command`, `file_path`,
+ * `path`, `notebook_path`, `url`), which are rejected at parse time; matching
+ * here assumes the field is an ordinary parameter.
  *
  * @param matcher - the compiled param matcher payload.
  * @param toolName - the invoked tool name.
@@ -15,7 +16,7 @@ import type { ParamMatcher } from './matchers.ts'
  * @returns true when the matcher applies to this call.
  */
 export function matchParam(matcher: ParamMatcher, toolName: string, args: JsonValue): boolean {
-  if (matcher.tool !== toolName) return false
+  if (matcher.tool.toLowerCase() !== toolName.toLowerCase()) return false
 
   if (args === null || typeof args !== 'object' || Array.isArray(args)) return false
   if (!Object.hasOwn(args, matcher.param)) return false

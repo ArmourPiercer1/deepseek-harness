@@ -48,6 +48,20 @@ describe('parseRule', () => {
     expect(res.rule!.matcher).toEqual({ kind: 'command', tool: 'pwsh', pattern: 'Remove-Item *' })
   })
 
+  it('detects command and path families case-insensitively', () => {
+    const path = parseRule('write', 'ask', 'teammate')
+    expect(path.diagnostics).toEqual([])
+    expect(path.rule!.matcher).toEqual({ kind: 'path', tool: 'write', pattern: '*' })
+
+    const command = parseRule('bash(git status:*)', 'allow', 'project')
+    expect(command.diagnostics).toEqual([])
+    expect(command.rule!.matcher).toEqual({ kind: 'command', tool: 'bash', pattern: 'git status:*' })
+
+    const alias = parseRule('powershell(Remove-Item *)', 'deny', 'project')
+    expect(alias.diagnostics).toEqual([])
+    expect(alias.rule!.tool).toBe('pwsh')
+  })
+
   it('ignores a primary content field param:value rule with a warning and no rule', () => {
     const res = parseRule('Bash(command:rm *)', 'allow', 'managed')
     expect(res.rule).toBeUndefined()

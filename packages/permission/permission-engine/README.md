@@ -19,6 +19,8 @@ Implements `ctx.permission` (the `@deepseek-ai/dsh-permission` Service Definitio
 | mcp | `mcp__server[__tool]` | whole-server, exact-tool, and `mcp__*` prefixes |
 | param | any tool | `Tool(param:value)` over a top-level scalar field, never a primary content field |
 
+Tool-name comparison is case-insensitive for the command, path, and param matchers — harness tool names are lowercase while rule spellings are Claude Code-style capitalized — with the `mcp__` prefix as the one exact-match exception. The path matcher resolves a relative input path against the scope's session cwd before the gitignore comparison.
+
 ## Adjudication
 
 `evaluate` matches in `deny → ask → allow → mode fallback` order; the first match wins regardless of specificity. A `managed`-layer `deny` cannot be overridden by a lower layer's `allow`. An unmatched call is decided by the mode: `enforce` denies, `default` allows; `readonly` and `bypass` are rejected as unimplemented.
@@ -69,6 +71,5 @@ Independent.
 
 ## Known Limitations and Deferred Work
 
-- **Not mounted in any shipped composition** — the engine row appears in no bundle or profile `cordis.yml`, so `ctx.permission` is absent in shipped presets: the team runtime's hard `permission` injection leaves the team preset's team-runtime row inert (pending) until a deployment composes the engine row alongside it.
 - **`readonly` and `bypass` modes are unimplemented stubs** — `resolveDecision` throws on either reserved mode rather than acting on it.
 - **Rule learning and MCP lifecycle are deferred** — later stages of the permission seam Agent Note own write-back destinations and MCP lifecycle, and are not implemented here.

@@ -2540,26 +2540,16 @@ Source: [`packages/lsp/tool-lsp/src/index.ts:58`](../packages/lsp/tool-lsp/src/i
 export interface Config {
   /** Permission mode for an unmatched call. */
   mode: 'enforce' | 'default'
-  /** The authored rules, compiled once at apply. */
+  /** The authored rules, compiled once, lazily, on the first evaluated call. */
   rules: RuleSource[]
   /** Resolution bases for path-rule anchors. */
   pathBases: PathBases
 }
-
-/** One authored rule with its kind and source layer. */
-interface RuleSource {
-  /** The authored rule string (e.g. `Bash(rm -rf *)`). */
-  raw: string
-  /** Whether the rule allows, prompts, or denies. */
-  kind: RuleKind
-  /** The layer the rule was declared in. */
-  layer: RuleLayer
-}
 ```
 
-Depends on: [`PathBases`](../packages/permission/permission/src/index.ts) · [`RuleKind`](../packages/permission/permission/src/index.ts) · [`RuleLayer`](../packages/permission/permission/src/index.ts)
+Depends on: [`PathBases`](../packages/permission/permission/src/index.ts) · [`RuleSource`](../packages/permission/permission/src/index.ts)
 
-Source: [`packages/permission/tool-permission-guard/src/index.ts:36`](../packages/permission/tool-permission-guard/src/index.ts)
+Source: [`packages/permission/tool-permission-guard/src/index.ts:33`](../packages/permission/tool-permission-guard/src/index.ts)
 
 <a id="deepseek-aidsh-tool-pwsh"></a>
 
@@ -3148,7 +3138,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-subagent` ([`packages/subagent/subagent/src/index.ts`](../packages/subagent/subagent/src/index.ts))
 - `@deepseek-ai/dsh-subprocess-local` ([`packages/subprocess/subprocess-local/src/index.ts`](../packages/subprocess/subprocess-local/src/index.ts))
 - `@deepseek-ai/dsh-team` ([`packages/team/team/src/index.ts`](../packages/team/team/src/index.ts))
-- `@deepseek-ai/dsh-team-runtime` — requires `team` · `tools` · `subagents` ([`packages/team/team-runtime/src/index.ts`](../packages/team/team-runtime/src/index.ts))
+- `@deepseek-ai/dsh-team-runtime` — requires `team` · `tools` · `subagents` · `permission` ([`packages/team/team-runtime/src/index.ts`](../packages/team/team-runtime/src/index.ts))
 - `@deepseek-ai/dsh-terminal` ([`packages/terminal/terminal/src/index.ts`](../packages/terminal/terminal/src/index.ts))
 - `@deepseek-ai/dsh-tool-ask-user` — requires `tools` · `userQuestions` ([`packages/interaction/tool-ask-user/src/index.ts`](../packages/interaction/tool-ask-user/src/index.ts))
 - `@deepseek-ai/dsh-tool-call-timeout-policy` — requires `tools` ([`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts))

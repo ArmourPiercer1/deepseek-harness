@@ -493,6 +493,6 @@ flowchart LR
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 注册 Host inspect 提供方、镜像 Client 提供方 manifest，并通过动态 Cordis 传输路由 Client 查询。 |
 | `ctx.team` | `seam` | [`team`](../packages/team/team) | [`team-local`](../packages/team/team-local) | [`tool-team`](../packages/team/tool-team), [`team-runtime`](../packages/team/team-runtime), [`team-channels`](../packages/team/team-channels) | - | Service Definition 声明抽象的 TeamRegistry；provider 填充成员定义，runtime、channels 与 tool 消费方协调成员生命周期。 |
 | `ctx.teamControl` | `core` | [`team-channels`](../packages/team/team-channels) | - | [`tool-team`](../packages/team/tool-team), [`team-runtime`](../packages/team/team-runtime) | - | 跨子上下文与工具执行，在 leader 会话上协调 teammate 的审批请求与汇合。 |
-| `ctx.permission` | `seam` | [`permission`](../packages/permission/permission) | [`permission-engine`](../packages/permission/permission-engine) | [`tool-permission-guard`](../packages/permission/tool-permission-guard) | - | Service Definition 声明 evaluate 与策略类型；engine 与 guard 包实现裁决与执行门控，但两者目前都尚未组合进任何已发布的 profile。 |
+| `ctx.permission` | `seam` | [`permission`](../packages/permission/permission) | [`permission-engine`](../packages/permission/permission-engine) | [`tool-permission-guard`](../packages/permission/tool-permission-guard) | - | Service Definition 声明 evaluate 与策略类型；engine 包实现裁决并随 base bundle 发布，guard 包实现执行门控并仍是 opt-in 消费者。 |
 
 维护模式：混合模式。服务从 Cordis 声明中发现；接口、实现和消费方角色在 `scripts/gen-doc-graphs.ts` 中分类，并设有完整性守卫。

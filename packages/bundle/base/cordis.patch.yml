@@ -190,6 +190,15 @@
       config:
         policy: !!js "(process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask'"
 
+    # The permission engine: `ctx.permission` (compile + evaluate). It is pure
+    # until a consumer compiles a scope's authored rules, so mounting it changes
+    # nothing on its own; the tools/pre-execute guard and the team plugin's
+    # teammate-enforcement hook are the consumers that read it. The team preset
+    # hard-injects it through scope parentage, exactly as it resolves the host
+    # `tools` and `subagents` registries.
+    - id: permission-engine
+      name: '@deepseek-ai/dsh-permission-engine'
+
     - id: permission
       name: '@deepseek-ai/dsh-permission-presets'
       config:

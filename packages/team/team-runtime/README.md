@@ -46,4 +46,4 @@ No effect.
 ## Known Limitations and Deferred Work
 
 - `maxTokens` is applied on fresh delegation only; a cold-resumed teammate falls back to its route default because the continuable descriptor omits per-activation budgets by design.
-- The hard `permission` injection means the plugin activates only in compositions that carry a permission engine row, and no shipped composition carries one: the shipped team preset's team-runtime row stays inert (pending) until a deployment composes the engine, so enforcement is live only where the two are assembled together. Wiring the engine into a shipped preset (manifest + lockfile) is deferred.
+- The hard `permission` injection means the plugin activates only in compositions that carry a permission engine row. The shipped base bundle carries it, so every shipped preset resolves the injection; a custom composition without the engine row shows the team-runtime row as pending instead of running with an invisible policy gap.

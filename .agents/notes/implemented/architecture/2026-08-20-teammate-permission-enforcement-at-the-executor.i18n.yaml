@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-20-teammate-permission-enforcement-at-the-executor.md
-2026-08-20-teammate-permission-enforcement-at-the-executor.md: 5d63278173d91edbfa0eaaab0855175c46bd233e
-2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md: 6e14d011a383bb9a9ce6470fa80f8ecdfa021e08
+2026-08-20-teammate-permission-enforcement-at-the-executor.md: 5156c21a142876beb750fc2925b92319ca1d5c14
+2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md: 42a204b5660fdc885b4669e7785cea2f39b7a3f6

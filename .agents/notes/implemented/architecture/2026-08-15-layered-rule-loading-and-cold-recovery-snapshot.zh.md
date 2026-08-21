@@ -45,7 +45,7 @@ Status: implemented
 - 向后兼容是结构性的：无规则字段的旧 `team/member-bound` 载荷（无 `rules`、无 `managedPresent`）与从前完全相同地冷恢复，成员设置测试断言了这一无快照的加载调用。
 - 引擎保持纯与不感知路径；`dsh-team-runtime` 的 `resolveRuleLayerPaths` 是文件路径约定的唯一所有者，引擎的测试使用自己的临时目录树。
 - 绑定期探测读取环境中的 `$DSH_HOME`；测试把它 stub 到临时目录。
-- 从恢复策略编译并对调用执行 deny（把存储的拒绝结算为 deny）的强制点由[teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.md)记载；剩余的缺口作为已知局限记录在 `dsh-permission-engine` 与 `dsh-team-runtime` 的 README 中：没有任何已发布的组合携带 engine 行，因此那里的团队行保持惰性。
+- 从恢复策略编译并对调用执行 deny（把存储的拒绝结算为 deny）的强制点由[teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.md)记载；它所需的 engine 行按 [base 组合接线 note](../bug-fix/2026-08-21-base-composition-carries-the-permission-engine.md) 随 base bundle 发布，因此每个已发布预设的团队行都能解析该硬注入。
 
 ## 相关
 

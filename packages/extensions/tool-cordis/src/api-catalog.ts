@@ -929,6 +929,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'call', description: 'the tool name and JSON arguments to decide.' }, { name: 'context', description: 'the compiled policy, mode, path bases, and acting member.' }],
         returns: 'the allow/ask/deny decision, with the matched rule when a rule decided it.',
       },
+      {
+        signature: 'loadRuleLayers(options: LoadRuleLayersOptions): Promise<LoadedRuleLayers>',
+        description: 'Load the managed and project rule layers from disk (read-only), merge them with the optional teammate inline rules, and return the scope\'s full layer-tagged rule source set. A missing managed file is refused (not skipped) when the options record that the scope was bound with it present.',
+        parameters: [{ name: 'options', description: 'the layer file paths and the optional teammate snapshot.' }],
+        returns: 'the merged rule sources plus each layer\'s presence.',
+        throws: ['when the managed file is missing but was present at bind time, or a layer file cannot be read or is outside the supported rule-file format.'],
+      },
     ],
   },
   {
@@ -3420,6 +3427,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export class LlmRuntime extends Service {\n    constructor(ctx: Context);\n    registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;\n    listProviders(): LlmProviderInfo[];\n    registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;\n    listConfigurableProviders(): LlmConfigurableProvider[];\n    registerModelDiscovery(settingsNs: string, discover: (request: LlmModelDiscoveryRequest) => Promise<readonly LlmDiscoveredModel[]>): () => void;\n    async discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest): Promise<LlmDiscoveredModel[]>;\n    providerRetryPolicy(provider: string): ResolvedRetryPolicy;\n    async listModels(provider: string): Promise<LlmModelInfo[]>;\n    async resolveModelInfo(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async resolveCallConfig(config: LlmCallConfig, signal?: AbortSignal): Promise<LlmCallConfig>;\n    async prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>;\n    stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
   },
   {
+    name: 'LoadedRuleLayers',
+    declaration: 'export interface LoadedRuleLayers {\n    readonly rules: RuleSource[];\n    readonly managedPresent: boolean;\n    readonly projectPresent: boolean;\n}',
+  },
+  {
+    name: 'LoadRuleLayersOptions',
+    declaration: 'export interface LoadRuleLayersOptions {\n    readonly managedPath?: string;\n    readonly projectPath?: string;\n    readonly teammateRules?: PermissionRules;\n    readonly managedPresent?: boolean;\n}',
+  },
+  {
     name: 'LspHover',
     declaration: 'export interface LspHover {\n    readonly contents: string;\n    readonly range?: LspRange;\n}',
   },
@@ -3594,6 +3609,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'PermissionMode',
     declaration: 'export type PermissionMode = \'enforce\' | \'default\' | \'readonly\' | \'bypass\';',
+  },
+  {
+    name: 'PermissionRules',
+    declaration: 'export interface PermissionRules {\n    readonly deny?: readonly string[];\n    readonly ask?: readonly string[];\n    readonly allow?: readonly string[];\n}',
   },
   {
     name: 'PermissionSelect',
@@ -4401,7 +4420,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamMemberDefinition',
-    declaration: 'export interface TeamMemberDefinition {\n    readonly id: TeamMemberId;\n    readonly role: TeamMemberRole;\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider?: string;\n    readonly model?: string;\n    readonly maxTokens?: number;\n    readonly tools?: TeamToolPolicy;\n    readonly requiresApproval?: readonly string[];\n    readonly skills?: readonly string[];\n    readonly mcpServers?: TeamMcpPolicy;\n    readonly contextPolicy?: TeamContextPolicy;\n    readonly sourcePath?: string;\n}',
+    declaration: 'export interface TeamMemberDefinition {\n    readonly id: TeamMemberId;\n    readonly role: TeamMemberRole;\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: string;\n    readonly provider?: string;\n    readonly model?: string;\n    readonly maxTokens?: number;\n    readonly tools?: TeamToolPolicy;\n    readonly requiresApproval?: readonly string[];\n    readonly skills?: readonly string[];\n    readonly mcpServers?: TeamMcpPolicy;\n    readonly permissions?: TeamPermissionRules;\n    readonly permissionMode?: TeamPermissionMode;\n    readonly contextPolicy?: TeamContextPolicy;\n    readonly sourcePath?: string;\n}',
   },
   {
     name: 'TeamMemberId',
@@ -4410,6 +4429,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamMemberRole',
     declaration: 'export type TeamMemberRole = \'leader\' | \'teammate\';',
+  },
+  {
+    name: 'TeamPermissionMode',
+    declaration: 'export type TeamPermissionMode = \'enforce\' | \'default\';',
+  },
+  {
+    name: 'TeamPermissionRules',
+    declaration: 'export interface TeamPermissionRules {\n    readonly deny?: readonly string[];\n    readonly ask?: readonly string[];\n    readonly allow?: readonly string[];\n}',
   },
   {
     name: 'TeamToolPolicy',

@@ -96,3 +96,26 @@ describe('matchPath field extraction', () => {
     expect(matchPath(m, 'Edit', { file_path: '/Users/alice/proj/x' }, bases)).toBe(false)
   })
 })
+
+describe('matchPath tool name case', () => {
+  it('matches the tool name case-insensitively', () => {
+    const m = matcher('hello.txt', 'Write')
+    expect(matchPath(m, 'write', { file_path: '/Users/alice/proj/notes/hello.txt' }, bases)).toBe(true)
+    expect(matchPath(m, 'WRITE', { file_path: '/Users/alice/proj/notes/hello.txt' }, bases)).toBe(true)
+    expect(matchPath(m, 'read', { file_path: '/Users/alice/proj/notes/hello.txt' }, bases)).toBe(false)
+  })
+})
+
+describe('matchPath input resolution', () => {
+  it('resolves a relative input path against cwd', () => {
+    const m = matcher('notes/hello.txt', 'Write')
+    expect(matchPath(m, 'write', { file_path: 'notes/hello.txt' }, bases)).toBe(true)
+    expect(matchPath(m, 'write', { file_path: 'notes/other.txt' }, bases)).toBe(false)
+    expect(matchPath(m, 'write', { file_path: '/Users/alice/proj/notes/hello.txt' }, bases)).toBe(true)
+  })
+
+  it('matches a bare Write rule against a nested relative path', () => {
+    const m = matcher('*', 'Write')
+    expect(matchPath(m, 'write', { file_path: 'notes/watch.txt' }, bases)).toBe(true)
+  })
+})

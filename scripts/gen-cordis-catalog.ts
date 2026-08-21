@@ -525,6 +525,8 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   PermissionContext: 'permission evaluation inputs are owned by packages/permission/permission/src/types.ts',
   PermissionDecision: 'permission evaluation result is owned by packages/permission/permission/src/types.ts',
   ToolCallView: 'minimal tool-call view is owned by packages/permission/permission/src/types.ts',
+  LoadRuleLayersOptions: 'rule-layer load inputs are owned by packages/permission/permission/src/types.ts',
+  LoadedRuleLayers: 'rule-layer load result is owned by packages/permission/permission/src/types.ts',
   TeamMemberDefinition: 'team member definition is owned by packages/team/team/src/types.ts',
   TeamMemberId: 'branded team member identity is owned by packages/team/team/src/brand.ts',
   TeamControlDecision: 'leader control decision is owned by packages/team/team-channels/src/control-coordinator.ts',

@@ -50,37 +50,43 @@ export interface ParseRuleResult {
   readonly diagnostics: readonly ParseDiagnostic[]
 }
 
-/** `PowerShell` is an alias for the `pwsh` tool in rule syntax. */
-const PWSH_ALIAS = 'PowerShell'
+/** `PowerShell` (matched case-insensitively) is an alias for the `pwsh` tool in rule syntax. */
+const PWSH_ALIAS = 'powershell'
 
-/** Tools whose natural matcher is a command pattern (the `pwsh` alias folded in). */
-const COMMAND_TOOLS: ReadonlySet<string> = new Set(['Bash', 'pwsh'])
+/**
+ * Tools whose natural matcher is a command pattern (the `pwsh` alias folded
+ * in). Family membership is case-insensitive: harness tool names are
+ * lowercase while Claude Code-style rule spellings are capitalized, and both
+ * must parse.
+ */
+const COMMAND_TOOLS: ReadonlySet<string> = new Set(['bash', 'pwsh'])
 
-/** Tools whose natural matcher is a gitignore-style path pattern. */
+/** Tools whose natural matcher is a gitignore-style path pattern (case-insensitive membership). */
 const PATH_TOOLS: ReadonlySet<string> = new Set([
-  'Read',
-  'Edit',
-  'Write',
-  'Grep',
-  'Glob',
-  'NotebookEdit',
+  'read',
+  'edit',
+  'write',
+  'grep',
+  'glob',
+  'notebookedit',
 ])
 
 /**
- * Each tool's primary content field. A `param:value` specifier matching one of
- * these cannot be enforced by a param matcher (the field is the whole payload),
- * so it is ignored with a warning for Claude Code parity.
+ * Each tool's primary content field, keyed by the lowercase tool name. A
+ * `param:value` specifier matching one of these cannot be enforced by a param
+ * matcher (the field is the whole payload), so it is ignored with a warning
+ * for Claude Code parity.
  */
 const PRIMARY_CONTENT_FIELDS: Readonly<Record<string, string>> = {
-  Bash: 'command',
+  bash: 'command',
   pwsh: 'command',
-  Read: 'file_path',
-  Edit: 'file_path',
-  Write: 'file_path',
-  Grep: 'path',
-  Glob: 'path',
-  NotebookEdit: 'notebook_path',
-  WebFetch: 'url',
+  read: 'file_path',
+  edit: 'file_path',
+  write: 'file_path',
+  grep: 'path',
+  glob: 'path',
+  notebookedit: 'notebook_path',
+  webfetch: 'url',
 }
 
 /**
@@ -128,9 +134,12 @@ function parseMcp(tool: string): McpMatcher {
  * Parse an authored rule string into a compiled rule. A bare `Tool` or
  * `Tool(*)` is a match-all for that tool; the matcher kind is chosen from the
  * tool family (mcp / command / path) and the specifier form (param:value vs a
- * plain pattern). A malformed or unsupported rule yields an error diagnostic
- * and no rule; a `param:value` specifier on a primary content field yields a
- * warning and no rule.
+ * plain pattern). Family detection is case-insensitive — `Write` and `write`
+ * both parse as the path family, since harness tool names are lowercase while
+ * Claude Code-style spellings are capitalized — except the `mcp__` prefix,
+ * which stays exact. A malformed or unsupported rule yields an error
+ * diagnostic and no rule; a `param:value` specifier on a primary content
+ * field yields a warning and no rule.
  *
  * @param raw - the authored rule string (e.g. `Bash(git push:*)`).
  * @param kind - allow / ask / deny, threaded onto the compiled rule.
@@ -164,7 +173,8 @@ export function parseRule(raw: string, kind: RuleKind, layer: RuleLayer): ParseR
     return { diagnostics: [{ severity: 'error', message: `malformed rule '${raw}': missing tool name` }] }
   }
 
-  const tool = rawTool === PWSH_ALIAS ? 'pwsh' : rawTool
+  const lowerTool = rawTool.toLowerCase()
+  const tool = lowerTool === PWSH_ALIAS ? 'pwsh' : rawTool
 
   if (tool.startsWith(MCP_PREFIX)) {
     if (specifier !== undefined && specifier !== '*') {
@@ -173,12 +183,16 @@ export function parseRule(raw: string, kind: RuleKind, layer: RuleLayer): ParseR
     return { rule: { kind, layer, tool, raw, matcher: parseMcp(tool) }, diagnostics: [] }
   }
 
-  const isCommand = COMMAND_TOOLS.has(tool)
-  const isPath = PATH_TOOLS.has(tool)
+  // Family detection is case-insensitive (rule spellings are Claude
+  // Code-style capitalized, harness tool names lowercase); the compiled
+  // matcher keeps the authored name and the matchers compare case-insensitively.
+  const matchName = tool.toLowerCase()
+  const isCommand = COMMAND_TOOLS.has(matchName)
+  const isPath = PATH_TOOLS.has(matchName)
   const param = describeParam(specifier)
 
   if (param !== undefined) {
-    const primary = PRIMARY_CONTENT_FIELDS[tool]
+    const primary = PRIMARY_CONTENT_FIELDS[matchName]
     if (primary !== undefined && param.param === primary) {
       return {
         diagnostics: [{

@@ -54,4 +54,10 @@ describe('matchParam', () => {
     const m = matcher('isolation', 'worktree', 'Agent')
     expect(matchParam(m, 'Bash', { isolation: 'worktree' })).toBe(false)
   })
+
+  it('matches the tool name case-insensitively', () => {
+    const m = matcher('isolation', 'worktree', 'Agent')
+    expect(matchParam(m, 'agent', { isolation: 'worktree' })).toBe(true)
+    expect(matchParam(m, 'AGENT', { isolation: 'worktree' })).toBe(true)
+  })
 })

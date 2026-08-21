@@ -2542,26 +2542,16 @@ export interface Config {
 export interface Config {
   /** Permission mode for an unmatched call. */
   mode: 'enforce' | 'default'
-  /** The authored rules, compiled once at apply. */
+  /** The authored rules, compiled once, lazily, on the first evaluated call. */
   rules: RuleSource[]
   /** Resolution bases for path-rule anchors. */
   pathBases: PathBases
 }
-
-/** One authored rule with its kind and source layer. */
-interface RuleSource {
-  /** The authored rule string (e.g. `Bash(rm -rf *)`). */
-  raw: string
-  /** Whether the rule allows, prompts, or denies. */
-  kind: RuleKind
-  /** The layer the rule was declared in. */
-  layer: RuleLayer
-}
 ```
 
-依赖：[`PathBases`](../packages/permission/permission/src/index.ts) · [`RuleKind`](../packages/permission/permission/src/index.ts) · [`RuleLayer`](../packages/permission/permission/src/index.ts)
+依赖：[`PathBases`](../packages/permission/permission/src/index.ts) · [`RuleSource`](../packages/permission/permission/src/index.ts)
 
-来源：[`packages/permission/tool-permission-guard/src/index.ts:36`](../packages/permission/tool-permission-guard/src/index.ts)
+来源：[`packages/permission/tool-permission-guard/src/index.ts:33`](../packages/permission/tool-permission-guard/src/index.ts)
 
 <a id="deepseek-aidsh-tool-pwsh"></a>
 

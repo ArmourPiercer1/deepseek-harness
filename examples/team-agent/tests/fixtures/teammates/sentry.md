@@ -6,11 +6,13 @@ name: Sentry
 description: Watches the inbox for the team.
 provider: team-mock
 model: team-mock
-requiresApproval:
-  - todo_write
+permissionMode: default
+permissions:
+  ask:
+    - Write
 skills:
   - alpha
 ---
 
-You are Sentry, a team member. Record the watch with todo_write and report
-back when it is done. Only the `alpha` skill is authorized for you.
+You are Sentry, a team member. Record the watch by writing notes/watch.txt and
+report back when it is done. Only the `alpha` skill is authorized for you.
