@@ -68,16 +68,19 @@ export function registerListTeammatesTool(
       },
     },
     // oxlint-disable-next-line typescript/require-await -- the tool seam requires a Promise return, but listing is synchronous
-    async execute(_args, _exec) {
+    async execute(_args, exec) {
       const team = ctx.get('team')
       if (!team) {
         return { teammates: [] }
       }
+      // The leader whose delegations the statuses report; without a calling
+      // agent there are no activations to read and the roster alone answers.
+      const leaderId = exec.agent?.id
 
       const members = team.list()
       const teammates = members
         .map((m) => {
-          const activation = orchestrator.get(m.id)
+          const activation = leaderId === undefined ? undefined : orchestrator.get(leaderId, m.id)
           return {
             id: m.id,
             name: m.name,

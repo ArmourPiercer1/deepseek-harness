@@ -12,12 +12,12 @@ Team runtime orchestration, delegation, and per-member capability filtering for 
 
 | Export | Description |
 |---|---|
-| `TeamOrchestrator` | Session-scoped activation manager |
+| `TeamOrchestrator` | Activation manager partitioned by leader session id; one instance may serve many concurrent leaders, and one leader's activations are invisible to every other |
 | `createMcpGuard` | Dynamic MCP tool guard factory |
 | `createSkillGuard` | Dynamic skill tool guard factory |
 | `installMemberComposition` | Composite member setup from bound data |
 | `installApprovalHook` | Scoped `tools/pre-execute` enforcement: every call is evaluated by the `permission` service; allow proceeds, deny blocks with the engine's reason, ask suspends at the leader rendezvous; abort and leader-unreachability settle with a deny |
-| `teamMemberSetupContribution` | `registerContinuableSetup` contribution reading `team/member-bound`, reconciling pending control requests, installing the enforcement hook, and starting the rule-layer recovery load |
+| `teamMemberSetupContribution` | `registerContinuableSetup` contribution reading `team/member-bound`, reconciling pending control requests, installing the enforcement hook, and starting the rule-layer recovery load; as a preset row it installs only into children derived under the same standing composition (a host-plane row installs into every team child) |
 | `resolveRuleLayerPaths` | Resolve the managed (`$DSH_HOME/permissions.yml`) and project (`<workspace>/.dsh/permissions.yml`) rule file paths |
 | `getRecoveredRuleLayers` | Read a team child's stored rule-layer load (a promise that may reject with a lapsed-managed or malformed-file error); `setRecoveredRuleLayers` / `releaseRecoveredRuleLayers` write and remove the entry |
 

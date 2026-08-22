@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/cookbook/adding-agent-team.md
-adding-agent-team.md: 5ba3726fc8e19f18ea576e9615de952244625666
-adding-agent-team.zh.md: 9dba36b911d9397e17599f6a678e2407cd788866
+adding-agent-team.md: 06669c0b183051565ddd920f8bc2ccfc098a3017
+adding-agent-team.zh.md: da714d32b0e22788aec54340615932e21ac6c142

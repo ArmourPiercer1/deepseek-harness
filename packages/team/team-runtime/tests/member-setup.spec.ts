@@ -1,9 +1,11 @@
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
+import { Context as CordisContext } from '@deepseek-ai/cordis'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { TeamMemberId } from '@deepseek-ai/dsh-team'
 import type { TeamMemberBoundData } from '@deepseek-ai/dsh-team'
+import { bindScopeParent, createScope } from '@deepseek-ai/dsh-scope'
 import { installMemberComposition, teamMemberSetupContribution } from '../src/member-setup.ts'
 import { getRecoveredRuleLayers } from '../src/rule-layers.ts'
 
@@ -97,6 +99,82 @@ describe('teamMemberSetupContribution', () => {
       expect(child.disposeGuard).toHaveBeenCalledTimes(1)
     }).not.toThrow()
     expect(child.guard).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('teamMemberSetupContribution preset-generation scoping', () => {
+  /**
+   * Real scoped contexts: one standing composition ("team") and one other
+   * ("aieo-team"), each with a child agent scope derived under it, plus an
+   * orphan child with no scope parent. The child stand-in keeps the plain
+   * object shape the other tests use while the scope tag comes from
+   * `extend`-style prototype chaining over the minted scope contexts.
+   */
+  function scopedFixture() {
+    const root = new CordisContext()
+    const teamKey: object = { preset: 'team' }
+    const otherKey: object = { preset: 'aieo-team' }
+    const teamStanding = createScope(root, teamKey)
+    createScope(root, otherKey)
+
+    const ownChildKey: object = { agent: 'own' }
+    bindScopeParent(ownChildKey, teamKey)
+    const foreignChildKey: object = { agent: 'foreign' }
+    bindScopeParent(foreignChildKey, otherKey)
+    const orphanKey: object = { agent: 'orphan' }
+
+    const teamRowCtx = teamStanding.ctx.extend({
+      // A preset row reads `permission` through its hard injection; the plain
+      // double keeps installRecoveredRules off the Cordis inject proxy.
+      permission: { loadRuleLayers: vi.fn().mockResolvedValue({ rules: [], managedPresent: false, projectPresent: false }) },
+    }) // a preset row context inherits the standing tag
+    const child = (scopeCtx: Context, events: readonly { type: string; data: unknown }[]) => {
+      const guard = vi.fn((_fn: unknown) => vi.fn())
+      // `extend` defines own properties (the Context proxy rejects plain
+      // assignment), shadowing the inherited scope tag with the child's own
+      // agent/tools test doubles while preserving scopeOf resolution.
+      const ctx = scopeCtx.extend({
+        agent: { session: { events, header: {} } },
+        tools: { guard },
+        on: vi.fn(() => vi.fn()),
+      })
+      return { ctx, guard }
+    }
+    const memberBound = [{ type: 'team/member-bound', data: bound({ mcpServers: { servers: ['a'] } }) }]
+    return {
+      teamRowCtx,
+      own: child(createScope(root, ownChildKey).ctx, memberBound),
+      foreign: child(createScope(root, foreignChildKey).ctx, memberBound),
+      orphan: child(createScope(root, orphanKey).ctx, memberBound),
+    }
+  }
+
+  it('installs into a child derived under the registration’s own standing composition', () => {
+    const f = scopedFixture()
+    const dispose = teamMemberSetupContribution(f.teamRowCtx)(f.own.ctx)
+    expect(f.own.guard).toHaveBeenCalledTimes(1)
+    dispose()
+  })
+
+  it('skips a child derived under a different standing composition', () => {
+    const f = scopedFixture()
+    const dispose = teamMemberSetupContribution(f.teamRowCtx)(f.foreign.ctx)
+    expect(f.foreign.guard).not.toHaveBeenCalled()
+    expect(() => { dispose() }).not.toThrow()
+  })
+
+  it('skips a child whose scope has no standing parent', () => {
+    const f = scopedFixture()
+    const dispose = teamMemberSetupContribution(f.teamRowCtx)(f.orphan.ctx)
+    expect(f.orphan.guard).not.toHaveBeenCalled()
+    expect(() => { dispose() }).not.toThrow()
+  })
+
+  it('keeps installing every team child when the row runs on the host plane (no scope tag)', () => {
+    const f = scopedFixture()
+    const dispose = teamMemberSetupContribution(hostCtx)(f.foreign.ctx)
+    expect(f.foreign.guard).toHaveBeenCalledTimes(1)
+    dispose()
   })
 })
 

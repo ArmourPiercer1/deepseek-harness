@@ -2,6 +2,11 @@
  * Model-facing team tools: delegate_to_teammate, list_teammates,
  * send_team_message, team_progress, team_control.
  *
+ * The orchestrator state is partitioned by leader session: this plugin row is
+ * shared by every agent its composition composes, so per-member activations
+ * belong to the calling leader's session id and are invisible to other
+ * leaders.
+ *
  * @module @deepseek-ai/dsh-tool-team
  */
 
@@ -29,10 +34,14 @@ export function apply(ctx: Context): void {
   registerControlTool(ctx, coordinator)
 
   ctx.on('session/event', (session, event) => {
+    // The leader whose delegation this event belongs to: for a teammate
+    // child's activity it is the child's durable parent; for the leader's
+    // own user/message events it is the session itself.
+    const leaderId = session.header.parentSession ?? session.id
     if (event.type === 'tool/call') {
-      const activation = orchestrator.findByChildSession(session.id)
+      const activation = orchestrator.findByChildSession(leaderId, session.id)
       if (activation && activation.status === 'running') {
-        orchestrator.updateActivity(activation.memberId, event.data.name)
+        orchestrator.updateActivity(leaderId, activation.memberId, event.data.name)
       }
       return
     }
@@ -41,9 +50,9 @@ export function apply(ctx: Context): void {
     if (source.kind !== 'subagent-settled') return
     const senderSessionId = source.senderSessionId
     if (typeof senderSessionId !== 'string') return
-    const activation = orchestrator.findByChildSession(senderSessionId)
+    const activation = orchestrator.findByChildSession(leaderId, senderSessionId)
     if (activation && activation.status === 'running') {
-      orchestrator.markSettled(activation.memberId)
+      orchestrator.markSettled(leaderId, activation.memberId)
     }
   })
 }

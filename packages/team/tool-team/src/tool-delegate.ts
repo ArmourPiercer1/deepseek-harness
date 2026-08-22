@@ -128,7 +128,7 @@ export function registerDelegateTool(
       }
 
       if (action === 'shutdown') {
-        const activation = orchestrator.get(memberId)
+        const activation = orchestrator.get(me.id, memberId)
         if (!activation || activation.status === 'disposed') {
           return {
             status: 'shutdown',
@@ -155,7 +155,7 @@ export function registerDelegateTool(
           }
         }
 
-        orchestrator.markDisposed(memberId)
+        orchestrator.markDisposed(me.id, memberId)
         return {
           status: 'shutdown',
           teammate_id: args.teammate_id,
@@ -166,7 +166,7 @@ export function registerDelegateTool(
       }
 
       if (action === 'follow_up') {
-        const activation = orchestrator.get(memberId)
+        const activation = orchestrator.get(me.id, memberId)
         if (!activation || activation.status === 'disposed') {
           return {
             status: 'error',
@@ -184,7 +184,7 @@ export function registerDelegateTool(
           await deliverFollowup(subagents, me, activation.childSessionId, args.prompt, exec.signal)
 
           if (activation.status === 'settled') {
-            orchestrator.recordActivation(memberId, activation.childSessionId)
+            orchestrator.recordActivation(me.id, memberId, activation.childSessionId)
           }
 
           return {
@@ -202,7 +202,7 @@ export function registerDelegateTool(
       }
 
       // Check if already in-flight
-      const running = orchestrator.get(memberId)
+      const running = orchestrator.get(me.id, memberId)
       if (running?.status === 'running') {
         const info = running.lastActivityAt
           ? ` Last activity: ${running.lastAction ?? 'unknown'} at ${new Date(running.lastActivityAt).toISOString()}.`
@@ -218,7 +218,7 @@ export function registerDelegateTool(
       // starting a fresh one.
       const policy = member.contextPolicy ?? 'persistent'
       if (policy === 'persistent') {
-        const activation = orchestrator.get(memberId)
+        const activation = orchestrator.get(me.id, memberId)
         if (activation && activation.status === 'settled') {
           const subagents = ctx.get('subagents')
           if (!subagents) {
@@ -228,7 +228,7 @@ export function registerDelegateTool(
           try {
             await deliverFollowup(subagents, me, activation.childSessionId, args.prompt, exec.signal)
 
-            orchestrator.recordActivation(memberId, activation.childSessionId)
+            orchestrator.recordActivation(me.id, memberId, activation.childSessionId)
 
             return {
               status: 'dispatched',
@@ -293,7 +293,7 @@ export function registerDelegateTool(
           },
         })
 
-        orchestrator.recordActivation(memberId, result.childId as string)
+        orchestrator.recordActivation(me.id, memberId, result.childId as string)
 
         return {
           status: 'dispatched',

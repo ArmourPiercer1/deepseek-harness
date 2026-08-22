@@ -12,12 +12,12 @@ DeepSeek Harness 团队插件的团队运行时编排、委托与每个成员的
 
 | 导出 | 说明 |
 |---|---|
-| `TeamOrchestrator` | 会话作用域的激活管理器 |
+| `TeamOrchestrator` | 按 leader 会话 id 分区的激活管理器；一个实例可服务多个并发 leader，且一个 leader 的激活记录对其他 leader 不可见 |
 | `createMcpGuard` | 动态 MCP 工具 guard 工厂 |
 | `createSkillGuard` | 动态 skill 工具 guard 工厂 |
 | `installMemberComposition` | 从绑定数据进行的复合成员设置 |
 | `installApprovalHook` | 作用域的 `tools/pre-execute` 强制点：每个调用都由 `permission` 服务评估；allow 放行，deny 以引擎的理由阻断，ask 在 leader 会合处挂起；中止与无法联系 leader 以 deny 结束 |
-| `teamMemberSetupContribution` | 读取 `team/member-bound`、对账待处理控制请求、安装强制钩子并启动规则分层恢复加载的 `registerContinuableSetup` 贡献 |
+| `teamMemberSetupContribution` | 读取 `team/member-bound`、对账待处理控制请求、安装强制钩子并启动规则分层恢复加载的 `registerContinuableSetup` 贡献；作为预设行时只装入派生自同一 standing composition 的子会话（宿主平面的行装入每个团队子会话） |
 | `resolveRuleLayerPaths` | 解析 managed（`$DSH_HOME/permissions.yml`）与 project（`<workspace>/.dsh/permissions.yml`）规则文件路径 |
 | `getRecoveredRuleLayers` | 读取某团队子会话存储的规则分层加载（一个可能以 managed 失效或文件格式错误拒绝的 promise）；`setRecoveredRuleLayers` / `releaseRecoveredRuleLayers` 写入与移除条目 |
 

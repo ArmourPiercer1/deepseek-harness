@@ -94,7 +94,7 @@ permissions:
 permissionMode: enforce
 ```
 
-四个 matcher 族覆盖命令、路径、MCP 工具前缀与通用 `Tool(param:value)` 参数；未匹配的调用回退到成员的 `permissionMode`，其中 `enforce`（受控 teammate 的默认）拒绝、`default` 放行。完整规则语言及其失败模式见 [dsh-permission-engine README](../../packages/permission/permission-engine/README.md)，团队侧的强制点见 [dsh-team-runtime README](../../packages/team/team-runtime/README.md)。
+四个 matcher 族覆盖命令、路径、MCP 工具前缀与通用 `Tool(param:value)` 参数；未匹配的调用回退到成员的 `permissionMode`，其中 `enforce`（受控 teammate 的默认）拒绝、`default` 放行。子会话发起的每个工具调用都要经过这一评估，包括团队自身的汇报工具：`enforce` 成员的 `allow` 列表必须显式包含它们（如 `allow: ["Read", "report"]`），否则其收尾的 `report` 调用会以 `no matching allow rule (enforce mode)` 被拒，结果只能经运行时的收尾消息兜底送达 leader。完整规则语言及其失败模式见 [dsh-permission-engine README](../../packages/permission/permission-engine/README.md)，团队侧的强制点见 [dsh-team-runtime README](../../packages/team/team-runtime/README.md)。
 
 teammate 的内联规则在首次委派时快照进其 `team/member-bound` 事件，因此被删除的定义文件不会破坏冷恢复；恢复时重读 managed 与 project 层，缺失的 managed 文件拒绝恢复，而不是在过期策略下运行。
 

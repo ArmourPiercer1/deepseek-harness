@@ -60,7 +60,7 @@ function recordedFollowup(subagents: { followup: ReturnType<typeof vi.fn> }) {
 describe('send_team_message', () => {
   it('delivers a leader message to a running teammate session via followup', async () => {
     const orchestrator = new TeamOrchestrator()
-    orchestrator.recordActivation(teammateId, 'child-1')
+    orchestrator.recordActivation('leader-session', teammateId, 'child-1')
     const { subagents, execute } = await captureTool(orchestrator)
     const caller = exec('leader')
 
@@ -75,13 +75,13 @@ describe('send_team_message', () => {
     expect(subagents.reportFrom).not.toHaveBeenCalled()
     expect(result.status).toBe('sent')
     expect(result.message).toBe('Message delivered to Teammate teammate-1.')
-    expect(orchestrator.get(teammateId)?.status).toBe('running')
+    expect(orchestrator.get('leader-session', teammateId)?.status).toBe('running')
   })
 
   it('cold-resumes a settled teammate via followup and re-records the activation as running', async () => {
     const orchestrator = new TeamOrchestrator()
-    orchestrator.recordActivation(teammateId, 'child-1')
-    orchestrator.markSettled(teammateId)
+    orchestrator.recordActivation('leader-session', teammateId, 'child-1')
+    orchestrator.markSettled('leader-session', teammateId)
     const { subagents, execute } = await captureTool(orchestrator)
     const caller = exec('leader')
 
@@ -93,14 +93,14 @@ describe('send_team_message', () => {
     expect(childId).toBe(SessionId('child-1'))
     expect(subagents.reportFrom).not.toHaveBeenCalled()
     expect(result.status).toBe('sent')
-    expect(orchestrator.get(teammateId)?.status).toBe('running')
-    expect(orchestrator.get(teammateId)?.childSessionId).toBe('child-1')
+    expect(orchestrator.get('leader-session', teammateId)?.status).toBe('running')
+    expect(orchestrator.get('leader-session', teammateId)?.childSessionId).toBe('child-1')
   })
 
   it('cold-resumes a disposed teammate via followup and re-records the activation as running', async () => {
     const orchestrator = new TeamOrchestrator()
-    orchestrator.recordActivation(teammateId, 'child-1')
-    orchestrator.markDisposed(teammateId)
+    orchestrator.recordActivation('leader-session', teammateId, 'child-1')
+    orchestrator.markDisposed('leader-session', teammateId)
     const { subagents, execute } = await captureTool(orchestrator)
     const caller = exec('leader')
 
@@ -112,13 +112,13 @@ describe('send_team_message', () => {
     expect(childId).toBe(SessionId('child-1'))
     expect(subagents.reportFrom).not.toHaveBeenCalled()
     expect(result.status).toBe('sent')
-    expect(orchestrator.get(teammateId)?.status).toBe('running')
+    expect(orchestrator.get('leader-session', teammateId)?.status).toBe('running')
   })
 
   it('keeps a settled activation settled when followup fails', async () => {
     const orchestrator = new TeamOrchestrator()
-    orchestrator.recordActivation(teammateId, 'child-1')
-    orchestrator.markSettled(teammateId)
+    orchestrator.recordActivation('leader-session', teammateId, 'child-1')
+    orchestrator.markSettled('leader-session', teammateId)
     const { execute } = await captureTool(orchestrator, {
       followup: vi.fn().mockRejectedValue(new Error('inbox closed')),
     })
@@ -127,7 +127,7 @@ describe('send_team_message', () => {
 
     expect(result.status).toBe('error')
     expect(result.message).toContain('Delivery failed')
-    expect(orchestrator.get(teammateId)?.status).toBe('settled')
+    expect(orchestrator.get('leader-session', teammateId)?.status).toBe('settled')
   })
 
   it('returns an error when a leader messages a never-delegated teammate', async () => {
@@ -140,7 +140,7 @@ describe('send_team_message', () => {
     expect(result.message).toBe('No active session for "teammate-2". Delegate first.')
     expect(subagents.followup).not.toHaveBeenCalled()
     expect(subagents.reportFrom).not.toHaveBeenCalled()
-    expect(orchestrator.get(TeamMemberId('teammate-2'))).toBeUndefined()
+    expect(orchestrator.get('leader-session', TeamMemberId('teammate-2'))).toBeUndefined()
   })
 
   it('routes a teammate message to the leader via reportFrom (wakeup)', async () => {
@@ -178,7 +178,7 @@ describe('send_team_message', () => {
 
   it('appends a team/message event to the calling session', async () => {
     const orchestrator = new TeamOrchestrator()
-    orchestrator.recordActivation(teammateId, 'child-1')
+    orchestrator.recordActivation('leader-session', teammateId, 'child-1')
     const agent = agentStub('leader')
     const { execute } = await captureTool(orchestrator)
     await execute({ target_id: 'teammate-1', message: 'hi' }, { agent, signal: new AbortController().signal })

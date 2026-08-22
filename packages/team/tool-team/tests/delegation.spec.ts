@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+﻿import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -69,7 +69,7 @@ describe('registerDelegateTool shutdown action', () => {
     const orch = new TeamOrchestrator()
     registerDelegateTool(ctx, orch)
     const memberId = TeamMemberId('B1')
-    orch.recordActivation(memberId, 'child-1')
+    orch.recordActivation('leader-1', memberId, 'child-1')
 
     const result = await invoke({ teammate_id: 'B1', prompt: 'stop', action: 'shutdown' })
 
@@ -77,7 +77,7 @@ describe('registerDelegateTool shutdown action', () => {
     expect(result.message).toContain('may keep running briefly')
     expect(subagents.interrupt).toHaveBeenCalledTimes(1)
     expect(subagents.interrupt).toHaveBeenCalledWith(SessionId('child-1'), { kind: 'ancestor', agent: leader })
-    expect(orch.get(memberId)?.status).toBe('disposed')
+    expect(orch.get('leader-1', memberId)?.status).toBe('disposed')
   })
 
   it('returns an informational result without interrupting when no activation exists', async () => {
@@ -91,7 +91,7 @@ describe('registerDelegateTool shutdown action', () => {
     expect(result.status).toBe('shutdown')
     expect(result.message).toContain('No active session')
     expect(subagents.interrupt).not.toHaveBeenCalled()
-    expect(orch.get(memberId)).toBeUndefined()
+    expect(orch.get('leader-1', memberId)).toBeUndefined()
   })
 
   it('disposes a settled activation without interrupting it', async () => {
@@ -99,15 +99,15 @@ describe('registerDelegateTool shutdown action', () => {
     const orch = new TeamOrchestrator()
     registerDelegateTool(ctx, orch)
     const memberId = TeamMemberId('B1')
-    orch.recordActivation(memberId, 'child-1')
-    orch.markSettled(memberId)
+    orch.recordActivation('leader-1', memberId, 'child-1')
+    orch.markSettled('leader-1', memberId)
 
     const result = await invoke({ teammate_id: 'B1', prompt: 'stop', action: 'shutdown' })
 
     expect(result.status).toBe('shutdown')
     expect(result.message).toContain('shut down')
     expect(subagents.interrupt).not.toHaveBeenCalled()
-    expect(orch.get(memberId)?.status).toBe('disposed')
+    expect(orch.get('leader-1', memberId)?.status).toBe('disposed')
   })
 
   it('keeps the activation running when the interrupt throws', async () => {
@@ -115,14 +115,14 @@ describe('registerDelegateTool shutdown action', () => {
     const orch = new TeamOrchestrator()
     registerDelegateTool(ctx, orch)
     const memberId = TeamMemberId('B1')
-    orch.recordActivation(memberId, 'child-1')
+    orch.recordActivation('leader-1', memberId, 'child-1')
     subagents.interrupt.mockImplementation(() => { throw new Error('unauthorized') })
 
     const result = await invoke({ teammate_id: 'B1', prompt: 'stop', action: 'shutdown' })
 
     expect(result.status).toBe('error')
     expect(result.message).toMatch(/^Interrupt failed: /)
-    expect(orch.get(memberId)?.status).toBe('running')
+    expect(orch.get('leader-1', memberId)?.status).toBe('running')
   })
 })
 
@@ -132,8 +132,8 @@ describe('registerDelegateTool run action context policy', () => {
     const orch = new TeamOrchestrator()
     registerDelegateTool(ctx, orch)
     const memberId = TeamMemberId('B1')
-    orch.recordActivation(memberId, 'child-1')
-    orch.markSettled(memberId)
+    orch.recordActivation('leader-1', memberId, 'child-1')
+    orch.markSettled('leader-1', memberId)
 
     const result = await invoke({ teammate_id: 'B1', prompt: 'keep going' })
 
@@ -147,8 +147,8 @@ describe('registerDelegateTool run action context policy', () => {
     expect(content).toEqual([{ type: 'text', text: 'keep going' }])
     expect(options).toMatchObject({ source: { kind: 'coordinator', form: 'relay', senderSessionId: 'leader-1' } })
     expect(subagents.startContinuable).not.toHaveBeenCalled()
-    expect(orch.get(memberId)?.status).toBe('running')
-    expect(orch.get(memberId)?.childSessionId).toBe('child-1')
+    expect(orch.get('leader-1', memberId)?.status).toBe('running')
+    expect(orch.get('leader-1', memberId)?.childSessionId).toBe('child-1')
   })
 
   it('reuses the settled child session when contextPolicy is undefined (default persistent)', async () => {
@@ -156,16 +156,16 @@ describe('registerDelegateTool run action context policy', () => {
     const orch = new TeamOrchestrator()
     registerDelegateTool(ctx, orch)
     const memberId = TeamMemberId('B1')
-    orch.recordActivation(memberId, 'child-1')
-    orch.markSettled(memberId)
+    orch.recordActivation('leader-1', memberId, 'child-1')
+    orch.markSettled('leader-1', memberId)
 
     const result = await invoke({ teammate_id: 'B1', prompt: 'keep going' })
 
     expect(result.status).toBe('dispatched')
     expect(subagents.followup).toHaveBeenCalledTimes(1)
     expect(subagents.startContinuable).not.toHaveBeenCalled()
-    expect(orch.get(memberId)?.status).toBe('running')
-    expect(orch.get(memberId)?.childSessionId).toBe('child-1')
+    expect(orch.get('leader-1', memberId)?.status).toBe('running')
+    expect(orch.get('leader-1', memberId)?.childSessionId).toBe('child-1')
   })
 
   it('starts a fresh child session when contextPolicy is fresh_per_delegation', async () => {
@@ -173,15 +173,15 @@ describe('registerDelegateTool run action context policy', () => {
     const orch = new TeamOrchestrator()
     registerDelegateTool(ctx, orch)
     const memberId = TeamMemberId('B1')
-    orch.recordActivation(memberId, 'child-1')
-    orch.markSettled(memberId)
+    orch.recordActivation('leader-1', memberId, 'child-1')
+    orch.markSettled('leader-1', memberId)
 
     const result = await invoke({ teammate_id: 'B1', prompt: 'start over' })
 
     expect(result.status).toBe('dispatched')
     expect(subagents.startContinuable).toHaveBeenCalledTimes(1)
     expect(subagents.followup).not.toHaveBeenCalled()
-    expect(orch.get(memberId)?.status).toBe('running')
+    expect(orch.get('leader-1', memberId)?.status).toBe('running')
   })
 
   it('starts a fresh child session for a disposed activation even with persistent policy', async () => {
@@ -189,16 +189,16 @@ describe('registerDelegateTool run action context policy', () => {
     const orch = new TeamOrchestrator()
     registerDelegateTool(ctx, orch)
     const memberId = TeamMemberId('B1')
-    orch.recordActivation(memberId, 'child-1')
-    orch.markDisposed(memberId)
+    orch.recordActivation('leader-1', memberId, 'child-1')
+    orch.markDisposed('leader-1', memberId)
 
     const result = await invoke({ teammate_id: 'B1', prompt: 'start over' })
 
     expect(result.status).toBe('dispatched')
     expect(subagents.startContinuable).toHaveBeenCalledTimes(1)
     expect(subagents.followup).not.toHaveBeenCalled()
-    expect(orch.get(memberId)?.status).toBe('running')
-    expect(orch.get(memberId)?.childSessionId).toBe('child-fresh')
+    expect(orch.get('leader-1', memberId)?.status).toBe('running')
+    expect(orch.get('leader-1', memberId)?.childSessionId).toBe('child-fresh')
   })
 })
 

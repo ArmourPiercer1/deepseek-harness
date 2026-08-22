@@ -14,6 +14,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { TeamControlRequestData, TeamMemberBoundData } from '@deepseek-ai/dsh-team'
 import type { ContinuableSetupContribution } from '@deepseek-ai/dsh-subagent'
+import { scopeOf, scopeParentOf, type ScopeKey } from '@deepseek-ai/dsh-scope'
 // Pull in the `teamControl` / `permission` Context declarations.
 import type {} from '@deepseek-ai/dsh-team-channels'
 import type {} from '@deepseek-ai/dsh-permission'
@@ -112,6 +113,16 @@ function installRecoveredRules(ctx: Context, child: Agent, bound: TeamMemberBoun
  * resume, and starts the rule-layer recovery load. Returns a no-op disposer
  * for a non-team child.
  *
+ * When this plugin runs as a preset row, the contribution installs only into
+ * children derived under the SAME standing composition (the registration's
+ * scope key): the host `subagents` setup registry is process-global, a
+ * process may hold several live preset generations that each carry this row
+ * (two presets naming it, or two generations after a composition edit), and
+ * an unfiltered contribution would stack one `tools/pre-execute` hook per
+ * generation onto every team child — re-evaluating each call, and re-asking
+ * the leader per evaluation. A host-plane row carries no scope tag and keeps
+ * the deployment-wide reading: every team child is its own.
+ *
  * On cold resume, every `team/control-request` the child logged is reconciled
  * against the host registry under the leader session: a still-pending entry
  * belongs to a suspended execution that no longer exists, so it is settled
@@ -123,7 +134,13 @@ function installRecoveredRules(ctx: Context, child: Agent, bound: TeamMemberBoun
  * @returns the setup contribution for a continuable child.
  */
 export function teamMemberSetupContribution(ctx: Context): ContinuableSetupContribution {
+  const standing: ScopeKey | undefined = scopeOf(ctx)
   return (childCtx) => {
+    if (standing !== undefined) {
+      const childKey = scopeOf(childCtx)
+      const derived = childKey !== undefined && scopeParentOf(childKey) === standing
+      if (!derived) return () => {}
+    }
     const agent = childCtx.agent as Agent
     const bound = findMemberBound(agent.session.events)
     if (bound === undefined) return () => {}

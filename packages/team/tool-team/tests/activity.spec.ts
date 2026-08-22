@@ -155,7 +155,9 @@ describe('teammate tool activity through the real Loader composition', () => {
     expect(first.isError).toBe(false)
     expect(resultText(first)).toContain('[dispatched]')
 
-    const child = ctx.sessions.create(SessionId('team-child-1'))
+    const child = ctx.sessions.create(SessionId('team-child-1'), {
+      meta: { parentSession: SessionId('team-activity-agent'), origin: 'subagent' },
+    })
     child.append('tool/call', { turn: 1, step: 1, callId: CallId('call-1'), name: 'pwsh', arguments: '{}' })
 
     const second = await ctx.tools.execute({
@@ -188,10 +190,14 @@ describe('teammate tool activity through the real Loader composition', () => {
     expect(first.isError).toBe(false)
     expect(resultText(first)).toContain('[dispatched]')
 
-    const child = ctx.sessions.create(SessionId('team-child-1'))
+    const child = ctx.sessions.create(SessionId('team-child-1'), {
+      meta: { parentSession: SessionId('team-activity-agent'), origin: 'subagent' },
+    })
     child.append('tool/call', { turn: 1, step: 1, callId: CallId('call-2'), name: 'pwsh', arguments: '{}' })
 
-    const stranger = ctx.sessions.create(SessionId('team-stranger'))
+    const stranger = ctx.sessions.create(SessionId('team-stranger'), {
+      meta: { parentSession: SessionId('team-activity-agent'), origin: 'subagent' },
+    })
     stranger.append('tool/call', { turn: 1, step: 1, callId: CallId('call-3'), name: 'Get-Process', arguments: '{}' })
 
     const second = await ctx.tools.execute({

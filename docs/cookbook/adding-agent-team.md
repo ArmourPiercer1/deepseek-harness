@@ -94,7 +94,7 @@ permissions:
 permissionMode: enforce
 ```
 
-Four matcher families cover commands, paths, MCP tool prefixes, and generic `Tool(param:value)` arguments; an unmatched call falls back to the member's `permissionMode`, where `enforce` (the controlled teammate's default) denies and `default` allows. The full rule language and its failure modes live in the [dsh-permission-engine README](../../packages/permission/permission-engine/README.md), and the team-side enforcement point in the [dsh-team-runtime README](../../packages/team/team-runtime/README.md).
+Four matcher families cover commands, paths, MCP tool prefixes, and generic `Tool(param:value)` arguments; an unmatched call falls back to the member's `permissionMode`, where `enforce` (the controlled teammate's default) denies and `default` allows. Every tool the child invokes passes this evaluation, including the team's own reporting tools: an `enforce` member's `allow` list must name them (e.g. `allow: ["Read", "report"]`), or its closing `report` call is denied with `no matching allow rule (enforce mode)` and the outcome reaches the leader only through the runtime's closing-message fallback. The full rule language and its failure modes live in the [dsh-permission-engine README](../../packages/permission/permission-engine/README.md), and the team-side enforcement point in the [dsh-team-runtime README](../../packages/team/team-runtime/README.md).
 
 A teammate's inline rules are snapshotted into its `team/member-bound` event at first delegation, so a deleted definition file cannot break a cold resume; the managed and project layers are re-read at recovery, and a missing managed file refuses recovery rather than running under a lapsed policy.
 

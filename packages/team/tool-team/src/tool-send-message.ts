@@ -74,7 +74,7 @@ async function deliverTeamMessage(
   // Leader → teammate: deliver the next turn to the teammate's session.
   // followup cold-resumes settled and disposed children from their
   // persisted sessions, so only a never-delegated teammate is unreachable.
-  const activation = orchestrator.get(target.id)
+  const activation = orchestrator.get(me.id, target.id)
   if (!activation) {
     return { status: 'error', message: `No active session for "${target.id}". Delegate first.` }
   }
@@ -83,7 +83,7 @@ async function deliverTeamMessage(
     signal,
   })
   if (activation.status !== 'running') {
-    orchestrator.recordActivation(target.id, activation.childSessionId)
+    orchestrator.recordActivation(me.id, target.id, activation.childSessionId)
   }
   return { status: 'sent', message: `Message delivered to ${target.name}.` }
 }
