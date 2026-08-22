@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-14-agent-team-plugin.md
 2026-08-14-agent-team-plugin.md: f4ca4f8b8a8b5829c42943b9e9afdc9d19e9bc60
-2026-08-14-agent-team-plugin.zh.md: 0c4602944e1d78f654bc54470bbaae637150061c
+2026-08-14-agent-team-plugin.zh.md: 99cd260dbfce1547d08b826287c5dd1f5f51ae10

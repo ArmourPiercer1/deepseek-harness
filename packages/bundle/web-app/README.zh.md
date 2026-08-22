@@ -2,7 +2,11 @@
 
 [English](README.md) | 中文
 
-dsh 浏览器表层组合包。[`cordis.patch.yml`](cordis.patch.yml) 叠加在 [`dsh-base`](../base/README.md) 之上：设置 coding persona，插入 Web 宿主行（webserver、API 网关、workspace、投影缓存、存储）、浏览器插件名录与始终挂载的客户端插件重载链（[`dsh-client-hmr`](../../client/hmr/README.md)，在重建 watcher 改写客户端 bundle 之前保持空闲），并挂载本包的 `web-runtime` 粘合插件（配置为 `{printUrl, surfaceContext, trustedHosts}`）。该插件通过 `@deepseek-ai/dsh-web-frontend` 的 exports 解析已构建的前端 dist，只采样一次依赖 bind 的 LAN 信任信息并将其作为 `webRuntime` 提供给浏览器信任栅栏和客户端名录，挂载 [`frontend-static`](../../host/frontend-static/README.md) 回退席位所有者，在 `surfaceContext` 为 true 时注册 Harness 源码与 Web 表层提示词段落，以及 bash 可见的 `DSH_WEB_URL` 运行时变量，并在 `printUrl` 为 true 时等自身的 Loader 配置树结算后再打印 `dsh web:` URL 行，避免兄弟行失败时公告一个已失效的应用。本组合包还持有应用命令行：普通 `web-startup` 提供方（[`src/startup.ts`](src/startup.ts)）注入 `ctx.cmdlineArgs`（[`dsh-cmdline`](../../boot/cmdline/README.md)），解析 `--host`、`--port`、可重复的 `--trusted-host` 以及应用自己的 `--help`，再提供 `webStartup`。它会在发布该服务前拒绝 `--host 0.0.0.0`，因为 CLI 目前有意不支持绑定所有网络接口。由 flag 配置的行会注入该服务，并在惰性配置中直接读取它，因此参数解析完成前不会有任何东西绑定端口，`dsh --profile web --help` 也不会启动服务器。[`dsh-headless`](../headless/README.md) 是同一 base 之上的同级表层，不挂载本组合包。
+dsh 浏览器表层组合包。[`cordis.patch.yml`](cordis.patch.yml) 叠加在 [`dsh-base`](../base/README.zh.md) 之上：设置 coding persona，插入 Web 宿主行（webserver、API 网关、workspace、投影缓存、存储）、浏览器插件名录与始终挂载的客户端插件重载链（[`dsh-client-hmr`](../../client/hmr/README.zh.md)，在重建 watcher 改写客户端 bundle 之前保持空闲），并挂载本包的 `web-runtime` 粘合插件（配置为 `{openBrowser, printUrl, surfaceContext, trustedHosts}`）。该插件通过 `@deepseek-ai/dsh-web-frontend` 的 exports 解析已构建的前端 dist，只采样一次依赖 bind 的 LAN 信任信息并将其作为 `webRuntime` 提供给浏览器信任栅栏和客户端名录，挂载 [`frontend-static`](../../host/frontend-static/README.zh.md) 回退席位所有者，在 `surfaceContext` 为 true 时注册 Harness 源码与 Web 表层提示词段落，以及 bash 可见的 `DSH_WEB_URL` 运行时变量。等自身的 Loader 配置树结算后，它在 `printUrl` 为 true 时打印 `dsh web:` URL 行，在 `openBrowser` 为 true 且继承的 `SSH_CONNECTION` 与 `SSH_TTY` 为空或不存在时，用默认浏览器打开规范宿主 URL。SSH 启动保留 URL 行但抑制浏览器交接，因为 SSH 客户端或编辑器拥有本地转发地址。交接前，运行时打印 `dsh web: opening the default browser; pass --no-open to disable`。一个短命的 Node 助手以规范、清洗后的子进程环境运行受维护的平台 opener；在 Windows 上它存活到短命的 PowerShell 启动器退出，因为 `open` 在该启动器把 URL 交给 shell 之前就报告了 spawn；其他地方在 opener 接受 spawn 后助手即停止。助手失败时把含原因与手动 URL 的诊断写到 stderr，不停止服务器；没有任何路径等待浏览器退出。本组合包还持有应用命令行：普通 `web-startup` 提供方（[`src/startup.ts`](src/startup.ts)）注入 `ctx.cmdlineArgs`（[`dsh-cmdline`](../../boot/cmdline/README.zh.md)），解析 `--host`、`--port`、可重复的 `--trusted-host` 以及应用自己的 `--help`，再提供 `webStartup`。它会在发布该服务前拒绝 `--host 0.0.0.0`，因为 CLI 目前有意不支持绑定所有网络接口。由 flag 配置的行会注入该服务，并在惰性配置中直接读取它，因此参数解析完成前不会有任何东西绑定端口，`dsh --profile web --help` 也不会启动服务器。[`dsh-headless`](../headless/README.zh.md) 是同一 base 之上的同级表层，不挂载本组合包。
+
+## 模型重试默认值
+
+Web 使用共享的有界常规默认值：初始请求后有五次合格重试。`deepseek-official` 路由和通过设置添加的 pi-ai 路由在省略 `retryPolicy` 时使用该默认值；显式的提供方策略仍然优先。Web 没有添加重试特定的组合覆盖，因此相同的省略行为也适用于非 Web 配置。
 
 ## 模型体验
 
@@ -24,3 +28,6 @@ dsh 浏览器表层组合包。[`cordis.patch.yml`](cordis.patch.yml) 叠加在 
 
 - **前端 dist 必须已构建**：对 dist 的 `require.resolve` 在激活时明确报错并给出构建提示；没有从源码直接服务的回退路径。
 - **`lanAddresses` 是启动期快照**：启动后的网卡变化不会重新公告；打印的 LAN URL 始终与配置的信任栅栏一致。
+- **仅交接启动可观测**：观测在平台 opener 接受 spawn 时结束，Windows 除外，它要等其短命的 PowerShell 启动器退出；之后浏览器的退出不会被报告，打印的 URL 仍是手动回退。
+- **SSH 转发拥有浏览器 URL**：打印的规范 URL 指向远端主机的回环端点；自动交接被抑制，SSH 客户端或编辑器必须暴露并打开其本地转发地址。
+- **浏览器命令覆盖仅限启动时**：发现的 `.env` 不能设置 `BROWSER`；只有继承的值才能到达遵循该变量的 opener 路径，因此检出无法为自动交接选择可执行文件。

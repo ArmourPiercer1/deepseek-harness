@@ -139,7 +139,7 @@ async function requestLeaderDecision(
         type: 'text',
         text: `Teammate "${bound.memberId as string}" requests approval to run "${exec.name}" (request ${requestId}). Review with team_control.`,
       }],
-      { delivery: 'wakeup', signal: exec.signal },
+      { delivery: 'next-step', signal: exec.signal },
     )
   } catch {
     registry.decide(leaderSessionId, requestId, 'deny')

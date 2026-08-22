@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-`dsh-team-runtime` 硬注入 `permission`，因为团队在策略下运行的任何地方都必须在场 teammate 强制（[teammate 权限强制](../architecture/2026-08-20-teammate-permission-enforcement-at-the-executor.md)）。但没有任何组合提供 engine 行：bundle、profile 与 preset 都不组合 `@deepseek-ai/dsh-permission-engine`，因此该注入永不解析，已发布的 `team` 预设以 `team-runtime ... waiting for permission` 挂载失败。所有 team 会话的创建与恢复都被拒绝，引擎的规则加载与强制虽已发布却不可达。
+`dsh-team-runtime` 硬注入 `permission`，因为团队在策略下运行的任何地方都必须在场 teammate 强制（[teammate 权限强制](../architecture/2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md)）。但没有任何组合提供 engine 行：bundle、profile 与 preset 都不组合 `@deepseek-ai/dsh-permission-engine`，因此该注入永不解析，已发布的 `team` 预设以 `team-runtime ... waiting for permission` 挂载失败。所有 team 会话的创建与恢复都被拒绝，引擎的规则加载与强制虽已发布却不可达。
 
 ## 决定
 
@@ -22,12 +22,12 @@ base bundle 组合携带 engine 行：`packages/bundle/base/cordis.patch.yml` �
 
 ## 后果
 
-- 每个在 base bundle 之上组合的会话都携带 `ctx.permission`；已发布 team 预设挂载其完整行集，team 会话可创建可恢复，[team-agent keyless snapshot](../testing/2026-08-20-team-agent-keyless-e2e-snapshot.md) 在已发布 profile 上演练活的强制路径。
+- 每个在 base bundle 之上组合的会话都携带 `ctx.permission`；已发布 team 预设挂载其完整行集，team 会话可创建可恢复，[team-agent keyless snapshot](../testing/2026-08-20-team-agent-keyless-e2e-snapshot.zh.md) 在已发布 profile 上演练活的强制路径。
 - `dsh-team-runtime` 与 `dsh-permission-engine` README 记载自定义组合的激活条件——插件只在组合携带 engine 行处激活，而每个已发布组合都携带——不再有已发布缺口的限制条目。
 - 丢弃 base 行的自定义组合仍会把 team-runtime 行显示为 pending：正是选择硬注入要得到的显影故障。
 
 ## 相关
 
-- [teammate 权限强制 note](../architecture/2026-08-20-teammate-permission-enforcement-at-the-executor.md) 拥有本行所满足的硬注入。
-- [分层规则加载 note](../architecture/2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md) 拥有强制所消费的加载。
-- [权限 seam note](../architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 拥有更宽的 seam。
+- [teammate 权限强制 note](../architecture/2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md) 拥有本行所满足的硬注入。
+- [分层规则加载 note](../architecture/2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.zh.md) 拥有强制所消费的加载。
+- [权限 seam note](../architecture/2026-08-15-permission-seam-and-mcp-fusion.zh.md) 拥有更宽的 seam。

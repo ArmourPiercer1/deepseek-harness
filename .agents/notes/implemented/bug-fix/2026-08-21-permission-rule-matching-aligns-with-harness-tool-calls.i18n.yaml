@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-21-permission-rule-matching-aligns-with-harness-tool-calls.md
 2026-08-21-permission-rule-matching-aligns-with-harness-tool-calls.md: a78f7af8fab6c23fb62a2fd7bb40ac632e5d5aa3
-2026-08-21-permission-rule-matching-aligns-with-harness-tool-calls.zh.md: 7826bfeb7340a8a6c983140e53d7cd417bdc2f39
+2026-08-21-permission-rule-matching-aligns-with-harness-tool-calls.zh.md: 2f7f1c73d78cbb7ba77ed7512aad794b05d13f84

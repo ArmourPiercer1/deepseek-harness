@@ -31,5 +31,5 @@ Status: implemented
 
 ## 相关
 
-- [权限 seam 与 MCP 融合](2026-08-15-permission-seam-and-mcp-fusion.md)提案拥有更宽的 seam——守卫行、团队插件的 leader 会合点 `ask` 路由、以及 MCP 工具名合并——本 note 拥有守卫的服务解析时机。
+- [权限 seam 与 MCP 融合](2026-08-15-permission-seam-and-mcp-fusion.zh.md)提案拥有更宽的 seam——守卫行、团队插件的 leader 会合点 `ask` 路由、以及 MCP 工具名合并——本 note 拥有守卫的服务解析时机。
 - 守卫的 README 记录按调用解析、诊断日志与 `pathBases` 配置字段。

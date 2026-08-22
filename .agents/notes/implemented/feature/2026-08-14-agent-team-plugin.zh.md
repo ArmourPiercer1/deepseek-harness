@@ -26,8 +26,8 @@ agent-team 插件以 `packages/team/` 下的六个包加上 `packages/bundle/tea
 - **`TeamRegistry` 是具体 Service**，而非抽象类：单一数据加载策略，无提供方多态。
 - **逐成员 MCP 过滤使用 `tools.guard()` 配合运行时 `mcp__<server>__` 前缀匹配**，而非启动时枚举，因而能覆盖后连接的 server。
 - **leader 定义仅为元数据。** 根 agent 由其 preset 组合，绝不由注册表组合；`DEFAULT_LEADER_TOOLS` 记录预期的 leader 暴露面，但不在运行时强制约束。
-- **成员绑定是持久且可重建的。** `delegate_to_teammate` 通过 subagent 接缝的 `delegationEvents` 字段植入一条 `team/member-bound` 事件；`registerContinuableSetup` 贡献项在全新创建和冷恢复时读取它以重新安装 MCP guard 与权限强制钩子。参见[委托事件植入说明](../architecture/2026-08-15-continuable-delegation-event-seeding.md)。
-- **teammate 权限强制位于执行器**，经由作用域内 `tools/pre-execute` 监听器：每个调用都由 `permission` 服务评估，`ask` 结果在宿主级 `TeamControlRegistry`（按 leader 会话键控）上创建请求，通过 `reportFrom` 唤醒 leader，并在做出决策后恢复或拒绝——完整机制（含 `enforce` 默认与 `permission/decision` 审计）由[teammate 权限强制 note](../architecture/2026-08-20-teammate-permission-enforcement-at-the-executor.md)拥有。
+- **成员绑定是持久且可重建的。** `delegate_to_teammate` 通过 subagent 接缝的 `delegationEvents` 字段植入一条 `team/member-bound` 事件；`registerContinuableSetup` 贡献项在全新创建和冷恢复时读取它以重新安装 MCP guard 与权限强制钩子。参见[委托事件植入说明](../architecture/2026-08-15-continuable-delegation-event-seeding.zh.md)。
+- **teammate 权限强制位于执行器**，经由作用域内 `tools/pre-execute` 监听器：每个调用都由 `permission` 服务评估，`ask` 结果在宿主级 `TeamControlRegistry`（按 leader 会话键控）上创建请求，通过 `reportFrom` 唤醒 leader，并在做出决策后恢复或拒绝——完整机制（含 `enforce` 默认与 `permission/decision` 审计）由[teammate 权限强制 note](../architecture/2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md)拥有。
 - **技能过滤待恢复**：首次交付记录了该字段但未强制执行，理由是不存在逐作用域技能目录 API；2026-08-18 审计确认 skill 注册表是 scope 分层的，证伪了该理由，scoped guard 强制已列入[第二轮开发计划](../../../../AGENT_TEAM_PLUGIN_ROUND2_PLAN.md)。
 
 ## 备选方案

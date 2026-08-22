@@ -2,7 +2,7 @@
 
 [English](permission.md) | 中文
 
-[packages/permission](../../packages/permission) 的权限能力决定某个工具调用是否可以发出。`ctx.permission`（[dsh-permission](../../packages/permission/permission/README.md)）是[服务定义](../../packages/permission/permission/README.md)：抽象的 `PermissionService` 契约，提供 `compile` 与 `evaluate`。提供方 [dsh-permission-engine](../../packages/permission/permission-engine/README.md) 通过解析作者编写的规则字符串、用四种 matcher 匹配工具调用、裁决分层规则集并追加 `permission/decision` 审计事件来实现 `evaluate`；[dsh-tool-permission-guard](../../packages/permission/tool-permission-guard/README.md) 与 team 插件是它的消费者。包 README 负责组合状态与限制；[权限 seam Agent Note](../../.agents/notes/implemented/architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 负责设计决策依据。
+[packages/permission](../../packages/permission) 的权限能力决定某个工具调用是否可以发出。`ctx.permission`（[dsh-permission](../../packages/permission/permission/README.zh.md)）是[服务定义](../../packages/permission/permission/README.zh.md)：抽象的 `PermissionService` 契约，提供 `compile` 与 `evaluate`。提供方 [dsh-permission-engine](../../packages/permission/permission-engine/README.zh.md) 通过解析作者编写的规则字符串、用四种 matcher 匹配工具调用、裁决分层规则集并追加 `permission/decision` 审计事件来实现 `evaluate`；[dsh-tool-permission-guard](../../packages/permission/tool-permission-guard/README.zh.md) 与 team 插件是它的消费者。包 README 负责组合状态与限制；[权限 seam Agent Note](../../.agents/notes/implemented/architecture/2026-08-15-permission-seam-and-mcp-fusion.zh.md) 负责设计决策依据。
 
 源码：[`packages/permission/permission/src/index.ts`](../../packages/permission/permission/src/index.ts)
 
@@ -12,7 +12,7 @@
 
 ## 规则引擎
 
-规则是作者编写的字符串，被解析成带 `kind`（`allow`/`ask`/`deny`）、`layer`（`managed`/`project`/`teammate`）、目标工具名和 matcher 判别的 [`RuleIR`](../../packages/permission/permission/src/types.ts)。引擎把每条规则编译成四种 matcher 之一：**command** matcher 拆分复合命令并剥离包装，用于 `Bash`/`pwsh`；**path** matcher 以 `//`/`~`/`/` 锚点对文件工具应用 gitignore 语义；**mcp** matcher 检查 `mcp__server[__tool]` 前缀；**param** matcher 检查任意工具的一个顶层标量输入字段。matcher 表见[引擎 README](../../packages/permission/permission-engine/README.md)。
+规则是作者编写的字符串，被解析成带 `kind`（`allow`/`ask`/`deny`）、`layer`（`managed`/`project`/`teammate`）、目标工具名和 matcher 判别的 [`RuleIR`](../../packages/permission/permission/src/types.ts)。引擎把每条规则编译成四种 matcher 之一：**command** matcher 拆分复合命令并剥离包装，用于 `Bash`/`pwsh`；**path** matcher 以 `//`/`~`/`/` 锚点对文件工具应用 gitignore 语义；**mcp** matcher 检查 `mcp__server[__tool]` 前缀；**param** matcher 检查任意工具的一个顶层标量输入字段。matcher 表见[引擎 README](../../packages/permission/permission-engine/README.zh.md)。
 
 ## 裁决
 
@@ -28,7 +28,7 @@
 
 ## Cordis API
 
-Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — this section is byte-identical in both language sides of the page. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
 <a id="ctxpermission--permissionservice"></a>
 
@@ -65,5 +65,5 @@ evaluate(call: ToolCallView, context: PermissionContext): PermissionDecision
 loadRuleLayers(options: LoadRuleLayersOptions): Promise<LoadedRuleLayers>
 ```
 
-Source: [`packages/permission/permission/src/index.ts:51`](../../packages/permission/permission/src/index.ts)
+Source: [`packages/permission/permission/src/index.ts`](../../packages/permission/permission/src/index.ts)
 <!-- END GENERATED cordis-surface -->

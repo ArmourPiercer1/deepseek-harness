@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-dsh-teammate-cli.md
 2026-08-19-dsh-teammate-cli.md: 47b6a2404d5e080c7fc3e7a76a37bc20902d0d42
-2026-08-19-dsh-teammate-cli.zh.md: 4044602862a1fcf5296a3f59b48c1b799f11fed8
+2026-08-19-dsh-teammate-cli.zh.md: 2eace661b3c9aa283e7f599eed0a28b2ae4e39bb

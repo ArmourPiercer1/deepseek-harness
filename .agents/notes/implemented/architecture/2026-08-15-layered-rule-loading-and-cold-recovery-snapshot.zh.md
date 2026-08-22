@@ -21,7 +21,7 @@ Status: implemented
 
 - `dsh-team-local` 从成员 frontmatter 解析可选的 `permissions`（按姿态分组的规则字符串数组）与 `permissionMode`（`enforce` / `default`；`readonly` / `bypass` 被拒绝）；这需要扩展 `parseSimpleYaml` 支持嵌套块数组与正确的空行内数组。
 - 委托工具把成员的 `permissions`、`permissionMode`、以及对 managed 文件的纯存在性探测，作为 `rules`、`permissionMode`、`managedPresent` 快照进持久的 `team/member-bound` 载荷——仅新增可选字段，因此字段出现之前写出的载荷依然可解析、依然可恢复。
-- 团队运行时的成员设置贡献在全新创建与冷恢复两种情况下都调用 `loadRuleLayers`——`permission` 是该插件的硬注入，这一注入与消费存储加载的强制点由[teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.md)拥有——并把结果 promise 以子会话 id 为键存储。文件层总是从磁盘重读；teammate 规则来自持久快照。
+- 团队运行时的成员设置贡献在全新创建与冷恢复两种情况下都调用 `loadRuleLayers`——`permission` 是该插件的硬注入，这一注入与消费存储加载的强制点由[teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md)拥有——并把结果 promise 以子会话 id 为键存储。文件层总是从磁盘重读；teammate 规则来自持久快照。
 
 ## 加载拒绝的归属
 
@@ -37,7 +37,7 @@ Status: implemented
 
 **恢复时对任何缺失的 managed 文件都失败关闭**——无条件拒绝会让所有没有 managed 策略的部署回归：从未在其下运行的会话一旦接线了恢复就永远无法冷恢复。绑定期的 `managedPresent` 标志区分"在其下绑定且它已失效"（拒绝）与"从未在其下"（缺席是常态）。
 
-**团队运行时用硬 `inject: ['permission']`**——本阶段被拒：注入使团队行在没有引擎行时无法组合，而团队插件独立组合、独立运行，因此松散的 `ctx.get` 读取保留了有文档的无引擎状态：不安装任何规则状态，子会话不带策略层运行。[teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.md) 在强制点反转了这个决定：硬注入交付了，激活条件显影在组合本身，而不是静默未强制的策略。
+**团队运行时用硬 `inject: ['permission']`**——本阶段被拒：注入使团队行在没有引擎行时无法组合，而团队插件独立组合、独立运行，因此松散的 `ctx.get` 读取保留了有文档的无引擎状态：不安装任何规则状态，子会话不带策略层运行。[teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md) 在强制点反转了这个决定：硬注入交付了，激活条件显影在组合本身，而不是静默未强制的策略。
 
 ## 后果
 
@@ -45,11 +45,11 @@ Status: implemented
 - 向后兼容是结构性的：无规则字段的旧 `team/member-bound` 载荷（无 `rules`、无 `managedPresent`）与从前完全相同地冷恢复，成员设置测试断言了这一无快照的加载调用。
 - 引擎保持纯与不感知路径；`dsh-team-runtime` 的 `resolveRuleLayerPaths` 是文件路径约定的唯一所有者，引擎的测试使用自己的临时目录树。
 - 绑定期探测读取环境中的 `$DSH_HOME`；测试把它 stub 到临时目录。
-- 从恢复策略编译并对调用执行 deny（把存储的拒绝结算为 deny）的强制点由[teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.md)记载；它所需的 engine 行按 [base 组合接线 note](../bug-fix/2026-08-21-base-composition-carries-the-permission-engine.md) 随 base bundle 发布，因此每个已发布预设的团队行都能解析该硬注入。
+- 从恢复策略编译并对调用执行 deny（把存储的拒绝结算为 deny）的强制点由[teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md)记载；它所需的 engine 行按 [base 组合接线 note](../bug-fix/2026-08-21-base-composition-carries-the-permission-engine.zh.md) 随 base bundle 发布，因此每个已发布预设的团队行都能解析该硬注入。
 
 ## 相关
 
-- [权限 seam 与 MCP 融合](2026-08-15-permission-seam-and-mcp-fusion.md)提案拥有更宽的 seam；其第一阶段列出了本 note 交付的分层文件加载、冷恢复规则快照与绝对 managed 层。
-- [teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.md) 在强制点消费本阶段的加载，并反转上文记录的松 `ctx.get` 决定。
-- [工具权限守卫 note](2026-08-20-tool-permission-guard-resolves-permission-per-call.md)拥有守卫的按调用服务解析，是同一 `permission` 服务、同一激活顺序约束下的另一个消费者。
+- [权限 seam 与 MCP 融合](2026-08-15-permission-seam-and-mcp-fusion.zh.md)提案拥有更宽的 seam；其第一阶段列出了本 note 交付的分层文件加载、冷恢复规则快照与绝对 managed 层。
+- [teammate 权限强制 note](2026-08-20-teammate-permission-enforcement-at-the-executor.zh.md) 在强制点消费本阶段的加载，并反转上文记录的松 `ctx.get` 决定。
+- [工具权限守卫 note](2026-08-20-tool-permission-guard-resolves-permission-per-call.zh.md)拥有守卫的按调用服务解析，是同一 `permission` 服务、同一激活顺序约束下的另一个消费者。
 - `dsh-permission-engine` 的 README 记录规则文件格式与失败关闭契约；`dsh-team-local` 的 README 记录 frontmatter 字段；`dsh-team-runtime` 的 README 记录恢复加载与其存储。

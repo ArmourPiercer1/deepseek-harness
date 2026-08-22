@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-20-tool-permission-guard-resolves-permission-per-call.md
 2026-08-20-tool-permission-guard-resolves-permission-per-call.md: 5e0a6a78f90ecefe53dc5797bc90389b546f0a1a
-2026-08-20-tool-permission-guard-resolves-permission-per-call.zh.md: d490385d2858385c59682e8f1164d3a84e2345e4
+2026-08-20-tool-permission-guard-resolves-permission-per-call.zh.md: 6688f78a8c7289d6db798185acc34a78e55f7b05

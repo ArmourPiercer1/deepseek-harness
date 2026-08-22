@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-18-team-runtime-release-blockers.md
 2026-08-18-team-runtime-release-blockers.md: 7e3e72096a9789e7a0af1b1a42ae788024741b13
-2026-08-18-team-runtime-release-blockers.zh.md: c4834e5af6369c9c3ed7faf04fc085c009a92559
+2026-08-18-team-runtime-release-blockers.zh.md: 855851ac28c5efaefecd81d65a3a99ddab8f87c4

@@ -6,13 +6,13 @@ Status: implemented
 
 ## 问题
 
-命名的 [`ctx.subagents`](2026-06-21-subagent-capability-seam.md) 注册表让父 agent（智能体）无需了解子 agent 的运行方式即可委派工作，但 harness 需要通往真实 Codex 与 Claude Code 产品的第一方路径。每条路径都必须向产品交付一项自包含任务，让它在父会话的工作区中执行，返回最终回答或明确的失败或取消结果，并且不留下任何受管的产品进程。
+命名的 [`ctx.subagents`](2026-06-21-subagent-capability-seam.zh.md) 注册表让父 agent（智能体）无需了解子 agent 的运行方式即可委派工作，但 harness 需要通往真实 Codex 与 Claude Code 产品的第一方路径。每条路径都必须向产品交付一项自包含任务，让它在父会话的工作区中执行，返回最终回答或明确的失败或取消结果，并且不留下任何受管的产品进程。
 
 产品集成不得成为任务文本、cwd、取消、结果结算或进程树的第二责任方。因此，所需证据要区分三个事实：无密钥真实产品测试证明官方集成、原生身份验证形态、确定性答案与资源清理；Loader 组合测试证明公开包和文档所示的工具配置无需启动产品即可加载；带密钥 e2e 证明生产提供方与真实产品能够从真实 DeepSeek 服务取得唯一答案。直接发起模型 HTTP 请求或使用产品替身无法取代上述任一产品运行层级；手工挂载插件无法取代 Loader 层级。
 
 ## 决策
 
-harness 交付两个同级的一次性提供方包：`codex` 与 `claude-code`。本说明负责它们的产品协议、结果映射和进程生命周期；[生产安装排除决策](../simplification/2026-08-12-production-dsh-excludes-product-subagent-providers.md)负责显式 Profile 安装与 host plane（宿主平面）放置，[产品一次性后台任务决策](2026-08-12-product-subagent-one-shot-background-tasks.md)负责模型可见的调度选择。加载任一提供方都不会启动产品进程，而且每个工具只接受独立文本任务；产品选择仍属于部署配置。
+harness 交付两个同级的一次性提供方包：`codex` 与 `claude-code`。本说明负责它们的产品协议、结果映射和进程生命周期；[生产安装排除决策](../simplification/2026-08-12-production-dsh-excludes-product-subagent-providers.zh.md)负责显式 Profile 安装与 host plane（宿主平面）放置，[产品一次性后台任务决策](2026-08-12-product-subagent-one-shot-background-tasks.zh.md)负责模型可见的调度选择。加载任一提供方都不会启动产品进程，而且每个工具只接受独立文本任务；产品选择仍属于部署配置。
 
 这两个提供方都报告 `inheritsParentContext: false`，不声明任何可选的启动能力，并传递父会话 cwd，但不会复制父级对话。文档所示的工具使用 `backgroundMode: 'one-shot'` 与 `maxDepth: 'provider-managed'`：消费方默认在前台收集结果，也可把同一次运行放入通用 Job 运行时，而递归策略仍由进程外产品负责。每次调用都会创建一个全新的产品进程和一次不可续接的产品对话。`ctx.subagents` 负责具名请求解析与成对生命周期事件；`dsh-tool-subagent` 负责模型可见的调度以及前台与 Job 适配；`ctx.jobs` 和 `dsh-tool-jobs` 负责 Job id、状态、输出、控制、通知与父级 owner 取消；各产品提供方负责原生结果映射，`dsh-subprocess` 则负责凭证清洗、进程树终止以及整棵进程树的退出观测。
 
@@ -88,7 +88,7 @@ Claude Code 证据锁定 Agent SDK 0.3.220，并使用 SDK 按平台分发的 Cl
 
 ## 后果
 
-用户通过官方产品集成支持的两个稳定一次性工具进行委派。显式 Profile 安装与 host plane 提供方放置由[生产安装排除决策](../simplification/2026-08-12-production-dsh-excludes-product-subagent-providers.md)负责；按 Preset 暴露工具以及默认前台且可选通用 Job 的调度方式由[产品一次性后台任务决策](2026-08-12-product-subagent-one-shot-background-tasks.md)负责。本说明规定的提供方生命周期会保留原生设置与行为，而共享服务继续独占作业结算与进程树完全停稳的责任。
+用户通过官方产品集成支持的两个稳定一次性工具进行委派。显式 Profile 安装与 host plane 提供方放置由[生产安装排除决策](../simplification/2026-08-12-production-dsh-excludes-product-subagent-providers.zh.md)负责；按 Preset 暴露工具以及默认前台且可选通用 Job 的调度方式由[产品一次性后台任务决策](2026-08-12-product-subagent-one-shot-background-tasks.zh.md)负责。本说明规定的提供方生命周期会保留原生设置与行为，而共享服务继续独占作业结算与进程树完全停稳的责任。
 
 每次委派都要承担新建产品进程和独立模型上下文的开销。到达父级的产品载荷仍只有最终文本；后台调度还会额外公开通用 Job id、状态、完成通知以及收集或取消结果。产品原生配置使行为取决于部署环境中安装的产品、账户状态和工作区设置。带密钥 e2e 运行还会消耗外部 API 配额，并依赖 DeepSeek 官方端点；对协议、失败、取消与审批的确定性覆盖仍由无密钥层级承担。提供方不会恢复会话、以流式方式传送进度、接受新的人工交互、回滚工具或文件副作用，也不会施加按实际经过时间触发的超时。
 

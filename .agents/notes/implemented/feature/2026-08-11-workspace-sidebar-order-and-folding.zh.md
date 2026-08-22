@@ -49,7 +49,7 @@ Workspace 命中测试使用完整渲染分组区段，包括可见 Session 行�
 - Workspace 顺序通过 Host 持久并共享；分组方式、打开状态、每个记账的 Session 视图顺序和查询状态仍是浏览器本地呈现偏好。Ungrouped 和单列表支持相同的拖拽与置顶规则，但因没有单一 Workspace 记账，其顺序只保存在浏览器本地。
 - 最近更新模式会在进入时执行完整时间排序，随后保持手动调整，直到 user prompt 或 steer 推进某条 Session 并将其置顶。返回手动排序会保留所有当前位置。
 - 未执行明确的**展开其余**手势时，打开 Workspace 最多显示五条 Session；关闭分组只重置这项临时手势。
-- Host Session 记账继续采用[会话列表浏览与 Workspace 手动排序](2026-07-25-session-list-browsing-and-manual-order.md)确立的手动顺序含义。
+- Host Session 记账继续采用[会话列表浏览与 Workspace 手动排序](2026-07-25-session-list-browsing-and-manual-order.zh.md)确立的手动顺序含义。
 
 ## 测试
 

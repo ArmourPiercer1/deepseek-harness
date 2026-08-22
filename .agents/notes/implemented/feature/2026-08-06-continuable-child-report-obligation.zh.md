@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-可继续后台 child 拥有自己的 Session，因此它写在那里的任何内容都不会到达启动它的 agent。[report 工具](2026-07-30-continuable-subagent-report-tool.md)为该 child 提供了一条返回通道，却把它呈现为若干选项之一：schema 里写着「可调用零次或多次」，child 的提示词中没有任何地方要求它调用该工具，而已采纳的默认调度（`quiet`）会把报告加入已停驻 parent 的下一次请求，却不唤醒它。
+可继续后台 child 拥有自己的 Session，因此它写在那里的任何内容都不会到达启动它的 agent。[report 工具](2026-07-30-continuable-subagent-report-tool.zh.md)为该 child 提供了一条返回通道，却把它呈现为若干选项之一：schema 里写着「可调用零次或多次」，child 的提示词中没有任何地方要求它调用该工具，而已采纳的默认调度（`quiet`）会把报告加入已停驻 parent 的下一次请求，却不唤醒它。
 
 这些选择单独看都站得住脚。合在一起，它们让这条返回通道无法作为委派契约使用。一个完成工作、把答案写进自己 transcript（文本记录）随后停止的 child，会让 parent 一无所获；而确实上报了的 child，面对的是一个已经停驻、要等到别的事件把它唤醒才会读到报告的 parent。外部反馈中的 parent 忙轮询 `list_agents`、反复向已结算 child 发送消息、以及放弃 `subagent` 改用 `workflow`，都可归结为同一处缺失的保证。
 
@@ -29,7 +29,7 @@ Status: implemented
 
 没有任何东西会拒绝一个从不上报的 child。没有任何运行时路径会检查是否发送过报告，`report` 仍接受一个轮次中调用零次或多次。本次改动是面向模型的措辞加上一个调度默认值；服务权限、确认与恢复契约都保持不变。
 
-这条边界是刻意划定的：提示词文本只能到达仍在运行自身循环的 child。被错误、token 上限、取消或拆卸终止的 child 根本没有机会遵守，因此运行时会自己记录结算这件事，而不是信任这条指令（见[由管理器负责的结算投递](2026-08-06-manager-owned-subagent-settlement-delivery.md)）。
+这条边界是刻意划定的：提示词文本只能到达仍在运行自身循环的 child。被错误、token 上限、取消或拆卸终止的 child 根本没有机会遵守，因此运行时会自己记录结算这件事，而不是信任这条指令（见[由管理器负责的结算投递](2026-08-06-manager-owned-subagent-settlement-delivery.zh.md)）。
 
 ### 快照覆盖
 
@@ -37,7 +37,7 @@ Status: implemented
 
 ## 备选方案
 
-**保留 `quiet` 作为默认值，只依赖提示词。** 这曾是随附的立场，而它本身什么也没有解决：一条 parent 从不阅读的报告，与一条从未发送的报告无法区分。[report 工具 Agent Note](2026-07-30-continuable-subagent-report-tool.md)对「始终唤醒」的否决，前提是 parent 还有别的理由去查看自己的上下文；已停驻的后台协调者并没有。轮次放大才是真正的代价，而它现在是 `quiet` 仍然保留的理由，而不是它作为默认值的理由。
+**保留 `quiet` 作为默认值，只依赖提示词。** 这曾是随附的立场，而它本身什么也没有解决：一条 parent 从不阅读的报告，与一条从未发送的报告无法区分。[report 工具 Agent Note](2026-07-30-continuable-subagent-report-tool.zh.md)对「始终唤醒」的否决，前提是 parent 还有别的理由去查看自己的上下文；已停驻的后台协调者并没有。轮次放大才是真正的代价，而它现在是 `quiet` 仍然保留的理由，而不是它作为默认值的理由。
 
 **让 child 按调用选择投递模式。** 与最初的否决相同：模型将掌握调度压力，行为也会随调用而非随部署变化。
 
@@ -57,4 +57,4 @@ Status: implemented
 
 默认唤醒会在深层树中放大模型工作量。部署通过 `reportDelivery` 掌握该取舍，且放大幅度以每条被接受报告一个轮次为界。
 
-child 仍可能不上报就结束，本次改动无法检测这一点。只有运行时自己的[结算记账](2026-08-06-manager-owned-subagent-settlement-delivery.md)才能补上这一情形。
+child 仍可能不上报就结束，本次改动无法检测这一点。只有运行时自己的[结算记账](2026-08-06-manager-owned-subagent-settlement-delivery.zh.md)才能补上这一情形。

@@ -61,6 +61,7 @@ You are a senior backend developer...
 - 工作区在 `.dsh/teammates/` 下定义了自己的成员时即为自包含：这些定义构成该工作区的完整团队，全局 home 定义不会混入项目团队。home 定义只作用于自身没有任何定义的工作区。
 - 每个被观察到的工作区的 `.dsh/teammates/` 目录都会获得一个 watcher，其后的文件修改走正常的防抖重载。
 
+<a id="teammate-enablement"></a>
 ## Teammate 启用
 
 按工作区划分的 teammate 启用状态持久化在 `team-enablement` 设置命名空间中，为工作区路径到 teammate id、再到启用标志的记录：

@@ -166,7 +166,7 @@ describe('send_team_message', () => {
     ]
     expect(child).toBe(caller.agent)
     expect(content).toEqual([{ type: 'text', text: '[Message to Teammate teammate-2]: review the draft' }])
-    expect(options).toMatchObject({ delivery: 'wakeup' })
+    expect(options).toMatchObject({ delivery: 'next-step' })
     expect(subagents.followup).not.toHaveBeenCalled()
     expect(result.status).toBe('relayed')
     expect(result.message).toBe('Message to Teammate teammate-2 relayed to leader for forwarding.')

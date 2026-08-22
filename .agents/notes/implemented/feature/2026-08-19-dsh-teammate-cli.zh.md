@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-Teammate 定义是位于工作区 `.dsh/teammates/` 或 `$DSH_HOME/teammates/` 下的 Markdown 文件，按工作区的启用状态存放在 `$DSH_HOME/settings.yaml` 的 `team-enablement` 段中（即[第二轮](2026-08-18-team-plugin-round-2.md) N2 的存储面）。在此改动之前，两个面都没有第一方 CLI：列出、添加或切换 teammate 需要知道磁盘布局，而启用状态的修改则需要手工编辑一个由 settings-file provider 拥有的 YAML 文档。
+Teammate 定义是位于工作区 `.dsh/teammates/` 或 `$DSH_HOME/teammates/` 下的 Markdown 文件，按工作区的启用状态存放在 `$DSH_HOME/settings.yaml` 的 `team-enablement` 段中（即[第二轮](2026-08-18-team-plugin-round-2.zh.md) N2 的存储面）。在此改动之前，两个面都没有第一方 CLI：列出、添加或切换 teammate 需要知道磁盘布局，而启用状态的修改则需要手工编辑一个由 settings-file provider 拥有的 YAML 文档。
 
 ## 决策
 
@@ -33,4 +33,4 @@ settings 写入用 js-yaml 整体往返文档：其他命名空间的数据被�
 - Teammate 可在不知磁盘布局的情况下被列出、添加和切换；四个子命令及其错误路径（文件缺失、frontmatter 非法变体、未知 id、重复 add、禁用 leader）由 `apps/cli/tests/teammate.spec.ts`（含 parity 测试电池共 57 个测试）钉住，`apps/cli/tests/teammate-source-launch.spec.ts`（4 个测试）对临时 `DSH_HOME` 启动真实源码 bin。
 - frontmatter 解析器现在存在两份副本；经过变异检查的 parity 测试电池（镜像中一字之差的消息改动即使其失败）是漂移守卫。
 - 整体文档的 settings 往返：其他命名空间的数据被保留，`settings.yaml` 注释不被保留，文档的并发写入方双向都不被锁出。
-- 本改动的 built-bin smoke 按"不构建仓库"的任务约束替换为源码启动 smoke（`node --import tsx/esm apps/cli/src/bin.ts`，即[源码启动契约](../architecture/2026-07-29-dsh-source-launch-tsx-esm.md)向量）；父级回合在验收时复核。
+- 本改动的 built-bin smoke 按"不构建仓库"的任务约束替换为源码启动 smoke（`node --import tsx/esm apps/cli/src/bin.ts`，即[源码启动契约](../architecture/2026-07-29-dsh-source-launch-tsx-esm.zh.md)向量）；父级回合在验收时复核。

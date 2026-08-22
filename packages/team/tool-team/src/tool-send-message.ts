@@ -62,13 +62,13 @@ async function deliverTeamMessage(
     await subagents.reportFrom(
       me,
       [{ type: 'text', text: `[Message to ${target.name}]: ${message}` }],
-      { delivery: 'wakeup', signal },
+      { delivery: 'next-step', signal },
     )
     return { status: 'relayed', message: `Message to ${target.name} relayed to leader for forwarding.` }
   }
   if (senderIsTeammate) {
     // Teammate → leader: report into the direct parent's next turn.
-    await subagents.reportFrom(me, [{ type: 'text', text: message }], { delivery: 'wakeup', signal })
+    await subagents.reportFrom(me, [{ type: 'text', text: message }], { delivery: 'next-step', signal })
     return { status: 'sent', message: `Message delivered to ${target.name}.` }
   }
   // Leader → teammate: deliver the next turn to the teammate's session.

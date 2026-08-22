@@ -12,7 +12,7 @@ Status: implemented
 
 插件配置分区渲染的是注册进 `settings.plugin.item` 的卡片列表，无序。卡片携带的是不透明的 `id`，从不是它所编辑的命名空间，因此分区无从判断哪些被服务的命名空间已经有了归属。凡是"这个命名空间由谁渲染"的问题，都无法从分区看得见的账本里得到答案。
 
-两者相加，用户自己写的插件就只能靠手改 `settings.yaml` 来配置。[web 插件配置 note](../feature/2026-08-10-web-plugin-configuration.md) 把白名单记为刻意为之，[配置面边界 note](2026-07-30-config-plane-boundaries.md) 则把「可在 Web 上配置」绑定到可配置提供方目录的成员资格。这两条结论恰恰挡住了那个通用 seam 本来要服务的插件作者。
+两者相加，用户自己写的插件就只能靠手改 `settings.yaml` 来配置。[web 插件配置 note](../feature/2026-08-10-web-plugin-configuration.zh.md) 把白名单记为刻意为之，[配置面边界 note](2026-07-30-config-plane-boundaries.zh.md) 则把「可在 Web 上配置」绑定到可配置提供方目录的成员资格。这两条结论恰恰挡住了那个通用 seam 本来要服务的插件作者。
 
 ## Decision
 

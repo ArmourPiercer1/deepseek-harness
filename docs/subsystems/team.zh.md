@@ -2,7 +2,7 @@
 
 [English](team.md) | 中文
 
-[packages/team](../../packages/team) 的团队能力将一位 leader 及其 teammates 协调为持久的可延续子代理。`ctx.team`（[dsh-team](../../packages/team/team)）是[服务定义](../../packages/team/team/README.md)：抽象的 `TeamRegistry`，负责加载、查询和校验 `TeamMemberDefinition` 记录，并解析每个成员的有效 `ToolRestriction`。诸如 [dsh-team-local](../../packages/team/team-local/README.md) 这样的提供方负责提供定义；[dsh-team-runtime](../../packages/team/team-runtime/README.md) 编排 teammate 生命周期，并在可延续子作用域上安装逐成员组合（MCP 守卫与审批钩子）；[dsh-team-channels](../../packages/team/team-channels/README.md) 提供宿主级 `ctx.teamControl`（待处理 teammate 控制请求的 `TeamControlRegistry` 与 `TeamProgressStore`）；[dsh-tool-team](../../packages/team/tool-team/README.md) 注册五个面向模型的团队工具。包级 [README](../../packages/team/README.md) 负责组合方式与 bundle。
+[packages/team](../../packages/team) 的团队能力将一位 leader 及其 teammates 协调为持久的可延续子代理。`ctx.team`（[dsh-team](../../packages/team/team)）是[服务定义](../../packages/team/team/README.zh.md)：抽象的 `TeamRegistry`，负责加载、查询和校验 `TeamMemberDefinition` 记录，并解析每个成员的有效 `ToolRestriction`。诸如 [dsh-team-local](../../packages/team/team-local/README.zh.md) 这样的提供方负责提供定义；[dsh-team-runtime](../../packages/team/team-runtime/README.zh.md) 编排 teammate 生命周期，并在可延续子作用域上安装逐成员组合（MCP 守卫与审批钩子）；[dsh-team-channels](../../packages/team/team-channels/README.zh.md) 提供宿主级 `ctx.teamControl`（待处理 teammate 控制请求的 `TeamControlRegistry` 与 `TeamProgressStore`）；[dsh-tool-team](../../packages/team/tool-team/README.zh.md) 注册五个面向模型的团队工具。包级 [README](../../packages/team/README.zh.md) 负责组合方式与 bundle。
 
 源码：[`packages/team/team/src/index.ts`](../../packages/team/team/src/index.ts)
 
@@ -14,7 +14,7 @@ teammate 是持久的可延续子代理。在委派时，`dsh-team-runtime` 通�
 
 ## 委派与协调工具
 
-[dsh-tool-team](../../packages/team/tool-team/README.md) 在 leader 上注册五个工具：
+[dsh-tool-team](../../packages/team/tool-team/README.zh.md) 在 leader 上注册五个工具：
 
 | 工具 | 用途 |
 |---|---|
@@ -26,7 +26,7 @@ teammate 是持久的可延续子代理。在委派时，`dsh-team-runtime` 通�
 
 ## 控制请求流程
 
-`ctx.teamControl`（[dsh-team-channels](../../packages/team/team-channels/README.md)）是一个宿主级注册表，按 leader 的会话 id 记录待处理的 teammate → leader 审批请求。当 teammate 调用 `requiresApproval` 工具时，`tools/pre-execute` 监听器创建一个请求并挂起执行；leader 通过 `reportFrom` 唤醒接收该请求，并通过 `team_control` 工具决定。`controlRequestTimeoutMs` 清扫会超时自动拒绝过期请求，销毁时也会自动拒绝所有待处理请求。
+`ctx.teamControl`（[dsh-team-channels](../../packages/team/team-channels/README.zh.md)）是一个宿主级注册表，按 leader 的会话 id 记录待处理的 teammate → leader 审批请求。当 teammate 调用 `requiresApproval` 工具时，`tools/pre-execute` 监听器创建一个请求并挂起执行；leader 通过 `reportFrom` 唤醒接收该请求，并通过 `team_control` 工具决定。`controlRequestTimeoutMs` 清扫会超时自动拒绝过期请求，销毁时也会自动拒绝所有待处理请求。
 
 ## `team/*` 会话事件
 
@@ -38,7 +38,7 @@ teammate 是持久的可延续子代理。在委派时，`dsh-team-runtime` 通�
 
 ## Cordis API
 
-Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — this section is byte-identical in both language sides of the page. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
 <a id="ctxteam--teamregistry"></a>
 
@@ -94,9 +94,9 @@ getLeader(): TeamMemberDefinition | undefined
 effectiveToolPolicy(member: TeamMemberDefinition): ToolRestriction
 ```
 
-Types: [ToolRestriction](tools.md)
+Types: [ToolRestriction](tools.zh.md)
 
-Source: [`packages/team/team/src/index.ts:38`](../../packages/team/team/src/index.ts)
+Source: [`packages/team/team/src/index.ts`](../../packages/team/team/src/index.ts)
 
 <a id="ctxteamcontrol--teamcontrolregistry"></a>
 
@@ -170,5 +170,5 @@ reconcilePending(leaderSessionId: string, requests: readonly TeamControlRequestD
 dispose(leaderSessionId: string): void
 ```
 
-Source: [`packages/team/team-channels/src/control-coordinator.ts:52`](../../packages/team/team-channels/src/control-coordinator.ts)
+Source: [`packages/team/team-channels/src/control-coordinator.ts`](../../packages/team/team-channels/src/control-coordinator.ts)
 <!-- END GENERATED cordis-surface -->

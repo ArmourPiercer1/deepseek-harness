@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-team-workspace-session-discovery.md
 2026-08-18-team-workspace-session-discovery.md: f4af6f713098121ee4ba0a350271ca8dedf0c330
-2026-08-18-team-workspace-session-discovery.zh.md: 1b408e21bfffd8bcaa900b11ed4cdfc0c4189fe5
+2026-08-18-team-workspace-session-discovery.zh.md: d5cbbf738f5b6b5f20909a28b4c34a7c7c6d9195

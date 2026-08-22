@@ -27,10 +27,10 @@ Status: implemented
 
 - 文档示例（`Bash(...)`、`Read(...)`、裸 `Write`）按原样匹配小写的 harness 工具及其相对路径。
 - 回归用例在 `parse.spec.ts`、`match-path.spec.ts`、`match-param.spec.ts` 中钉住大小写不敏感的家族检测与工具比较，以及相对输入对 cwd 的解析。
-- [team-agent keyless snapshot](../testing/2026-08-20-team-agent-keyless-e2e-snapshot.md) 是装配级证明：fixture 成员的内联 `ask: [Write]` 规则让它们相对路径的 `write` 调用经由已发布的强制钩子挂起。
+- [team-agent keyless snapshot](../testing/2026-08-20-team-agent-keyless-e2e-snapshot.zh.md) 是装配级证明：fixture 成员的内联 `ask: [Write]` 规则让它们相对路径的 `write` 调用经由已发布的强制钩子挂起。
 
 ## 相关
 
-- [base 组合接线 note](2026-08-21-base-composition-carries-the-permission-engine.md) 提供让本匹配在已发布组合中可达的 engine 行。
-- [权限 seam note](../architecture/2026-08-15-permission-seam-and-mcp-fusion.md) 拥有本 note 保留的 matcher 词汇。
+- [base 组合接线 note](2026-08-21-base-composition-carries-the-permission-engine.zh.md) 提供让本匹配在已发布组合中可达的 engine 行。
+- [权限 seam note](../architecture/2026-08-15-permission-seam-and-mcp-fusion.zh.md) 拥有本 note 保留的 matcher 词汇。
 - `dsh-permission-engine` README 记载 matcher 表与规则文件格式。

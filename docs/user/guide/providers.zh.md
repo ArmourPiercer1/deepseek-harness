@@ -2,7 +2,7 @@
 
 [English](providers.md) | 中文
 
-本指南假定你已按照[根 README](../../../README.md#run)启动 Web UI。模型变更会在下一次请求时生效，不需要重启服务器。
+本指南假定你已按照[根 README](../../../README.zh.md#run)启动 Web UI。模型变更会在下一次请求时生效，不需要重启服务器。
 
 ## 配置 DeepSeek
 
@@ -79,6 +79,42 @@ llm-pi-ai:
 
 这两个字段都是对你端点的断言，而不是对它的检查。声明了端点并不提供的图片能力的模型不会在这里被拦下，改由提供方拒绝该请求。
 
+### 请求兼容性
+
+网关可以在可访问的地址上持有有效密钥，却仍然拒绝每一个请求。pi-ai 从端点的 URL 决定请求的形状——哪个角色携带系统提示、哪个字段限制输出、思考等级如何传递——而它不认识的地址会被当作 OpenAI 本身来对待。大多数 OpenAI 兼容网关都会拒绝 OpenAI 至少接受的一项内容。
+
+其中两项占了大部分。声明推理的模型，其系统提示会作为 `role: "developer"` 发送，许多网关会直接拒绝；输出上限会作为 `max_completion_tokens` 发送，而只认识 `max_tokens` 的服务器会拒绝它。表单对这两项都没有字段；请在 `$DSH_HOME/settings.yaml` 中于路由上修正：
+
+```yaml
+llm-pi-ai:
+  providers:
+    my-gateway:
+      apiKeyEnv: GATEWAY_API_KEY
+      api: openai-completions
+      baseURL: https://gateway.example/v1
+      compat:
+        supportsDeveloperRole: false
+        maxTokensField: max_tokens
+      models:
+        - id: my-model
+```
+
+路由的 `compat` 是其模型们的默认值，模型自身的值逐字段优先，因此只需修正单个模型而无需重写整个路由：
+
+```yaml
+      models:
+        - id: my-model
+        - id: my-reasoner
+          compat:
+            thinkingFormat: deepseek
+```
+
+两者都未设置的，保留已安装目录为该模型记录的值；目录未描述的，交由 pi-ai 的检测处理。你写出的每个开关都要给值：留空的键（`supportsDeveloperRole:`）会被拒绝而不是被忽略，因为空值会抹掉目录已知的内容却又不提供任何替代。任何协议都不接受的名字同样会被拒绝，且报错消息会列出可用的名字。
+
+每个开关属于声明它的协议，因此在一种 `api` 上有效的开关可能在另一种上被拒绝——报错消息会说明该协议实际提供哪些。与上文的 `input` 一样，开关是对你的端点的断言而不是对它的检查：设置一个你的网关实际并不需要的开关，只是发送了一个不同的请求。
+
+每个开关、其接受的值以及接受它的协议，都列在[生成的 `dsh-llm-pi-ai` 配置参考](../../config-catalog.zh.md#deepseek-aidsh-llm-pi-ai) 的 `PiAiCompatProfile` 之下——它派生自源码，因此不会落后于适配器实际接受的内容。
+
 ## 选择模型
 
 已配置的提供方会出现在模型选择器中。选择模型也会将其设为新会话的默认值。已发送过请求的会话会保留自身日志中记录的模型。
@@ -90,9 +126,12 @@ llm-pi-ai:
 - **`MISSING_CREDENTIAL`**：通过模型页存储提供方密钥，或提供被引用的环境变量。
 - **`UNKNOWN_MODEL`**：选择已配置的模型，或向自定义提供方添加缺失的模型。
 - **获取可用模型返回 401**：检查密钥。模型发现会调用 OpenAI 兼容的 `GET /models` 端点；对于不提供该端点的服务，请手动输入模型。
+- **网关拒绝每个请求，尽管密钥和 URL 都正确**：其请求形状与 OpenAI 不同。请从路由上的 `compat.supportsDeveloperRole: false` 和 `compat.maxTokensField: max_tokens` 开始。
+- **只有推理模型失败**：pi-ai 将它们的系统提示作为 `developer` 角色发送，被网关拒绝。请设置 `compat.supportsDeveloperRole: false`。
+- **某个 compat 开关因没有值而被拒绝**：一个冒号后什么都没写的键。请给它一个值，或移除该键以保留已安装目录的值。
 - **图片在发送前被拒绝**：该模型未声明图片模态。请给自定义提供方的模型加上 `input: [text, image]`；DeepSeek 自身的 chat-completions 路由是纯文本的，且无法通过配置改变。
 - **提供方拒绝了带图片的请求**：该模型声明了其端点实际并不提供的图片能力。请从授予它图片能力的那个列表中移除 `image`——可能是模型的 `input`，也可能是路由的 `defaultInput`——然后开启新会话：附加的图片会留在会话日志里，因此在会话离开它之前，同一个请求会不断重复。
 
 ## 进阶配置
 
-自动生成的[插件配置目录](../../config-catalog.md)列出所有受支持的字段与默认值。[`dsh-llm-pi-ai`](../../../packages/llm/llm-pi-ai/README.md) 和 [`dsh-llm-deepseek`](../../../packages/llm/llm-deepseek/README.md) 参考文档负责直接 `settings.yaml` 配置、目录解析、推理控制、凭据与适配器错误。
+自动生成的[插件配置目录](../../config-catalog.zh.md)列出每个插件全部受支持的字段与默认值；[`dsh-llm-pi-ai`](../../config-catalog.zh.md#deepseek-aidsh-llm-pi-ai) 就是本页所配置的提供方小节。[`dsh-llm-pi-ai`](../../../packages/llm/llm-pi-ai/README.zh.md) 和 [`dsh-llm-deepseek`](../../../packages/llm/llm-deepseek/README.zh.md) 参考文档负责直接 `settings.yaml` 配置、目录解析、推理控制、凭据与适配器错误。

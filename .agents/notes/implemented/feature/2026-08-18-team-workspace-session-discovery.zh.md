@@ -4,7 +4,7 @@ Status: implemented
 
 [English](2026-08-18-team-workspace-session-discovery.md) | 中文
 
-相关：[Agent Team Plugin](2026-08-14-agent-team-plugin.md)、[Team Plugin Round 2](2026-08-18-team-plugin-round-2.md)。
+相关：[Agent Team Plugin](2026-08-14-agent-team-plugin.zh.md)、[Team Plugin Round 2](2026-08-18-team-plugin-round-2.zh.md)。
 
 ## 问题
 

@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-08-20-team-agent-keyless-e2e-snapshot.md
 2026-08-20-team-agent-keyless-e2e-snapshot.md: 0dfe4f6782319b57dd49b526b97ae42269c99888
-2026-08-20-team-agent-keyless-e2e-snapshot.zh.md: 9e4735d44e3a502a5ee14d2695ea8dba80c4995c
+2026-08-20-team-agent-keyless-e2e-snapshot.zh.md: 07af466c23e1289824ee79921b4d3f6b9234068f

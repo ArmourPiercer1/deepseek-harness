@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-14-model-picker-family-grouping.md
 2026-08-14-model-picker-family-grouping.md: f86ae5ee3ab0c99c5c2013122cf8706354990db5
-2026-08-14-model-picker-family-grouping.zh.md: 4184787b918bc44a9cbb9da661bd24677f7e9151
+2026-08-14-model-picker-family-grouping.zh.md: 06bd10280b2a44fa057843f328c1d0889123b7bb

@@ -26,7 +26,7 @@ TUI 用户需要把另一场对话中的相关工作带入一条新消息，但�
 
 ## 消息所有权
 
-TUI 负责快照／直接消息事务，不扩展通用收件箱记录。agent 空闲时，它会在调用 `followup()` 前安装一次性的外层 `agent/pre-step` 监听器；enter 决策会把快照作为另一条消息接收，而 reject 或更早的普通丢弃会释放监听器，并且不写入任何消息。agent 运行时，TUI 会依次调用 `inject(snapshot)` 和 `steer(prompt)`，把两者放入 next-step inbox，等待后续同一次领取。pre-step reject 或失败会使这对已领取消息维持已移除状态；领取后插入的消息继续等待。这一通用交付边界由[上下文分离决策](../architecture/2026-07-24-separate-context-injection-from-turn-execution.md)规定。
+TUI 负责快照／直接消息事务，不扩展通用收件箱记录。agent 空闲时，它会在调用 `followup()` 前安装一次性的外层 `agent/pre-step` 监听器；enter 决策会把快照作为另一条消息接收，而 reject 或更早的普通丢弃会释放监听器，并且不写入任何消息。agent 运行时，TUI 会依次调用 `inject(snapshot)` 和 `steer(prompt)`，把两者放入 next-step inbox，等待后续同一次领取。pre-step reject 或失败会使这对已领取消息维持已移除状态；领取后插入的消息继续等待。这一通用交付边界由[上下文分离决策](../architecture/2026-07-24-separate-context-injection-from-turn-execution.zh.md)规定。
 
 引用准备过程不是新的 steering 协议，本身也不会创建轮次。空闲交付使用 `followup()` 和 pre-step 进入决策；运行期间的交付使用共享 next-step inbox，并保持快照顺序。
 
@@ -34,7 +34,7 @@ TUI 负责快照／直接消息事务，不扩展通用收件箱记录。agent �
 
 TUI 把会话候选与现有 `@` 文件提供方组合在一起。候选查询会对 session id、cwd 或最新折叠后的标题执行不区分大小写的子串匹配，显示该标题，并在没有标题观察结果或标题观察失败时回退到 session id。候选查询遵循编辑器的取消信号；session id、cwd 和提及标签中的外部终端控制字符会被转义，但规范 URI 仍保留原始 id。TUI 只准备包含结构化提及标记的提交；等待快照时禁用重复提交；失败时恢复输入；它把可读的直接内容渲染为用户消息，并把会话引用来源元数据渲染为精简的来源列表，不在终端中暴露完整 JSON。
 
-[仅面向自动化的 ACP（Agent Client Protocol）传输层](../simplification/2026-07-23-acp-automation-only-protocol.md)有意不挂载会话查询或会话引用服务。
+[仅面向自动化的 ACP（Agent Client Protocol）传输层](../simplification/2026-07-23-acp-automation-only-protocol.zh.md)有意不挂载会话查询或会话引用服务。
 
 ## 预算与保留策略
 

@@ -6,15 +6,15 @@ Status: implemented
 
 ## 问题
 
-[Codex 与 Claude Code 提供方约定](../feature/2026-08-04-claude-code-and-codex-subagent-backends.md)最初以可独立安装的包交付，由部署环境在通用 subagent 工具旁加载。Agent Preset 后来成为单个 agent（智能体）的模型可见工具的常规责任方，但 preset 不能安全地拥有这些产品提供方：`ctx.subagents` 是进程级注册表，提供方名称唯一，而宿主消费方会跨会话解析同一个注册表。如果要求用户同时编辑 Profile 和 Preset，也会使通用 preset 行本身不完整。
+[Codex 与 Claude Code 提供方约定](../feature/2026-08-04-claude-code-and-codex-subagent-backends.zh.md)最初以可独立安装的包交付，由部署环境在通用 subagent 工具旁加载。Agent Preset 后来成为单个 agent（智能体）的模型可见工具的常规责任方，但 preset 不能安全地拥有这些产品提供方：`ctx.subagents` 是进程级注册表，提供方名称唯一，而宿主消费方会跨会话解析同一个注册表。如果要求用户同时编辑 Profile 和 Preset，也会使通用 preset 行本身不完整。
 
 归属决策必须同时保留两个彼此独立的事实：加载提供方不得启动产品，也不得对产品执行身份验证；而工具是否启用仍须按 preset 决定，这样两个会话才能暴露不同的产品。全局产品开关、按 agent 创建提供方实例或预先枚举的组合 preset，都会为其中一个事实另设第二责任方。
 
 ## 决策
 
-产品提供方仍是进程级的 host plane（宿主平面）注册。[生产安装排除决策](../simplification/2026-08-12-production-dsh-excludes-product-subagent-providers.md)只取代本说明原先由 base bundle 安装提供方的选择：生产 `dsh-base` 既不依赖也不挂载它们。选择产品集成的 Profile 会安装目标提供方包，并在 host plane 挂载一次。加载任一插件只会注册一个休眠后端；对应的 Codex 或 Claude 进程直到第一次实际委派调用时才启动。Agent Preset 分别通过普通的 `dsh-tool-subagent` 行贡献 `subagent_codex` 与 `subagent_claude_code`，因此一个 preset 可以不暴露任何工具、只暴露其中一个或同时暴露两者，而无需更改提供方注册表。
+产品提供方仍是进程级的 host plane（宿主平面）注册。[生产安装排除决策](../simplification/2026-08-12-production-dsh-excludes-product-subagent-providers.zh.md)只取代本说明原先由 base bundle 安装提供方的选择：生产 `dsh-base` 既不依赖也不挂载它们。选择产品集成的 Profile 会安装目标提供方包，并在 host plane 挂载一次。加载任一插件只会注册一个休眠后端；对应的 Codex 或 Claude 进程直到第一次实际委派调用时才启动。Agent Preset 分别通过普通的 `dsh-tool-subagent` 行贡献 `subagent_codex` 与 `subagent_claude_code`，因此一个 preset 可以不暴露任何工具、只暴露其中一个或同时暴露两者，而无需更改提供方注册表。
 
-本说明继续负责解释为什么已经挂载的产品提供方属于 host plane，而面向模型的工具属于 Agent Preset。生产安装排除决策负责哪些 Profile 安装这些可选包。提供方约定说明继续负责每个产品的协议、结果映射、取消、进程树生命周期与证据层级。[Agent Preset 架构](2026-08-03-per-session-agent-presets.md)仍负责宿主与 agent 的划分、preset 创作，以及改动只影响新组装会话的规则。
+本说明继续负责解释为什么已经挂载的产品提供方属于 host plane，而面向模型的工具属于 Agent Preset。生产安装排除决策负责哪些 Profile 安装这些可选包。提供方约定说明继续负责每个产品的协议、结果映射、取消、进程树生命周期与证据层级。[Agent Preset 架构](2026-08-03-per-session-agent-presets.zh.md)仍负责宿主与 agent 的划分、preset 创作，以及改动只影响新组装会话的规则。
 
 这些提供方使用宿主环境已经选定的产品。Codex 启动 `codex`，该命令从 `PATH` 解析；Claude Code 通过共享的子进程执行世界解析 `claude`，并把确切路径交给官方 SDK。加载 Profile 不会安装产品、创建产品状态、探测版本、测试身份验证，也不会新增产品专属设置。命令缺失和产品故障仍局限于发生问题的那次委派。
 

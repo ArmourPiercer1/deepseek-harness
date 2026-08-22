@@ -319,7 +319,7 @@ function panelProps(data: TeamPanelChatData, sessions: SessionListState = listSt
     openFile: () => {},
     inspectCall: () => {},
     forkAt: () => {},
-    loadImage: () => Promise.reject(new Error('unused')),
+    renderMessageImages: () => undefined,
     fileMentions: () => undefined,
     t: makeTranslate(zh),
   }

@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-15-permission-seam-and-mcp-fusion.md
 2026-08-15-permission-seam-and-mcp-fusion.md: 67a0b5ae5f3e0eb739262d7644da67f530702a27
-2026-08-15-permission-seam-and-mcp-fusion.zh.md: 7e4c0b88313784a543a1a6f362f92778906edbaf
+2026-08-15-permission-seam-and-mcp-fusion.zh.md: 1ae45572c5136ed132b715f620d5dad06f8004a3

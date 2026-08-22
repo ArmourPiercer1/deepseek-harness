@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md
 2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.md: 202ea807a2f15acba21327a094b1b6422e9df53b
-2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.zh.md: 78191a5e338b04ade49dc376ea37206fb5f365a0
+2026-08-15-layered-rule-loading-and-cold-recovery-snapshot.zh.md: 2a32d1a452ecb1d4bb12b39e95cf8a1d986d75a7

@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-[团队插件](../feature/2026-08-14-agent-team-plugin.md)交付时带有四个运行时缺陷，阻碍干净的版本耦合发布。第一，`delegate_to_teammate` 的 `shutdown` 动作只清除 orchestrator 的登记状态：leader 认为 teammate 已停止后，其子会话仍在运行。第二，`contextPolicy` 从成员定义解析并持久化进 `team/member-bound`，却从未被消费：每次 `run` 委派都新建子会话，因此默认策略 `persistent`（跨委派复用一个 durable 会话）从未生效。第三，`dsh-team-channels` 声明了 `Config.controlRequestTimeoutMs` 但其 `apply` 忽略该值，而 `dsh-tool-team` 在自己的清理定时器里硬编码同一常量；`packages/bundle/team/cordis.patch.yml` 中配置的超时没有任何效果。第四，`TeamOrchestrator.updateActivity` 只被测试调用：运行时没有任何路径写入 `lastActivityAt` 与 `lastAction`，leader 的 `already_running` 响应因此永远无法报告 teammate 的进行中活动。
+[团队插件](../feature/2026-08-14-agent-team-plugin.zh.md)交付时带有四个运行时缺陷，阻碍干净的版本耦合发布。第一，`delegate_to_teammate` 的 `shutdown` 动作只清除 orchestrator 的登记状态：leader 认为 teammate 已停止后，其子会话仍在运行。第二，`contextPolicy` 从成员定义解析并持久化进 `team/member-bound`，却从未被消费：每次 `run` 委派都新建子会话，因此默认策略 `persistent`（跨委派复用一个 durable 会话）从未生效。第三，`dsh-team-channels` 声明了 `Config.controlRequestTimeoutMs` 但其 `apply` 忽略该值，而 `dsh-tool-team` 在自己的清理定时器里硬编码同一常量；`packages/bundle/team/cordis.patch.yml` 中配置的超时没有任何效果。第四，`TeamOrchestrator.updateActivity` 只被测试调用：运行时没有任何路径写入 `lastActivityAt` 与 `lastAction`，leader 的 `already_running` 响应因此永远无法报告 teammate 的进行中活动。
 
 ## 决策
 
@@ -29,4 +29,4 @@ Status: implemented
 
 ## 后果
 
-`persistent` teammate 跨 `run` 委派延续同一个会话——这是相对此前"每次新建"行为的模型可见变化；`fresh_per_delegation` 按成员恢复旧行为。`controlRequestTimeoutMs` 现在可以从 cordis.yml 真正配置，调整它同时会在 1–30 秒夹取范围内改变清理周期。修复新增十二个测试，其中一个真实 Loader 组合测试向 store 创建的子会话追加 `tool/call` 事件，并断言 leader 的第二次委派点名该工具。没有引入新的 session 事件类型，因此生成的事件词汇表与[团队插件说明](../feature/2026-08-14-agent-team-plugin.md)记录的版本耦合保持不变。
+`persistent` teammate 跨 `run` 委派延续同一个会话——这是相对此前"每次新建"行为的模型可见变化；`fresh_per_delegation` 按成员恢复旧行为。`controlRequestTimeoutMs` 现在可以从 cordis.yml 真正配置，调整它同时会在 1–30 秒夹取范围内改变清理周期。修复新增十二个测试，其中一个真实 Loader 组合测试向 store 创建的子会话追加 `tool/call` 事件，并断言 leader 的第二次委派点名该工具。没有引入新的 session 事件类型，因此生成的事件词汇表与[团队插件说明](../feature/2026-08-14-agent-team-plugin.zh.md)记录的版本耦合保持不变。

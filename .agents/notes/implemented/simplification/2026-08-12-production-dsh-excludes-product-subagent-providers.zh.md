@@ -10,7 +10,7 @@ Status: implemented
 
 ## 决策
 
-本决策取代[共享 host 放置决策](../architecture/2026-08-10-product-subagent-providers-in-shared-host.md)：`@deepseek-ai/dsh-base` 不依赖也不挂载 Codex 与 Claude Code subagent 提供方。需要这些集成的 Profile 仍可显式安装并挂载对应包。仓库 examples 保留直接开发依赖，使其显式提供方配置可以继续解析。
+本决策取代[共享 host 放置决策](../architecture/2026-08-10-product-subagent-providers-in-shared-host.zh.md)：`@deepseek-ai/dsh-base` 不依赖也不挂载 Codex 与 Claude Code subagent 提供方。需要这些集成的 Profile 仍可显式安装并挂载对应包。仓库 examples 保留直接开发依赖，使其显式提供方配置可以继续解析。
 
 ## 验证
 
