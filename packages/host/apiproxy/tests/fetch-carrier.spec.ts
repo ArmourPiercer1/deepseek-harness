@@ -137,6 +137,11 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
         return { rpcId: request.rpcId, result: { ok: true, value: { accepted: true as const } } }
       },
     },
+    team: {
+      async projection(request) {
+        return { rpcId: request.rpcId, result: { ok: false, error: { code: 'team-unavailable' as const, message: 'stub', details: {} } } }
+      },
+    },
     host: {
       async describe(request) {
         return {

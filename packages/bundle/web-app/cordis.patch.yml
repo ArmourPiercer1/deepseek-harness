@@ -100,6 +100,12 @@
     - id: plugin-inventory
       name: '@deepseek-ai/dsh-host-plugin-inventory'
 
+    # Host-plane read-only team projection: cold-safe TeamView folds over the
+    # leader and team-child session logs plus the workspace roster, feeding
+    # the api-gateway's session/team pushes and the team.projection unary.
+    - id: team-projection
+      name: '@deepseek-ai/dsh-team-projection'
+
     # The API gateway: the transport-agnostic dispatch face every client shape
     # shares. The base layer's agent-default-model service owns the default model.
     - id: api-gateway

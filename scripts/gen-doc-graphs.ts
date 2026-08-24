@@ -609,6 +609,14 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Coordinates teammate approval requests and rendezvous on the leader session across child contexts and tool executions.',
   },
   {
+    key: 'teamProjection',
+    pkg: 'team-projection',
+    title: 'Host read-only team projection',
+    mode: 'core',
+    consumers: ['apiproxy'],
+    note: 'Folds one leader team view cold-safely from session logs and the workspace roster, overlays live running state, and publishes whole snapshots; the API gateway serves them to the browser.',
+  },
+  {
     key: 'permission',
     pkg: 'permission',
     title: 'Tool-call permission evaluation seam',

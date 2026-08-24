@@ -2442,7 +2442,7 @@ export interface Config {
 }
 ```
 
-来源：[`packages/team/team-local/src/index.ts:60`](../packages/team/team-local/src/index.ts)
+来源：[`packages/team/team-local/src/index.ts:61`](../packages/team/team-local/src/index.ts)
 
 <a id="deepseek-aidsh-terminal-bash"></a>
 
@@ -3342,6 +3342,7 @@ export interface Config {
 - `@deepseek-ai/dsh-subagent`（[`packages/subagent/subagent/src/index.ts`](../packages/subagent/subagent/src/index.ts)）
 - `@deepseek-ai/dsh-subprocess-local`（[`packages/subprocess/subprocess-local/src/index.ts`](../packages/subprocess/subprocess-local/src/index.ts)）
 - `@deepseek-ai/dsh-team`（[`packages/team/team/src/index.ts`](../packages/team/team/src/index.ts)）
+- `@deepseek-ai/dsh-team-projection`（[`packages/team/team-projection/src/index.ts`](../packages/team/team-projection/src/index.ts)）
 - `@deepseek-ai/dsh-team-runtime` — 需要 `team` · `tools` · `subagents` · `permission`（[`packages/team/team-runtime/src/index.ts`](../packages/team/team-runtime/src/index.ts)）
 - `@deepseek-ai/dsh-terminal`（[`packages/terminal/terminal/src/index.ts`](../packages/terminal/terminal/src/index.ts)）
 - `@deepseek-ai/dsh-tool-ask-user` — 需要 `tools` · `userQuestions`（[`packages/interaction/tool-ask-user/src/index.ts`](../packages/interaction/tool-ask-user/src/index.ts)）

@@ -10,6 +10,7 @@ import type { WorkspaceApi } from './workspace.ts'
 import type { AgentPresetsApi } from './agent-presets.ts'
 import type { SkillsApi } from './skills.ts'
 import type { SubagentsApi } from './subagents.ts'
+import type { TeamApi } from './team.ts'
 import type { EventsApi } from './events.ts'
 import type { GoalsApi } from './goals.ts'
 import type { SettingsApi } from './settings.ts'
@@ -22,6 +23,13 @@ import type { ClientResponse, RpcReceipt } from './rpc.ts'
 export interface ApiProxy {
   sessions: SessionsApi
   subagents: SubagentsApi
+  /**
+   * Optional until the P3a browser consumer lands: the host gateway always
+   * provides it, while in-repo fixture impls in packages that do not yet
+   * consume the domain keep compiling; the consuming change makes it
+   * required together with its store.
+   */
+  team?: TeamApi
   host: HostApi
   workspace: WorkspaceApi
   skills: SkillsApi
@@ -53,6 +61,11 @@ export type {
   SubagentPromptReceipt, SubagentsApi,
 } from './subagents.ts'
 export type { JobView } from './jobs.ts'
+export type { TeamApi, TeamProjectionRequest, TeamProjectionValue } from './team.ts'
+export type {
+  MessageAnchor, TeamApprovalView, TeamDelegationView, TeamMemberView, TeamMessagePage,
+  TeamMessageView, TeamTaskView, TeamView,
+} from '@deepseek-ai/dsh-team-projection/types'
 export type { WorkspaceApi, WorkspaceId, WorkspaceView } from './workspace.ts'
 export type { SkillsApi, SkillEntry } from './skills.ts'
 export type { AgentPresetsApi, AgentPresetEntry } from './agent-presets.ts'

@@ -286,6 +286,7 @@
     { "path": "./packages/todo/tool-todo" },
     { "path": "./packages/team/team" },
     { "path": "./packages/team/team-local" },
+    { "path": "./packages/team/team-projection" },
     { "path": "./packages/team/team-runtime" },
     { "path": "./packages/team/team-channels" },
     { "path": "./packages/team/tool-team" },

@@ -208,6 +208,8 @@ flowchart LR
   pkg_team_runtime["team-runtime"]
   pkg_team_channels["team-channels"]
   svc_teamControl["ctx.teamControl<br/>Host-level team control request coordinator"]
+  pkg_team_projection["team-projection"]
+  svc_teamProjection["ctx.teamProjection<br/>Host read-only team projection"]
   pkg_permission["permission"]
   svc_permission["ctx.permission<br/>Tool-call permission evaluation seam"]
   pkg_permission_engine["permission-engine"]
@@ -307,6 +309,7 @@ flowchart LR
   pkg_team --> svc_team
   pkg_team_channels --> svc_teamControl
   pkg_team_local --> svc_team
+  pkg_team_projection --> svc_teamProjection
   pkg_terminal --> svc_terminals
   pkg_terminal_bash --> svc_terminals
   pkg_token_meter --> svc_tokenMeter
@@ -419,6 +422,7 @@ flowchart LR
   svc_team --> pkg_tool_team
   svc_teamControl --> pkg_team_runtime
   svc_teamControl --> pkg_tool_team
+  svc_teamProjection --> pkg_apiproxy
   svc_terminals --> pkg_tool_terminal
   svc_tokenMeter --> pkg_compaction_basic
   svc_toolResultPruner --> pkg_compaction_basic
@@ -508,6 +512,7 @@ flowchart LR
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Registers host inspect providers, mirrors the client provider manifest, and routes client queries through the dynamic Cordis transport. |
 | `ctx.team` | `seam` | [`team`](../packages/team/team) | [`team-local`](../packages/team/team-local) | [`tool-team`](../packages/team/tool-team), [`team-runtime`](../packages/team/team-runtime), [`team-channels`](../packages/team/team-channels) | - | The Service Definition declares the abstract TeamRegistry; providers populate definitions, and runtime, channels, and tool consumers coordinate member lifecycles. |
 | `ctx.teamControl` | `core` | [`team-channels`](../packages/team/team-channels) | - | [`tool-team`](../packages/team/tool-team), [`team-runtime`](../packages/team/team-runtime) | - | Coordinates teammate approval requests and rendezvous on the leader session across child contexts and tool executions. |
+| `ctx.teamProjection` | `core` | [`team-projection`](../packages/team/team-projection) | - | `apiproxy` | - | Folds one leader team view cold-safely from session logs and the workspace roster, overlays live running state, and publishes whole snapshots; the API gateway serves them to the browser. |
 | `ctx.permission` | `seam` | [`permission`](../packages/permission/permission) | [`permission-engine`](../packages/permission/permission-engine) | [`tool-permission-guard`](../packages/permission/tool-permission-guard) | - | The Service Definition declares evaluate and policy types; the engine package implements adjudication and ships in the base bundle, while the guard package implements execution gating and remains an opt-in consumer. |
 
 Maintenance mode: hybrid: services are discovered from Cordis declarations; interface/implementation/consumer roles are classified in `scripts/gen-doc-graphs.ts` with a completeness guard.

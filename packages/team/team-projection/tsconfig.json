@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "lib/types" },
+  "include": ["src"],
+  "references": [
+    { "path": "../../../vendor/cosmokit" },
+    { "path": "../../../vendor/cordis" },
+    { "path": "../../util/brand" },
+    { "path": "../../util/home-paths" },
+    { "path": "../../core/agent" },
+    { "path": "../../core/session" },
+    { "path": "../../session/session-persistence" },
+    { "path": "../../subagent/subagent" },
+    { "path": "../team" },
+    { "path": "../team-local" },
+    { "path": "../../runtime-diagnostics/invariants" }
+  ]
+}

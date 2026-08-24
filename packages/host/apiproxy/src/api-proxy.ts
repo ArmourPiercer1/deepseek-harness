@@ -23,6 +23,9 @@ import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
 import { SessionQueryError, type SessionSearchCursor } from '@deepseek-ai/dsh-session-query'
 import { SubagentError } from '@deepseek-ai/dsh-subagent'
 import type { SubagentListEntry as CatalogSubagentListEntry } from '@deepseek-ai/dsh-subagent'
+import { TeamProjectionError } from '@deepseek-ai/dsh-team-projection'
+import type { TeamView } from '@deepseek-ai/dsh-team-projection'
+import type { TeamApi } from './api/team.ts'
 import { isUserInvocable } from '@deepseek-ai/dsh-skill'
 import type { Workspace, WorkspaceRecord } from '@deepseek-ai/dsh-workspace'
 import {
@@ -1042,9 +1045,11 @@ function changedWorkspaceView(workspaceId: string, value: unknown): WorkspaceVie
  * Implement ApiProxy over a composed host context.
  * @param ctx - a context with the Host spine and Workspace registry mounted.
  * @param defaults - host routing and project-directory defaults.
- * @returns the ApiProxy implementation.
+ * @returns the ApiProxy implementation, with every optional-provision domain
+ *   (currently only `team`, optional for not-yet-consuming fixture impls)
+ *   concretely provided.
  */
-export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiProxy {
+export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiProxy & { team: TeamApi } {
   const sessionExportCompressionLevel = defaults.sessionExportCompressionLevel
     ?? DEFAULT_SESSION_LOG_COMPRESSION_LEVEL
   const coldBlankProbeMaxBytes = defaults.coldBlankProbeMaxBytes
@@ -1224,6 +1229,17 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
   ctx.inject(['sessionProjections'], (projectionCtx) => {
     projectionCtx.sessionProjections.onChanged((session, key, value, seq) => {
       broadcast({ type: 'session/projection', sessionId: session.id, key, value, seq })
+    })
+  })
+
+  // Team projection change feed → session/team whole-snapshot pushes (the
+  // session/jobs posture: one authoritative value per leader, last-wins, no
+  // deltas). The service folds from durable logs, so the child activates only
+  // when the projection service is composed and unwinds with this gateway's
+  // fiber; a composition without it simply never pushes.
+  ctx.inject(['teamProjection'], (teamCtx) => {
+    teamCtx.teamProjection.onChanged((leaderSessionId: SessionId, team: TeamView) => {
+      broadcast({ type: 'session/team', sessionId: leaderSessionId, team })
     })
   })
 
@@ -2699,6 +2715,58 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
     },
 
+    team: {
+      async projection(request, signal) {
+        const { leaderSessionId } = request.payload
+        const teamProjection = ctx.get('teamProjection')
+        if (teamProjection === undefined) {
+          return err(request, {
+            code: 'team-unavailable',
+            message: 'the team projection service is not composed in this deployment',
+            details: {},
+          })
+        }
+        try {
+          const value = await teamProjection.project(
+            leaderSessionId,
+            signal,
+            'messagesBefore' in request.payload
+              ? {
+                messagesBefore: request.payload.messagesBefore,
+                ...request.payload.limit !== undefined ? { limit: request.payload.limit } : {},
+              }
+              : undefined,
+          )
+          return ok(request, value)
+        } catch (error: unknown) {
+          if (signal?.aborted) {
+            return err(request, { code: 'cancelled', message: 'team projection read was cancelled', details: {} })
+          }
+          if (error instanceof TeamProjectionError && error.code === 'LEADER_UNKNOWN') {
+            // The service message states the exact reason: an unknown session
+            // or one that fails the team-ness gate.
+            return err(request, {
+              code: 'team-leader-unknown',
+              message: error.message,
+              details: { leaderSessionId },
+            })
+          }
+          if (error instanceof TeamProjectionError && error.code === 'ANCHOR_UNKNOWN') {
+            // An anchor the fold does not serve is a client defect, never a
+            // silent fallback to the default window.
+            return err(request, {
+              code: 'team-anchor-unknown',
+              message: error.message,
+              details: { leaderSessionId },
+            })
+          }
+          // INVALID_LIMIT is unreachable behind the payload schema's closed
+          // range; anything else is a genuine fold failure.
+          return err(request, { code: 'internal', message: 'team projection read failed', details: {} })
+        }
+      },
+    },
+
     workspace: {
       list(request) {
         return Promise.resolve(ok(request, {
@@ -3363,6 +3431,25 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             if (views.length > 0) {
               queue.push(frame({ type: 'session/jobs', sessionId: session.id, jobs: views }))
             }
+          }
+        }
+        // Team projection baseline: attempt every live session once; a session
+        // that fails the service's team-ness gate (an ordinary non-team
+        // session) is rejected and stays absent, which is how the client reads
+        // "no team". Baselines push straight into this queue (not broadcast):
+        // the stream is opening, so only this consumer needs them. A settle is
+        // not awaited — the queue preserves arrival order and the async
+        // generator drains it either way.
+        const teamProjection = ctx.get('teamProjection')
+        if (teamProjection !== undefined) {
+          for (const session of ctx.sessions.list()) {
+            void teamProjection.get(session.id).then((team) => {
+              queue.push(frame({ type: 'session/team', sessionId: session.id, team }))
+            }, () => {
+              // A session the gate rejects (ordinary session, unknown, or an
+              // unreadable corpus) has no baseline; the client's absence
+              // semantics apply.
+            })
           }
         }
         // Per-session open-call table for result-view pairing. Bounded by the

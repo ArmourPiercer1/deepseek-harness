@@ -72,6 +72,9 @@
       "path": "../../subagent/subagent"
     },
     {
+      "path": "../../team/team-projection"
+    },
+    {
       "path": "../../skill/skill"
     },
     {

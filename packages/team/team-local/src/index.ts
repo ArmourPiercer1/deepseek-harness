@@ -49,6 +49,7 @@ export {
   isTeammateEnabled,
 } from './enablement.ts'
 export type { TeamEnablementSettings } from './enablement.ts'
+export { deduplicateDefinitions, discoverTeamMembers } from './discovery.ts'
 
 export const name = 'team-local'
 export const inject = ['team']

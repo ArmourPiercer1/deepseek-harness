@@ -70,6 +70,7 @@ import {
   subagentListRequestSchema,
   subagentPromptRequestSchema,
 } from '../api/subagents.schema.ts'
+import { teamProjectionRequestSchema } from '../api/team.schema.ts'
 
 /**
  * Unary dispatch table, keyed by (and compiler-locked to) RpcMethodMap: a map row without a
@@ -104,6 +105,20 @@ const UNARY_ROUTES: UnaryRoutes = {
   'subagent.history': { schema: subagentHistoryRequestSchema, invoke: (api, r, signal) => api.subagents.history(r, signal) },
   'subagent.prompt': { schema: subagentPromptRequestSchema, invoke: (api, r, signal) => api.subagents.prompt(r, signal) },
   'subagent.interrupt': { schema: subagentInterruptRequestSchema, invoke: (api, r) => api.subagents.interrupt(r) },
+  // The `?.` arm is unreachable through the shipped gateway (createApiProxy
+  // always provides the domain); it answers fixture impls that omit the
+  // optional member with the same code the impl itself would.
+  'team.projection': {
+    schema: teamProjectionRequestSchema,
+    invoke: (api, r, signal) => api.team?.projection(r, signal)
+      ?? Promise.resolve({
+        rpcId: r.rpcId,
+        result: {
+          ok: false as const,
+          error: { code: 'team-unavailable' as const, message: 'the team domain is not implemented by this gateway', details: {} },
+        },
+      }),
+  },
   'host.describe': { schema: hostDescribeRequestSchema, invoke: (api, r) => api.host.describe(r) },
   'host.pickDirectory': { schema: hostPickDirectoryRequestSchema, invoke: (api, r, signal) => api.host.pickDirectory(r, signal) },
   'host.listDirectory': { schema: hostListDirectoryRequestSchema, invoke: (api, r, signal) => api.host.listDirectory(r, signal) },

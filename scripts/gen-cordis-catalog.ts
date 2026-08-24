@@ -115,6 +115,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   workspaceRegistry: 'workspace.md',
   team: 'team.md',
   teamControl: 'team.md',
+  teamProjection: 'team.md',
   permission: 'permission.md',
 }
 
@@ -440,6 +441,12 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   JobSnapshot: 'jobs.md',
   JobStart: 'jobs.md',
   JobsChangedListener: 'jobs.md',
+  TeamView: 'team.md',
+  TeamMessagePage: 'team.md',
+  TeamMessageView: 'team.md',
+  TeamPageOptions: 'team.md',
+  TeamProjectionListener: 'team.md',
+  MessageAnchor: 'team.md',
   CreateTeamTaskRequest: 'agent-team.md',
   SendTeamMessageRequest: 'agent-team.md',
   SendTeamMessageResult: 'agent-team.md',

@@ -15,6 +15,7 @@ import type { JsonValue, SessionEvent, SessionId } from '@deepseek-ai/dsh-sessio
 import type { ToolCallView, ToolResultView } from '@deepseek-ai/dsh-tools/presentation'
 import type { RpcError, RpcId, RpcRequest } from './rpc.ts'
 import type { JobView } from './jobs.ts'
+import type { TeamView } from '@deepseek-ai/dsh-team-projection/types'
 import type { WorkspaceView } from './workspace.ts'
 
 // Client-side consumers take the render-intent vocabulary from the contract;
@@ -96,6 +97,21 @@ export type MuxFrame =
    * express.
    */
   | { type: 'session/jobs'; sessionId: SessionId; jobs: JobView[] }
+  /**
+   * Complete team projection snapshot for one leader session, after every
+   * committed change the fold observes (team event families, delegation
+   * spans, settlement notices, running flips). Process-local push state
+   * derived from durable logs — exactly like `session/jobs`, the whole
+   * snapshot is what makes a change, a reconnect, and a second tab converge
+   * on one authoritative value (last-wins; the `team.projection` unary is
+   * the cold/absent fallback).
+   *
+   * Sent as a subscription baseline only for a session that passes the
+   * service's team-ness gate (a `team:`-labeled continuable child, a team
+   * fact in its own log, or a bound teammate); an absent key means no team,
+   * and `session/subscribed` clears the client mirror to that baseline.
+   */
+  | { type: 'session/team'; sessionId: SessionId; team: TeamView }
   /**
    * One projection unit's finished value changed (session-projection RFC).
    * Live push state, never logged — replay recomputes on the host (the

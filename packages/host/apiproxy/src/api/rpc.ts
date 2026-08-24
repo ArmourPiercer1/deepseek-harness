@@ -92,6 +92,16 @@ export interface RpcErrorDetailsMap {
   'subagent-not-resumable': { childSessionId: SessionId }
   'subagent-unauthorized': { childSessionId: SessionId }
   'subagent-delivery-unavailable': { childSessionId: SessionId }
+  /**
+   * The team projection fold rejected the request: a session neither store
+   * knows, or a known session that fails the team-ness gate (no team child,
+   * no team fact in its own log) — never an empty team view.
+   */
+  'team-leader-unknown': { leaderSessionId: SessionId }
+  /** The team projection pagination anchor named no folded message. */
+  'team-anchor-unknown': { leaderSessionId: SessionId }
+  /** The team projection service is not composed in this deployment. */
+  'team-unavailable': {}
   'internal': {}
 }
 

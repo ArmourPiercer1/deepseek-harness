@@ -3191,6 +3191,14 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'subagent.history': return this.api.subagents.history(request)
       case 'subagent.prompt': return this.api.subagents.prompt(request, signal)
       case 'subagent.interrupt': return this.api.subagents.interrupt(request)
+      // The team domain is optional on ApiProxy; the fixture world serves no
+      // team session, so the case only keeps this dispatch exhaustive.
+      case 'team.projection': {
+        if (this.api.team === undefined) {
+          throw new Error('fixture api implements no team domain')
+        }
+        return this.api.team.projection(request, signal)
+      }
       case 'host.describe': return this.api.host.describe(request)
       case 'host.pickDirectory': return this.api.host.pickDirectory(request, new AbortController().signal)
       case 'host.listDirectory': return this.api.host.listDirectory(request, new AbortController().signal)

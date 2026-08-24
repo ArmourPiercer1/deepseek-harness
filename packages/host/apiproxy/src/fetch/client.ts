@@ -67,6 +67,7 @@ import {
   subagentListValueSchema,
   subagentPromptValueSchema,
 } from '../api/subagents.schema.ts'
+import { teamProjectionValueSchema } from '../api/team.schema.ts'
 
 /**
  * Client consumption face of the contract (shape a): same domain tree as ApiProxy, but unary
@@ -104,6 +105,14 @@ export interface IApiClient {
     history(payload: RequestPayload<'subagent.history'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'subagent.history'>>>
     prompt(payload: RequestPayload<'subagent.prompt'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'subagent.prompt'>>>
     interrupt(payload: RequestPayload<'subagent.interrupt'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'subagent.interrupt'>>>
+  }
+  /**
+   * Optional until the P3a browser store lands: every shipped carrier
+   * implements it, while fixture clients in not-yet-consuming packages keep
+   * compiling; the consuming change makes it required alongside its store.
+   */
+  team?: {
+    projection(payload: RequestPayload<'team.projection'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.projection'>>>
   }
   host: {
     describe(payload: RequestPayload<'host.describe'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.describe'>>>
@@ -186,6 +195,7 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'subagent.history': subagentHistoryValueSchema,
   'subagent.prompt': subagentPromptValueSchema,
   'subagent.interrupt': subagentInterruptValueSchema,
+  'team.projection': teamProjectionValueSchema,
   'host.describe': hostDescribeValueSchema,
   'host.pickDirectory': hostPickDirectoryValueSchema,
   'host.listDirectory': hostListDirectoryValueSchema,
@@ -431,6 +441,9 @@ export abstract class AbstractApiClient implements IApiClient {
     interrupt: (payload, signal) => this.callUnary('subagent.interrupt', payload, signal),
   }
 
+  readonly team: NonNullable<IApiClient['team']> = {
+    projection: (payload, signal) => this.callUnary('team.projection', payload, signal),
+  }
   readonly host: IApiClient['host'] = {
     describe: (payload, signal) => this.callUnary('host.describe', payload, signal),
     // A native system dialog is user-paced and may legitimately stay open

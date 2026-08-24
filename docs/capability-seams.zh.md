@@ -210,6 +210,8 @@ flowchart LR
   pkg_team_runtime["team-runtime"]
   pkg_team_channels["team-channels"]
   svc_teamControl["ctx.teamControl<br/>Host-level team control request coordinator"]
+  pkg_team_projection["team-projection"]
+  svc_teamProjection["ctx.teamProjection<br/>Host read-only team projection"]
   pkg_permission["permission"]
   svc_permission["ctx.permission<br/>Tool-call permission evaluation seam"]
   pkg_permission_engine["permission-engine"]
@@ -309,6 +311,7 @@ flowchart LR
   pkg_team --> svc_team
   pkg_team_channels --> svc_teamControl
   pkg_team_local --> svc_team
+  pkg_team_projection --> svc_teamProjection
   pkg_terminal --> svc_terminals
   pkg_terminal_bash --> svc_terminals
   pkg_token_meter --> svc_tokenMeter
@@ -421,6 +424,7 @@ flowchart LR
   svc_team --> pkg_tool_team
   svc_teamControl --> pkg_team_runtime
   svc_teamControl --> pkg_tool_team
+  svc_teamProjection --> pkg_apiproxy
   svc_terminals --> pkg_tool_terminal
   svc_tokenMeter --> pkg_compaction_basic
   svc_toolResultPruner --> pkg_compaction_basic
@@ -510,6 +514,7 @@ flowchart LR
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 注册 Host inspect 提供方、镜像 Client 提供方 manifest，并通过动态 Cordis 传输路由 Client 查询。 |
 | `ctx.team` | `seam` | [`team`](../packages/team/team) | [`team-local`](../packages/team/team-local) | [`tool-team`](../packages/team/tool-team), [`team-runtime`](../packages/team/team-runtime), [`team-channels`](../packages/team/team-channels) | - | Service Definition 声明抽象的 TeamRegistry；provider 填充成员定义，runtime、channels 与 tool 消费方协调成员生命周期。 |
 | `ctx.teamControl` | `core` | [`team-channels`](../packages/team/team-channels) | - | [`tool-team`](../packages/team/tool-team), [`team-runtime`](../packages/team/team-runtime) | - | 跨子上下文与工具执行，在 leader 会话上协调 teammate 的审批请求与汇合。 |
+| `ctx.teamProjection` | `core` | [`team-projection`](../packages/team/team-projection) | - | `apiproxy` | - | 从会话日志与工作区名册冷安全地折叠单个 leader 的团队视图，叠加实时运行态并发布全量快照；API 网关将其提供给浏览器。 |
 | `ctx.permission` | `seam` | [`permission`](../packages/permission/permission) | [`permission-engine`](../packages/permission/permission-engine) | [`tool-permission-guard`](../packages/permission/tool-permission-guard) | - | Service Definition 声明 evaluate 与策略类型；engine 包实现裁决并随 base bundle 发布，guard 包实现执行门控并仍是 opt-in 消费者。 |
 
 维护模式：混合模式。服务从 Cordis 声明中发现；接口、实现和消费方角色在 `scripts/gen-doc-graphs.ts` 中分类，并设有完整性守卫。

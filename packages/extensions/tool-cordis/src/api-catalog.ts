@@ -383,6 +383,11 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Root interface of the unified API. New client-request domain = one new file pair + one field here + one map row.',
     methods: [
       {
+        signature: 'team?: TeamApi',
+        description: 'Optional until the P3a browser consumer lands: the host gateway always provides it, while in-repo fixture impls in packages that do not yet consume the domain keep compiling; the consuming change makes it required together with its store.',
+        parameters: [],
+      },
+      {
         signature: 'downloads: DownloadsApi',
         description: 'Host-only download surfaces (GET, no wire envelope); absent from IApiClient.',
         parameters: [],
@@ -2032,6 +2037,33 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'dispose(leaderSessionId: string): void',
         description: 'Dispose all pending requests for one leader, auto-denying each.',
         parameters: [{ name: 'leaderSessionId', description: 'the leader session whose pending requests to dispose.' }],
+      },
+    ],
+  },
+  {
+    key: 'teamProjection',
+    summary: 'Read-only team projection over session logs and the workspace roster.',
+    description: 'Read-only team projection over session logs and the workspace roster. The service owns no cache; every call re-reads the corpus (roster directory reads are cheap and logs are local), so a fold always reflects committed state.\n\nFolds are gated on team-ness: the requested session must own a `team:`-labeled continuable child in its subagent directory or a team fact in its own log suffix (a roster entry alone never qualifies); a bound teammate (own `team/member-bound`) anchors its leader. A session passing no criterion is rejected with `LEADER_UNKNOWN`, never an empty view.',
+    methods: [
+      {
+        signature: 'onChanged(listener: TeamProjectionListener): () => void',
+        description: 'Subscribe to whole-snapshot publications. Last-wins per leader: a listener sees the newest committed snapshot for each leader, never deltas.',
+        parameters: [{ name: 'listener', description: 'invoked once per committed leader snapshot.' }],
+        returns: 'the disposer removing this listener.',
+      },
+      {
+        signature: 'async project( leaderSessionId: SessionId, signal?: AbortSignal, options?: TeamPageOptions, ): Promise<TeamView | TeamMessagePage>',
+        description: 'Fold one leader\'s complete current view. Cold-safe: a leader absent from the live store is rebuilt from persistence. The requested session must pass the team-ness gate — a roster entry alone never qualifies — so an ordinary session is a loud rejection, never a synthetic empty team; a bound teammate request anchors its leader.',
+        parameters: [{ name: 'leaderSessionId', description: 'the team session anchoring the fold (a leader, or a bound teammate whose leader is anchored instead).' }, { name: 'signal', description: 'caller cancellation observed around every persistence read.' }, { name: 'options', description: 'pagination options for the message-page response form.' }],
+        returns: 'the full snapshot, or the older-messages page when `messagesBefore` is set.',
+        throws: ['{@link TeamProjectionError} LEADER_UNKNOWN when neither store knows the session, or the session fails the team-ness gate (no team child, no team fact in its own log).', '{@link TeamProjectionError} ANCHOR_UNKNOWN when the anchor names no folded message.', '{@link TeamProjectionError} INVALID_LIMIT when limit is outside [1, MESSAGE_CAP].'],
+      },
+      {
+        signature: 'async get(leaderSessionId: SessionId, signal?: AbortSignal): Promise<TeamView>',
+        description: 'Read one leader\'s current snapshot without pagination (the push payload shape).',
+        parameters: [{ name: 'leaderSessionId', description: 'the team session anchoring the fold (a leader, or a bound teammate whose leader is anchored instead).' }, { name: 'signal', description: 'caller cancellation observed around every persistence read.' }],
+        returns: 'the full snapshot.',
+        throws: ['{@link TeamProjectionError} LEADER_UNKNOWN when neither store knows the session, or the session fails the team-ness gate (no team child, no team fact in its own log).'],
       },
     ],
   },
@@ -3813,6 +3845,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface Message {\n    readonly id: MessageId;\n    readonly role: \'system\' | \'user\' | \'assistant\';\n    readonly content: ContentBlock[];\n    readonly source: MessageSource;\n}',
   },
   {
+    name: 'MessageAnchor',
+    declaration: 'export interface MessageAnchor {\n    readonly at: number;\n    readonly sessionId: string;\n    readonly seq: number;\n}',
+  },
+  {
     name: 'MessageFeedbackDeleteRequest',
     declaration: 'export interface MessageFeedbackDeleteRequest {\n    readonly sessionId: SessionId;\n    readonly messageId: MessageId;\n    readonly ifVersion: MessageFeedbackVersion;\n}',
   },
@@ -4123,6 +4159,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'RpcReceipt',
     declaration: 'export type RpcReceipt = {\n    accepted: true;\n} | {\n    accepted: false;\n    reason: \'not-pending\' | \'bad-response\';\n};',
+  },
+  {
+    name: 'RpcRequest',
+    declaration: 'export interface RpcRequest<P> {\n    rpcId: RpcId;\n    payload: P;\n}',
+  },
+  {
+    name: 'RpcResponse',
+    declaration: 'export interface RpcResponse<T> {\n    rpcId: RpcId;\n    result: RpcResult<T>;\n}',
   },
   {
     name: 'RpcResult',
@@ -4761,6 +4805,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TableValueOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<string, infer V> ? V : never;',
   },
   {
+    name: 'TeamApi',
+    declaration: 'export interface TeamApi {\n    projection(request: RpcRequest<TeamProjectionRequest>, signal?: AbortSignal): Promise<RpcResponse<TeamProjectionValue>>;\n}',
+  },
+  {
+    name: 'TeamApprovalView',
+    declaration: 'export interface TeamApprovalView {\n    readonly requestId: string;\n    readonly memberId: string;\n    readonly toolName: string;\n    readonly reason: string;\n    readonly kind?: \'tool\' | \'plan\';\n    readonly requestedAt: number;\n    readonly decision?: {\n        readonly value: TeamControlDecision;\n        readonly reason?: string;\n        readonly decidedAt: number;\n    };\n}',
+  },
+  {
     name: 'TeamContextPolicy',
     declaration: 'export type TeamContextPolicy = \'persistent\' | \'fresh_per_delegation\';',
   },
@@ -4771,6 +4823,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamControlRequestData',
     declaration: 'export interface TeamControlRequestData {\n    readonly requestId: string;\n    readonly memberId: TeamMemberId;\n    readonly toolName: string;\n    readonly reason: string;\n    readonly arguments?: Record<string, unknown>;\n    readonly kind?: \'tool\' | \'plan\';\n}',
+  },
+  {
+    name: 'TeamDelegationView',
+    declaration: 'export interface TeamDelegationView {\n    readonly memberId: string;\n    readonly childSessionId: string;\n    readonly startedAt: number;\n    readonly endedAt?: number;\n    readonly inProgress: boolean;\n}',
   },
   {
     name: 'TeamId',
@@ -4797,12 +4853,20 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamMembership {\n    readonly root: Agent;\n    readonly id: TeamId;\n    readonly role: \'lead\' | \'teammate\';\n    readonly name: string;\n}',
   },
   {
-    name: 'TeamMemberView',
-    declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'idle\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
-  },
-  {
     name: 'TeamMessageId',
     declaration: 'export type TeamMessageId = Branded<\'TeamMessageId\'>;',
+  },
+  {
+    name: 'TeamMessagePage',
+    declaration: 'export interface TeamMessagePage {\n    readonly kind: \'message-page\';\n    readonly teamId: string;\n    readonly leaderSessionId: string;\n    readonly messages: readonly TeamMessageView[];\n    readonly messageCount: number;\n}',
+  },
+  {
+    name: 'TeamMessageView',
+    declaration: 'export interface TeamMessageView {\n    readonly from: string;\n    readonly to: string;\n    readonly message: string;\n    readonly at: number;\n    readonly seq: number;\n    readonly sessionId: string;\n}',
+  },
+  {
+    name: 'TeamPageOptions',
+    declaration: 'export interface TeamPageOptions {\n    readonly messagesBefore?: MessageAnchor;\n    readonly limit?: number;\n}',
   },
   {
     name: 'TeamPermissionMode',
@@ -4813,6 +4877,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamPermissionRules {\n    readonly deny?: readonly string[];\n    readonly ask?: readonly string[];\n    readonly allow?: readonly string[];\n}',
   },
   {
+    name: 'TeamProjectionListener',
+    declaration: 'export type TeamProjectionListener = (leaderSessionId: SessionId, view: TeamView) => void;',
+  },
+  {
+    name: 'TeamProjectionRequest',
+    declaration: 'export type TeamProjectionRequest = {\n    leaderSessionId: SessionId;\n} | {\n    leaderSessionId: SessionId;\n    messagesBefore: MessageAnchor;\n    limit?: number;\n};',
+  },
+  {
+    name: 'TeamProjectionValue',
+    declaration: 'export type TeamProjectionValue = TeamView | TeamMessagePage;',
+  },
+  {
     name: 'TeamTaskAction',
     declaration: 'export type TeamTaskAction = \'claim\' | \'release\' | \'edit\' | \'set_dependencies\' | \'complete\' | \'reopen\' | \'reassign\' | \'delete\';',
   },
@@ -4821,16 +4897,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TeamTaskId = Branded<\'TeamTaskId\'>;',
   },
   {
-    name: 'TeamTaskStatus',
-    declaration: 'export type TeamTaskStatus = \'pending\' | \'in_progress\' | \'completed\' | \'deleted\';',
-  },
-  {
-    name: 'TeamTaskView',
-    declaration: 'export interface TeamTaskView {\n    readonly id: TeamTaskId;\n    readonly revision: number;\n    readonly subject: string;\n    readonly description: string;\n    readonly status: TeamTaskStatus;\n    readonly blockedBy: TeamTaskId[];\n    readonly writeScopes: string[];\n    readonly ownerName?: string;\n    readonly ready: boolean;\n    readonly writeScopeWarnings: string[];\n}',
-  },
-  {
     name: 'TeamToolPolicy',
     declaration: 'export interface TeamToolPolicy {\n    readonly allow?: readonly string[];\n    readonly deny?: readonly string[];\n}',
+  },
+  {
+    name: 'TeamView',
+    declaration: 'export interface TeamView {\n    readonly teamId: string;\n    readonly leaderSessionId: string;\n    readonly rosterMemberCount: number;\n    readonly members: readonly TeamMemberView[];\n    readonly delegations: readonly TeamDelegationView[];\n    readonly tasks: readonly TeamTaskView[];\n    readonly approvals: readonly TeamApprovalView[];\n    readonly messages: readonly TeamMessageView[];\n    readonly messageCount: number;\n}',
   },
   {
     name: 'TeamWaitResult',

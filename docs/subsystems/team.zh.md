@@ -171,4 +171,55 @@ dispose(leaderSessionId: string): void
 ```
 
 Source: [`packages/team/team-channels/src/control-coordinator.ts`](../../packages/team/team-channels/src/control-coordinator.ts)
+
+<a id="ctxteamprojection--teamprojectionservice"></a>
+
+### `ctx.teamProjection` — `TeamProjectionService`
+
+Read-only team projection over session logs and the workspace roster. The service owns no cache; every call re-reads the corpus (roster directory reads are cheap and logs are local), so a fold always reflects committed state.
+
+Folds are gated on team-ness: the requested session must own a `team:`-labeled continuable child in its subagent directory or a team fact in its own log suffix (a roster entry alone never qualifies); a bound teammate (own `team/member-bound`) anchors its leader. A session passing no criterion is rejected with `LEADER_UNKNOWN`, never an empty view.
+
+```ts cordis-catalog
+/**
+ * Subscribe to whole-snapshot publications. Last-wins per leader: a listener
+ * sees the newest committed snapshot for each leader, never deltas.
+ * @param listener - invoked once per committed leader snapshot.
+ * @returns the disposer removing this listener.
+ */
+onChanged(listener: TeamProjectionListener): () => void
+
+/**
+ * Fold one leader's complete current view. Cold-safe: a leader absent from
+ * the live store is rebuilt from persistence. The requested session must
+ * pass the team-ness gate — a roster entry alone never qualifies — so an
+ * ordinary session is a loud rejection, never a synthetic empty team; a
+ * bound teammate request anchors its leader.
+ * @param leaderSessionId - the team session anchoring the fold (a leader, or
+ *   a bound teammate whose leader is anchored instead).
+ * @param signal - caller cancellation observed around every persistence read.
+ * @param options - pagination options for the message-page response form.
+ * @returns the full snapshot, or the older-messages page when `messagesBefore` is set.
+ * @throws {@link TeamProjectionError} LEADER_UNKNOWN when neither store knows the session, or the
+ *   session fails the team-ness gate (no team child, no team fact in its own log).
+ * @throws {@link TeamProjectionError} ANCHOR_UNKNOWN when the anchor names no folded message.
+ * @throws {@link TeamProjectionError} INVALID_LIMIT when limit is outside [1, MESSAGE_CAP].
+ */
+async project( leaderSessionId: SessionId, signal?: AbortSignal, options?: TeamPageOptions, ): Promise<TeamView | TeamMessagePage>
+
+/**
+ * Read one leader's current snapshot without pagination (the push payload shape).
+ * @param leaderSessionId - the team session anchoring the fold (a leader, or
+ *   a bound teammate whose leader is anchored instead).
+ * @param signal - caller cancellation observed around every persistence read.
+ * @returns the full snapshot.
+ * @throws {@link TeamProjectionError} LEADER_UNKNOWN when neither store knows the session, or the
+ *   session fails the team-ness gate (no team child, no team fact in its own log).
+ */
+async get(leaderSessionId: SessionId, signal?: AbortSignal): Promise<TeamView>
+```
+
+Types: [SessionId](core.zh.md)
+
+Source: [`packages/team/team-projection/src/index.ts`](../../packages/team/team-projection/src/index.ts)
 <!-- END GENERATED cordis-surface -->

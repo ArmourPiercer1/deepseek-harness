@@ -117,6 +117,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/bundle/team': { kind: 'none', reason: 'The bundle is a patch-list carrier; each inserted row\'s package owns its model-facing behavior.' },
   'packages/team/team': { kind: 'none', reason: 'Service Definition with types, events, and constants; registers no prompt, schema, or result.' },
   'packages/team/team-local': { kind: 'none', reason: 'Filesystem loader populates the registry; registers no prompt, schema, or result.' },
+  'packages/team/team-projection': { kind: 'none', reason: 'Host-side read-only GUI projection over session logs; registers no prompt, schema, or result.' },
   'packages/team/team-runtime': { kind: 'indirect', reason: 'Orchestration delegates model context to the subagent seam; it registers no prompt or schema of its own.' },
   'packages/team/team-channels': { kind: 'none', reason: 'In-memory coordination state; registers no prompt, schema, or result.' },
   'packages/team/tool-team': { kind: 'indirect', reason: 'The 5 team tools register schemas through dsh-tools; dsh-tools owns the model-visible tool catalog rendering.' },
