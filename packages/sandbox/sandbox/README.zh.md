@@ -15,6 +15,7 @@
 ## 模型体验
 
 <a id="confinement-error-indirectly"></a>
+
 ### 间接的限制错误
 
 #### 模型看到的内容

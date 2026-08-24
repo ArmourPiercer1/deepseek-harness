@@ -94,6 +94,7 @@ interface SandboxPolicy extends SandboxExecutionPolicy {
 ```
 
 <a id="wrapped-argv-and-classification-dialects"></a>
+
 ## 包装后的 argv 与分类方言
 
 `RunnerFailureRule` 汇集用于判定 runner 在执行命令前失败的证据。消费方要求进程以非零状态退出，并同时满足可选的允许退出码门控，以及余下某一 stderr 行中不区分大小写的致命签名。系统会先按不区分大小写的整行精确匹配移除信息性排除项，因此无害的 runner 通知本身不能证明失败。匹配到的行仍可用作错误详情；分类过程不会重写 stderr。

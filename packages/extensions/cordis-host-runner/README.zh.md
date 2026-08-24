@@ -32,6 +32,7 @@
 vm 沙箱隔离全局变量，但不是安全边界：Node 全局变量不存在，或重定向到 Cordis 服务（`ctx.fs`、`ctx.web`、`ctx.bash` 以及定时器 helper），host 半收到的是不含框架内部机制的 façade，但它声明的服务仍会触达存活运行时。应当像对待 bash 访问一样对待动态包，参见[自引用工具集 Agent Note](../../../.agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.zh.md)。
 
 <a id="config"></a>
+
 ## 配置
 
 | 字段 | 默认值 | 含义 |
@@ -61,6 +62,7 @@ vm 沙箱隔离全局变量，但不是安全边界：Node 全局变量不存在
 注册工具的 host 半会改变下一次请求的工具视图，从第一个变化的 schema token 起使前缀复用失效；运行或停止一个不注册任何工具的包对前缀不产生影响。
 
 <a id="known-limitations-and-deferred-work"></a>
+
 ## 已知限制与暂缓事项
 
 - **run 成功不等于 UI 渲染成功。** 只要作答页面**已装载**浏览器半，`run` 就会返回；React 是随后才渲染的，因此一个抛异常的组件根本不可能出现在 run 的回执里。该失败经 `reportRenderFailure` 浮现，并通过 `cordis_inspect what:"temporary"` 读回；run 的结果会把这一点说出来，而不是暗示成功。

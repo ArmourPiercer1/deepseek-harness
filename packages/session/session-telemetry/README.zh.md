@@ -21,6 +21,7 @@
 在 `live` 模式中，协调器的全部注册都经由组合方 fiber 的 effect 完成：`session/created`（收养：记录 header，并经投影从构造边界起回读日志；来自 fork 或恢复的构造函数种子绝不会在 firehose 上再次发出，也绝不会再次导出）、`session/event`（投影、深拷贝、脱敏，再交接；零 I/O）、`session/flush`（转发可选的 `flush()` 提示并返回 void；循环所等待的并行任务绝不能等待遥测）、`session/disposed`（在会话自身的终止边缘捕获该会话的 `shutdown` 运维记录，然后将其退役）、`agent/error`（唯一的实时总线转发；会话事件词汇有意不包含运维错误记录）、一个 dispose effect（捕获每个仍存活会话的 shutdown，再等待后端的 `shutdown()`；失败只发出警告而不抛出），以及对 `ctx.sessions.list()` 的收养扫描（热重载不会重放 `session/created`）。在 `on-demand` 模式中，协调器只注册 dispose effect：`captureSession()` 读取权威日志，直至可选的序列号边界（含边界）；flush 提示与运维事件留在本地。
 
 <a id="the-redact-waterfall"></a>
+
 ## 脱敏 waterfall（瀑布式事件）
 
 每条记录在投影后立即经过 `sessionTelemetry/record` waterfall，这是 Service Definition 的脱敏扩展点。本包自身不带任何规则：最内层的 `next()` 原样透传记录，因此未挂载监听器时，记录以捕获时的原样到达后端；导出数据能干净到什么程度，恰恰取决于部署方挂载了什么规则。监听器通过变换 `next()` 的返回值来堆叠；不调用 `next()` 就返回，即替换其下方的全部逻辑；抛出异常的监听器会在协调器的隔离范围内以 fail-closed 方式拦下这一条记录。实时捕获在追加时运行 waterfall；按需捕获则在回放权威日志时使用当时挂载的规则运行 waterfall。脱敏只作用于外发副本；权威会话日志永不改写。

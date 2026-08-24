@@ -17,6 +17,7 @@
 Service Definition 位于 `fs/fs/`。沙箱化、远程或限定项目作用域的文件系统后端可以替换 `fs-local`，而无需更改 Service Definition、政策门禁或面向模型的工具 schema：`fs-sandbox` 基于共享沙箱模式提供进程内路径围栏（[决策](../../.agents/notes/implemented/feature/2026-07-14-cross-family-fs-sandbox.zh.md)），而 `fs-e2b` 则把文件状态置于与 E2B 子进程提供方共享的远程执行世界中（[决策](../../.agents/notes/implemented/architecture/2026-07-28-portable-execution-world-consumers.zh.md)）。政策（`fs-observation-policy/`）是一个只通过 `fs/*` 事件门禁参与的插件，不是工具注入的服务；因此移除它会平稳失去政策，留下不受约束的裸提供方，而不会破坏工具。加载 `tool-fs/` 的部署也应加载该插件。模式围栏与编辑前读取门禁彼此正交，可以组合。发现（`tool-fs-search/`）有意不扩展提供方约定：搜索是由进程支持的 `rg` 工作流（经 `ctx.subprocess` spawn 的打包 `@vscode/ripgrep` 二进制文件），因此文件系统后端无需承担通用搜索约定；其工具会无条件注册。如果搜索工作目录与 `read` 根目录是同一工作区，结果就能继续读取，这也是其 README 所述的共置部署。
 
 <a id="no-timeouts-on-file-io"></a>
+
 ## 文件 I/O 不设超时
 
 `read`/`write`/`edit` **不** 接受 `timeoutMs`，提供方约定也不设置 deadline：这里的文件 I/O 不计时运行，因为 deadline 只会杀掉操作系统仍会完成的工作——参见[文件系统子系统页面](../../docs/subsystems/filesystem.zh.md)。取消仍通过工具执行信号传播，在系统调用边界尽力中止。

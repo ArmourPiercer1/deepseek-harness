@@ -5,6 +5,7 @@
 搭建教程引导新贡献者从准备前置条件开始，直到检出目录通过检查。后面的贡献者参考介绍仓库布局、日常工作流和 CI 组织方式。设计依据与实现细节属于链接的 Agent Note 和脚本。
 
 <a id="setup-tutorial"></a>
+
 ## 搭建教程
 
 ### 前置条件
@@ -43,6 +44,7 @@ pnpm run typecheck
 ## 贡献者参考
 
 <a id="typescript-project-layout"></a>
+
 ### TypeScript 项目布局
 
 仓库使用相互隔离的 Host 与 Client aggregate。普通包只登记进其中一个 aggregate；Host 包进入 `tsconfig.host.json`，Client 包进入 `tsconfig.client.json`。
@@ -77,7 +79,7 @@ pnpm run build:web
 
 Typert 只在 Host tsdown 中以 `tsconfig.host.json` 为种子运行。它分析 Host 类型并生成 Host 反射产物及 Host-for-Client Remote 投影；Client tsdown 不启动 Typert。`pnpm run typecheck` 因此先执行完整 Host lib 阶段，再运行 Client tsc；`pnpm run build` 继续执行 Client tsdown 和 Web 构建。该顺序的决策记录见 [API Remotes 生成约定构建 Note](../.agents/notes/implemented/process/2026-08-08-api-remotes-generated-contract-build.zh.md)。
 
-`pnpm run build` 嵌入调用方确切的 `DSH_CLIENT_*` 环境，未设置时不使用任何公开 client 值。`pnpm run build:official` 是 CI 与发布产物构建的跨平台本地等价物。每次成功的完整构建都写入一条被 gitignore 的记录，将这些值绑定到 Vite 输出与动态 client bundle；发布打包与构建后的 Web 测试会拒绝缺失的记录或后来被部分构建改动的产物。
+`pnpm run build` 会内联调用方精确的 `DSH_CLIENT_*` 环境；未设置时不使用任何公开 client 值。`pnpm run build:official` 是与 CI 和 release 产物构建等价的跨平台本地命令。每次完整构建成功后都会写入一份被 gitignore 的记录，把这些值与 Vite 输出及动态 client bundle 绑定；release 打包和 built Web 测试会拒绝缺少记录或被后续局部构建改动的产物。
 
 静态分析和测试通过 base 的 `paths` 映射把工作区 import 解析到 `src`，且必须在干净树上通过；消费构建产物 `lib/` 的门禁显式声明该依赖。生成的 Host-for-Client Remote 声明是有意设置的例外：公共 `typecheck`、`lint` 和 `doc-typecheck` 命令会先生成这些声明，而内部 `*:contracts-ready` 脚本假定调用它的公共命令或调度器门禁已经依赖 Typert 约定生成阶段或完整构建。两个 aggregate 的设置见 [solution-root Note](../.agents/notes/implemented/process/2026-07-22-tsconfig-solution-root-two-aggregates.zh.md)，tsc-first 发射职责见 [ts-build-config Note](../.agents/notes/implemented/process/2026-06-17-ts-build-config.zh.md)，门禁准备约定见 [Typert Remote Agent Note](../.agents/notes/implemented/architecture/2026-08-02-typert-remote-method-calls.zh.md)。
 
@@ -165,6 +167,7 @@ pnpm run demo:acp
 请选择与紧急程度匹配的标签，让浏览代码的人一眼分清「发布阻塞」和「有空再说」。
 
 <a id="documenting-types-verbatim-ts-type-equiv"></a>
+
 ### 逐字记录类型定义（`ts type-equiv`）
 
 [子系统](subsystems/README.zh.md)页面会把与源码等价的声明及其原始 JSDoc 一并粘贴，让读者看到确切类型定义和源码约定。为防止粘贴内容在源码变化时漂移，请将其围栏为 ` ```ts type-equiv `（而不是 ` ```ts `），并在 `scripts/type-equiv.manifest.json` 中登记它镜像的源文件和符号：

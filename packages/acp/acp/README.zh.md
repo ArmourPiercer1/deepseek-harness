@@ -18,6 +18,7 @@
 两个字段都是可选的，以便由另一个 agent/request 监听器提供目标。可运行的 ACP 组合同时要求两者。
 
 <a id="protocol-contract"></a>
+
 ## 协议约定
 
 | 方法 | 行为 |

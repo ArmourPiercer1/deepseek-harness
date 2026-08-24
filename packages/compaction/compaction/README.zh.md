@@ -31,6 +31,7 @@
 `ManualCompactionError.code` 是封闭集合 `busy | changed | summary | commit | persistence`。`changed` 和 `summary` 表示所选会话表层未被替换，但日志仍会记录失败尝试。`commit` 有意不判断是否发生了部分变更；`persistence` 表示内存中的 bracket 已闭合，但显式 flush 失败。
 
 <a id="tool-pairing-boundaries"></a>
+
 ## 工具配对边界
 
 该 Service Definition 导出 `toolPairingBalancedBefore(session, seq)` 与 `toolPairingBalancedAfter(session, seq)`，用于对齐和验证压缩边界。安全边界不会被尚未回答的 assistant 工具调用跨越。每个 helper 都会验证给定事件 seq 位于当前表层，并根据按表层顺序缓存的各切分点配对状态返回结果。

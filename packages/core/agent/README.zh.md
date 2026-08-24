@@ -24,6 +24,7 @@ Agent 接口、注册表、进程本地发起方作用域，以及 `agent/*` 事
 - `ctx.agents.roots(): Agent[]`：在没有所属 agent 上下文的情况下创建的实时 agent；带谱系的恢复会话仍可能是运行时根。
 
 <a id="initiating-agent-scope"></a>
+
 #### 发起方 Agent 作用域
 
 `AgentLoop` 在发起方边界内运行每个具体驱动器的完整生命周期。并发驱动器彼此隔离：子驱动器的 continuation 携带子 agent，而 `withInitiator()` 返回后，父 continuation 立即重新取得父 agent；drain 跟踪持续到子驱动器的 Promise 结算。创建、持久化加载和未发布 setup 位于子边界之外，因此由父 agent 发起的 setup 会继承父 agent，而 `agentCtx.agent` 显式标识子 agent。

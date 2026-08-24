@@ -44,6 +44,7 @@
 封存后，每组归档文件都永久冻结。禁止编辑、翻译、重新格式化、更新、移动或删除，也不得将其视为当前行为的权威依据。文档门禁会跳过归档源文件，包括其中的出站链接；当活跃文档有意引用历史时，仍可链接到归档 Agent Note。[`verify-archived-agent-notes`](../../scripts/verify-archived-agent-notes.ts) 强制执行封闭的类别目录树、完整的三文件配对、归档元数据、伴随记录 hash，以及仅追加的冻结内容 manifest（元数据清单）。[归档政策 Agent Note](implemented/process/2026-07-26-frozen-agent-note-archive.zh.md) 记录了设计依据。
 
 <a id="when-to-write-one"></a>
+
 ## 何时需要写一份
 
 每个非平凡变更都必须在同一 PR（Pull Request）中新增或更新至少一份 Agent Note。如果变更修改了行为、架构、跨文件或跨包约定、流程或工具、测试策略、磁盘存储格式、协议格式（wire format）或配置格式，或者维护者可能合理重新审视的其他决策，就属于非平凡变更。对未来重大工作的提案从 `proposed/` 开始；已经做出的决策从 `implemented/` 开始。选择与决策匹配的类别文件夹（见[分类](#classification)）。

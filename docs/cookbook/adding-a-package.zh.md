@@ -71,6 +71,7 @@ package.json 不变式（由 `pnpm run constraints` / `scripts/check-workspace-c
 只对受支持的 Python 与 TypeScript SDK 所使用的 JSON-RPC 客户端／服务器协议使用 `SDK`。DeepSeek Harness 本身是 agent harness，不是 SDK 项目。产品拼写统一使用 `Typert`，不得使用 `TypeRT` 或 `typeRT`。
 
 <a id="4-write-the-package-readme"></a>
+
 ## 4. 编写包 README
 
 将包特有的服务 API、配置、事件、扩展点和设计说明放在前面。limitations 部分记录持久的消费方缺口和本包拥有的非显而易见的维护者约束；日常清理事项留在源码 TODO 或 Agent Note 中。间接的 Model Experience 语句可以点名暴露本包贡献的消费方，但不重述该消费方的实现。包 README 以如下规范序列结尾：

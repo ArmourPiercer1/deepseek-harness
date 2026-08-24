@@ -59,6 +59,7 @@ Cordis 使用 dispatch receiver（`this`）过滤监听器，而 harness 的监�
 Cordis waterfall 是中间件风格的 dispatch。每个监听器接收 `next()`：调用它则委托给剩余监听器和基础操作，不调用则短路或替换下游结果。Waterfall 驱动提示词组装和工具策略；普通 emit 事件同步通知，parallel 事件等待所有监听器但没有否决结果。
 
 <a id="scope-routing-one-opaque-key-selects-one-layer"></a>
+
 ## 作用域路由：一个不透明键选择一层
 
 scope 包实现了 Cordis 路由所需的最小对象。其载体仅持有一个组合的服务过滤器和作用域谓词，而包私有地记录不透明键，并单独暴露会等待作用域 fiber 完全停稳的 disposer。
@@ -159,6 +160,8 @@ sequenceDiagram
 
 此顺序让最终的 agent 和会话事件能使用匹配的作用域监听器，并使持久化观察者在最终刷新完成前保持附加。作用域 dispose 放在最后，因为注册撤销是外部可见的生命期边界。
 
+<a id="session-append-materialize-validate-commit-notify"></a>
+
 ## 会话追加：物化、验证、提交、通知
 
 会话事件跨越持久化边界，因此追加操作拥有其数据。算法的其余部分使用一条已附加的注册表条目和一个提交点。
@@ -232,6 +235,7 @@ SystemPrompt 首先将全局加 agent 的段、变量和工具提供方解析为
 Scope 直接解决了真正的隔离问题。结构化输出贡献注册在子级的精确作用域中，而 Code Mode 从同一个已解析的工具视图派生其传输和 SDK。第二套命名保护系统需要另一套所有权和碰撞规则来覆盖任意 schema 提供方（包括有意贡献重复名称的提供方），却不创建新的信任边界。
 
 <a id="structured-output-commits-only-authoritative-outcomes"></a>
+
 ### 结构化输出仅提交权威结果
 
 结构化输出将子作用域组合与两阶段执行提交相结合。子级在发布前注册其 `structured_output` 工具和指令；可信的 assembly 监听器可以变换这些普通贡献，并有责任在期望子级完成时保持协议。工具体验证候选值并按当前 `ToolExecution` 暂存，但成功捕获仅由不可变的 `tools/result` 观察决定。
@@ -245,6 +249,7 @@ Scope 直接解决了真正的隔离问题。结构化输出贡献注册在子�
 纯 Code Mode 的注册表贡献从原生 wire schema 中省略 `structured_output`，并通过生成的 SDK 暴露它。Assembly waterfall 可以有意改变该展示；执行仍然针对子作用域定义进行验证，监听器拥有其创建的任何替代模型可见路由的一致性。
 
 <a id="three-execution-boundaries-are-deliberately-one-way"></a>
+
 ### 三个执行边界有意设为单向
 
 提示词组装有意是协作式的，但三个执行事实在其可扩展阶段之后需要单向结算：
@@ -296,6 +301,7 @@ Start 仅在 `initialize` 和 `newSession` 成功后才 resolve。Abort、spawn 
 Worker 和子进程桥接比同进程注册表需要更多状态，因为消息、进程死亡和清理可以独立结算。它们的状态围绕这些真实事实组织，而非重复的取消协议。
 
 <a id="workflow-children-are-pending-starts-or-published-records"></a>
+
 ### 工作流子级是待定 start 或已发布记录
 
 工作流宿主保持待定的提供方 start promise 和已发布的子级记录。子级仅在异步 `SubagentRuntime.start()` 兑现时才从待定变为已发布；被拒绝的 start 清理其部分提供方工作且不产生子级生命周期对。

@@ -204,6 +204,8 @@ type StreamChunk =
   }
 ```
 
+<a id="llmfailure"></a>
+
 ## `LlmFailure`
 
 每个抛出的失败或最终适配器的带内失败都会规范化为一种可序列化、提供方无关的 payload。`providerRetryAfterMs` 是经校验、由提供方请求的正数延迟，而不是重试决策；`ProviderRequestId` 是用于诊断的不透明品牌字符串。
@@ -240,7 +242,7 @@ interface LlmFailure {
 
 ## `ResolvedRetryPolicy`
 
-重试配置在路由注册前解析为不可变的可辨识联合。normal mode 携带 `mode: 'normal'`、有限的 `maxRetries`、`retryableCodes`，以及必填的 `initialDelayMs`、`maxDelayMs` 与 `jitterRatio`；always mode 携带 `mode: 'always'` 和相同的必填退避字段，但没有有限上限。省略提供方策略时使用 normal 默认的五次重试。分层设置在切换到 always mode 后可能仍保留 normal 专用的 `maxRetries` 或 `retryableCodes`；解析器忽略这些非活动字段，并捕获纯 always 策略。`LlmRuntime.providerRetryPolicy(provider)` 返回当前注册的值；调用选定该注册后，`llmRetryPolicyOf(stream)` 返回为该调用服务的注册所捕获的值，因此之后释放或替换路由都无法改变进行中失败的恢复策略。可选配置输入字段由[生成的配置目录](../config-catalog.zh.md)列出。
+重试配置会在路由注册前解析为不可变的可辨识联合。normal mode 携带 `mode: 'normal'`、有限的 `maxRetries`、`retryableCodes`，以及必填的 `initialDelayMs`、`maxDelayMs` 与 `jitterRatio`；always mode 携带 `mode: 'always'` 和相同的必填退避字段，但没有有限上限。省略提供方策略时使用重试五次的 normal 默认值。分层 settings 在切换到 always 模式后可能保留仅属于 normal 的 `maxRetries` 或 `retryableCodes`；解析器会忽略这些未启用字段，并捕获纯 always 策略。`LlmRuntime.providerRetryPolicy(provider)` 返回注册值；调用选定实际提供服务的注册后，`llmRetryPolicyOf(stream)` 返回从中捕获的值，因此之后释放或替换路由都无法改变进行中失败的恢复策略。可选配置输入字段由[生成的配置目录](../config-catalog.zh.md)列出。
 
 ## `AppIdentity`：应用归属
 
@@ -264,6 +266,8 @@ interface AppIdentity {
 }
 ```
 
+<a id="tokenusage"></a>
+
 ## `TokenUsage`
 
 逐调用 token 记账。各计数**互不重叠**：`inputTokens` 只包含未缓存输入；缓存输入单独报告，计费输入是三者之和。若提供方把缓存命中折入单一提示词总数（如 DeepSeek 的 `prompt_tokens`），适配器会再将其扣除。`reasoningTokens` 存在时只是信息性细节，已经包含在 `outputTokens` 中；汇总时不得重复相加。
@@ -285,6 +289,8 @@ interface TokenUsage {
   reasoningTokens?: number
 }
 ```
+
+<a id="blockassembler"></a>
 
 ## `BlockAssembler`
 

@@ -109,6 +109,7 @@ export function apply(ctx: Context) {
 这可以防止插件调用已不存在的服务。
 
 <a id="service-isolation"></a>
+
 ## 服务隔离
 
 `cordis.yml` 支持服务隔离——同一个服务可以有多个实例，不同插件组看到不同实例：

@@ -7,7 +7,7 @@ dsh web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共享 U
 | 包 | 目的 |
 |---|---|
 | [`web/`](web/README.zh.md) | 从客户端条目图启动浏览器 shell。 |
-| [`ui-renderer/`](ui-renderer/README.zh.md) | 将 slot 数据绑定到 React，并在客户端启动稳定后挂载组装好的应用。 |
+| [`ui-renderer/`](ui-renderer/README.zh.md) | 将 slot 数据绑定到 React，并在客户端启动稳定后挂载组装完成的应用。 |
 | [`modules/`](modules/README.zh.md) | 加载浏览器侧客户端模块。 |
 | [`connection/`](connection/README.zh.md) | 维护浏览器与宿主之间的 RPC 通信和事件传递。 |
 | [`runtime/`](runtime/README.zh.md) | 为会话、工作区和 UI 组合提供共享客户端服务。 |
@@ -17,10 +17,10 @@ dsh web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共享 U
 | [`ui-slots/`](ui-slots/README.zh.md) | 定义 UI 功能注册和组合扩展 slot 的方式。 |
 | [`ui-theme/`](ui-theme/README.zh.md) | 应用所选颜色主题。 |
 | [`ui-primitives/`](ui-primitives/README.zh.md) | 提供共享 React 控件、图标和内容渲染器。 |
-| [`ui-attachment/`](ui-attachment/README.zh.md) | 提供附件展示原子组件：草稿图片栏、消息画廊与灯箱。 |
+| [`ui-attachment/`](ui-attachment/README.zh.md) | 注册输入框与消息图片的附件呈现。 |
 | [`ui-layout/`](ui-layout/README.zh.md) | 排列应用的主要区域。 |
 | [`ui-sidebar/`](ui-sidebar/README.zh.md) | 展示工作区与会话导航。 |
-| [`ui-brand-official/`](ui-brand-official/README.zh.md) | 用官方名称和标识填充通用的浏览器品牌 slot。 |
+| [`ui-brand-official/`](ui-brand-official/README.zh.md) | 使用官方名称和标记填充通用浏览器品牌 slot。 |
 | [`ui-workspace/`](ui-workspace/README.zh.md) | 提供工作区选择与创建界面。 |
 | [`ui-conversation/`](ui-conversation/README.zh.md) | 展示当前对话及其输入界面。 |
 | [`ui-tool/`](ui-tool/README.zh.md) | 编排工具调用树和按工具键控的视图。 |
@@ -30,7 +30,7 @@ dsh web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共享 U
 | [`ui-commands/`](ui-commands/README.zh.md) | 提供会话感知的命令发现与分发。 |
 | [`ui-input-trigger/`](ui-input-trigger/README.zh.md) | 协调内联命令和引用建议。 |
 | [`ui-skill/`](ui-skill/README.zh.md) | 向内联建议添加 skill（技能）引用。 |
-| [`ui-reference/`](ui-reference/README.zh.md) | 统一的 Web `@file` / `@session` 引用源。 |
+| [`ui-reference/`](ui-reference/README.zh.md) | 统一的 Web `@file` / `@session` 引用 source。 |
 | [`ui-subagent/`](ui-subagent/README.zh.md) | 提供 subagent（子 agent）导航、子级 transcript（文本记录）的状态和内联引用。 |
 | [`ui-jobs/`](ui-jobs/README.zh.md) | 在会话标题栏列出当前会话的后台任务。 |
 | [`ui-model-selection/`](ui-model-selection/README.zh.md) | 在对话界面中提供模型选择。 |

@@ -143,6 +143,7 @@ Consumer 包仅依赖 Service Definition 包，从不依赖 `dsh-fs-local`。需
 - **观测状态放在 `ctx.fs` 上**：本 Agent Note 最初落地的形态；被 [拆分文件系统 seam Agent Note](../simplification/2026-06-26-fsspec-style-fs-seam.zh.md) 和 [事件门控 Agent Note](2026-06-26-file-context-as-event-gate.zh.md) 取代：沙箱/远程后端不应继承面向模型的观测策略，因此提供方只保留版本令牌和可选的版本守护变更。
 
 <a id="consequences"></a>
+
 ## 后果
 
 **`cwd` 可能被误认为沙箱。** 本地后端的基目录是解析默认值，而非自动的隔离边界。如果需要路径包含约束，必须由后端约定或 `tools/execute` 上的权限/沙箱插件强制执行。

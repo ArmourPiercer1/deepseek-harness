@@ -2,13 +2,13 @@
 
 [English](session-reference.md) | 中文
 
-宿主支持的文件发现，加上结构化的跨会话引用请求与准备后的消息上下文。[file-reference 包约定](../../packages/context/file-reference) 负责仅路径的补全记录与语法；[session-reference 包约定](../../packages/context/session-reference) 定义规范 URI、当前表层投影、标签安全的 JSON 与字节保留、稳定错误和不可信的模型提示词。宿主适配器使用这些类型，而不会把各自 UI 的提及语法传入 agent（智能体）核心。
+由 Host 支撑的文件发现，以及结构化的跨会话引用请求与准备后的消息上下文。[文件引用约定](../../packages/context/file-reference)负责仅含路径的补全记录与语法；[会话引用约定](../../packages/context/session-reference)定义规范 URI、当前表层投影、标签安全的 JSON 与字节保留、稳定错误和不可信的模型提示词。宿主适配器使用这些类型，而不会把各自 UI 的提及语法传入 agent（智能体）核心。
 
 来源：[`packages/context/file-reference/src/types.ts`](../../packages/context/file-reference/src/types.ts) · [`packages/context/session-reference/src/types.ts`](../../packages/context/session-reference/src/types.ts)
 
 ## 文件候选项
 
-`FileReferenceCandidate` 是仅路径的发现结果。被指向的 agent 提供工作目录范围；提供方在不读取文件内容的情况下决定排序与命名空间访问。
+`FileReferenceCandidate` 是仅含路径的发现结果。被寻址的 agent 提供工作目录范围；提供方负责排序和命名空间访问，但不会读取文件内容。
 
 ```ts type-equiv
 /** One path-only completion candidate inside the target session cwd. */
@@ -50,7 +50,7 @@ interface SessionReferenceCandidate {
 }
 ```
 
-`sessionReferenceResolver/candidates` Remote 方法向浏览器消费方提供同样的发现，并为每个候选项附上其规范的提示词提及。
+`sessionReferenceResolver/candidates` Remote 方法向浏览器消费方提供同一发现能力，并为每个候选附上规范提示词 mention。
 
 ```ts type-equiv
 /** One discovery candidate carrying its canonical prompt mention. */

@@ -26,6 +26,7 @@ Web client 却对它视而不见。`packages/client/ui-tool/src/client/tool/mode
 几何尺寸、圆角与字体沿用 `CodeBlock`，因此终端卡片与围栏代码块在视觉上一致；`white-space: pre` 加横向滚动是有意的分歧。两个组件都需要的剪贴板写入从 `CodeBlock` 中提取到包内部的 `src/clipboard.ts`，不对外导出，因此它仍是这两个块的实现细节。
 
 <a id="inline-output-in-the-chat-row-reverses-a-stated-convention"></a>
+
 ### 聊天行内嵌输出推翻了一条既有约定
 
 `packages/client/ui-tool/src/client/tool/components/ToolRow.tsx` 与 `packages/client/ui-tool/src/client/tool/models/tool-call-model.ts` 都断言过「绝不内嵌输出——完整结果在详情面板」。在行内显示终端块推翻了这一点，依据是 owner 的明确决定。

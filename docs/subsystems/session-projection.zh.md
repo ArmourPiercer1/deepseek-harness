@@ -8,7 +8,7 @@
 
 ## 投影单元
 
-`SessionProjectionStateMap` 是 host 折叠状态的 merge-extensible 表，`SessionProjectionMap` 则保存客户端可见的全量值。领域为每个 state key 贡献一个 `ProjectionDefinition`；`wire` 块使该 key 客户端可见，渲染归 slot 体系管，永远不归本层：
+`SessionProjectionStateMap` 是 host 侧折叠状态的 merge-extensible 类型表，`SessionProjectionMap` 则继续表示客户端可见的全量值。领域为每个状态 key 贡献一个 `ProjectionDefinition`；`wire` 块使该 key 对客户端可见，渲染归 slot 体系管，永远不归本层：
 
 ```ts type-equiv
 /**
@@ -94,7 +94,7 @@ type ProjectionChangeListener = (
 ) => void
 ```
 
-`snapshot(session)` 完全同步：载体在切出页面切片的同一 tick 内读取它，因此 `asOfSeq` 使两次读取使用同一个序号。它只返回客户端视图，且每个值在返回前都会通过其单元的 `viewSchema` 校验。`stateOf(session, key)` 读取一个存活的 host 状态而不计算无关视图；调用方不得修改借出的引用。对于每个已提交事件，变更流会为每个状态*引用*已变化的客户端可见单元触发一次；状态未变时，`apply` 必须返回同一引用。
+`snapshot(session)` 完全同步：载体在切出页面切片的同一 tick 内读取它，因此 `asOfSeq` 使两次读取使用同一个序号。它只返回客户端视图，并在返回前通过各单元的 `viewSchema` 校验。`stateOf(session, key)` 可在不计算无关视图的情况下读取一份实时 host 状态；调用方不得修改这一借用引用。对于每个已提交事件，变更流会为每个状态*引用*已变化的客户端可见单元触发一次；状态未变时，`apply` 必须返回同一引用。
 
 ## 注册表：`ctx.sessionProjections`
 

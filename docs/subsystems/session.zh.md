@@ -253,6 +253,7 @@ type SessionEvent<T extends SessionEventType = SessionEventType> = {
 对于 `assistant/message`，存在的 `sourceEventSeqs: []` 表示提供方流已知且完整地为空；旧格式或外部事件缺少该字段时，没有记录这条消息由哪些早期事件产生。agent loop 会为每次成功的模型调用写入该字段；其他 surface 事件只要包含该字段，其列表就必须非空。
 
 <a id="surface-types"></a>
+
 ## Surface 类型
 
 三种产生消息的类型（`SurfaceEventType`：`user/message`、`assistant/message`、`tool/result`）携带 surface 元数据，用来声明它们如何加入有序的派生 surface。见 [session surface Agent Note](../../.agents/notes/implemented/architecture/2026-06-18-session-surface.zh.md)。
