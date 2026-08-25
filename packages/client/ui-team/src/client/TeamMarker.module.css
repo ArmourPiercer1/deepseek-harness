@@ -1,0 +1,84 @@
+/* One compact single-line inline team marker row in the conversation flow (D16). */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: var(--dsw-font-xs-13);
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.row:hover {
+  background: var(--dsw-alias-bg-layer-3);
+}
+
+.row:focus-visible {
+  outline: 1px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -1px;
+}
+
+.row:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.time {
+  flex: none;
+  color: var(--dsw-alias-label-caption);
+  font: var(--dsw-font-xxxs-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.marker {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--dsw-alias-bg-layer-3);
+  color: var(--dsw-alias-label-secondary);
+  font: var(--dsw-font-xxxs-11);
+}
+
+.actor {
+  flex: none;
+  max-width: 220px;
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary {
+  overflow: hidden;
+  min-width: 0;
+  flex: 1 1 auto;
+  color: var(--dsw-alias-label-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  max-width: 40%;
+  padding: 0 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  font: var(--dsw-font-xxxs-11);
+}
+
+.state[data-pending='true'] {
+  background: var(--dsw-alias-state-warn-tertiary);
+  color: var(--dsw-alias-state-warn-label);
+}
+
+.state:not([data-pending='true']) {
+  background: var(--dsw-alias-bg-layer-3);
+  color: var(--dsw-alias-label-secondary);
+}

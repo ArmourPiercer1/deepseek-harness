@@ -1,8 +1,9 @@
 /**
  * Team configuration and status plugin, browser half. Registers a Team
  * settings section in the Settings panel showing teammate configuration
- * and usage instructions, the durable team panel Chat node (task
- * progress board plus teammate status rows) in the conversation, and the
+ * and usage instructions, the inline team marker Chat nodes (one compact
+ * single-line row per durable team event — progress, control
+ * request/decision, and member message — with the D16 click-to-jump), the
  * globally visible "团队" conversation view tab backed by the read-only
  * leader-keyed team mirror, whose four-section body is complete: the
  * delegation timeline (teammate lanes over the honest time domain), the
@@ -10,7 +11,9 @@
  * task board (the projection's task list), and the event stream (the
  * mixed approval/message feed over the most recent 200 rows with the
  * "load earlier" append — a depth step over the snapshot stream, then wire
- * pages of `messagesBefore` once it is loaded).
+ * pages of `messagesBefore` once it is loaded), and the resident team dock
+ * bar above the input (the thin collapsed readout plus the expandable
+ * compact member/task lists, team sessions only, with the team-tab jump).
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {
@@ -23,23 +26,25 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: the conversation slot declarations and the ChatNodeDataMap merge point.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { TeamSettingsSection } from './TeamSettingsSection.tsx'
-import { TeamPanel } from './TeamPanel.tsx'
+import { TeamMarker, type TeamMarkerInjected } from './TeamMarker.tsx'
 import { TeamView, type TeamViewInjected } from './TeamView.tsx'
-import { teamPanelDefinition } from './team-definition.ts'
+import { TeamDock, type TeamDockInjected } from './TeamDock.tsx'
+import { teamMarkerDefinition } from './team-marker-definition.ts'
 import { en, zh, type TeamKey } from './locales.ts'
 
 export type { TeamSettingsSectionProps } from './TeamSettingsSection.tsx'
-export type { TeamPanelProps, TeammateUiStatus } from './TeamPanel.tsx'
+export type { TeamMarkerProps, TeamMarkerInjected } from './TeamMarker.tsx'
 export type { TeamTimelineProps } from './TeamTimeline.tsx'
 export type { TeamMembersProps } from './TeamMembers.tsx'
 export type { TeamTasksProps } from './TeamTasks.tsx'
 export type { TeamFeedProps } from './TeamFeed.tsx'
 export type { TeamViewProps, TeamViewInjected } from './TeamView.tsx'
+export type { TeamDockProps, TeamDockInjected, TeamDockPanelProps } from './TeamDock.tsx'
 export type { TeamKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    /** Team settings section, panel, and view-tab copy. */
+    /** Team settings section, inline markers, and view-tab copy. */
     team: TeamKey
   }
 }
@@ -76,12 +81,20 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
   }, TeamSettingsSection))
 
-  ctx.conversationEvents.register(teamPanelDefinition)
+  ctx.conversationEvents.register(teamMarkerDefinition)
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
     name: 'conversation.chat.node',
-    key: 'team-panel',
+    key: 'team-marker',
     locale: NS,
-  }, TeamPanel))
+    inject: (): TeamMarkerInjected => ({
+      hooks: { teamMirror },
+      // D9/D16: the existing session-open path, threaded as a plain
+      // callback so the row never touches the sessions service. The wire
+      // view carries unbranded ids, so the cast stays at this consumption
+      // face.
+      openSession: (sessionId) => { ctx.sessions.open(sessionId as SessionId) },
+    }),
+  }, TeamMarker))
 
   // The team view tab (globally visible; a non-team session renders the
   // zero state). The mirror read rides the sessions service's team face —
@@ -120,4 +133,36 @@ export function apply(ctx: ClientContext): void {
       openSession: (sessionId) => { ctx.sessions.open(sessionId as SessionId) },
     }),
   }, TeamView))
+
+  // D13: jump the current session to the team tab. The view write (the
+  // conversation chat store's setView action) is ui-conversation-private —
+  // no cross-plugin verb exists for it yet (awaiting orchestration
+  // arbitration), so the registered entry degrades to activating the tab
+  // ring's team button, which carries this registration's own locale label.
+  const openTeamTab = (): void => {
+    const label = t('view.team')
+    for (const tab of document.querySelectorAll<HTMLElement>('[role="tablist"] [role="tab"]')) {
+      // String(): a text-less tab reads as "null" and can never match the label.
+      if (String(tab.textContent).trim() === label) {
+        tab.click()
+        return
+      }
+    }
+  }
+
+  // The resident team dock above the input (D11–D13): the same mirror source
+  // and single-flight cold pull as the tab, so the dock appears exactly for
+  // the tab's team sessions; it sits between the goal strip (order 10) and
+  // the queue strip (order 20).
+  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
+    name: 'conversation.input.dock',
+    id: 'team',
+    order: 15,
+    locale: NS,
+    inject: (): TeamDockInjected => ({
+      hooks: { teamMirror },
+      ensureTeam,
+      openTeamTab,
+    }),
+  }, TeamDock))
 }

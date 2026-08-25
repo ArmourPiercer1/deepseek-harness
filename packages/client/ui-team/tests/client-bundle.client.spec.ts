@@ -3,8 +3,8 @@
  * Real tsdown artifact shape: lib/client.js hands off through
  * window.__ModuleLoader__.load, resolves externals through the injected
  * require, returns the exports (apply + inject), and a mounted apply
- * registers the team panel definition and keyed renderer into a real
- * SlotRegistry ring. Skips when dist/ is not built
+ * registers the inline team marker definition and keyed renderer into a
+ * real SlotRegistry ring. Skips when dist/ is not built
  * (`pnpm --filter @deepseek-ai/dsh-client-ui-team bundle`).
  */
 import { readFileSync } from 'node:fs'
@@ -77,6 +77,7 @@ describe('tsdown client artifact', () => {
       name: 'root',
       children: {
         'conversation.chat.node': { kind: 'keyed', scope: 'session' },
+        'conversation.input.dock': { kind: 'list', scope: 'session' },
         'settings.section': { kind: 'list', scope: 'root' },
       },
     } as never, (_p: { renderSlot?: unknown }) => null)
@@ -95,13 +96,20 @@ describe('tsdown client artifact', () => {
     const slots = ctx.slots
     const events = ctx.conversationEvents
     expect(slots.entries('conversation.chat.node')).toHaveLength(1)
-    expect(slots.entries('conversation.chat.node')[0]?.options.key).toBe('team-panel')
+    expect(slots.entries('conversation.chat.node')[0]?.options.key).toBe('team-marker')
     expect(slots.entries('settings.section')).toHaveLength(1)
     expect(slots.entries('settings.section')[0]?.options.id).toBe('team')
-    expect(events.entries().map(entry => entry.kind)).toEqual(['team-panel'])
+    expect(events.entries().map(entry => entry.kind)).toEqual(['team-marker'])
+    // The resident team dock lands in the declared input-dock list (id/order):
+    // 15 sits between the goal bar's 10 and the queue strip's 20.
+    const docks = slots.entries('conversation.input.dock')
+    expect(docks).toHaveLength(1)
+    expect(docks[0]?.options.id).toBe('team')
+    expect(docks[0]?.options.order).toBe(15)
     await fiber.dispose()
     expect(slots.entries('conversation.chat.node')).toHaveLength(0)
     expect(slots.entries('settings.section')).toHaveLength(0)
+    expect(slots.entries('conversation.input.dock')).toHaveLength(0)
     expect(events.entries()).toEqual([])
   })
 

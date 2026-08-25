@@ -15,7 +15,7 @@ export const name = 'client-ui-team-invariant'
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: the settings section registration, the team panel
+ * No runtime invariant: the settings section registration, the team marker
  * Conversation Node definition and renderer, and the locale dictionaries
  * are registry-owned registrations whose disposal is proven by the
  * HMR-safety spec.

@@ -49,21 +49,16 @@ export type TeamKey =
   | 'view.events.decision.escalate_to_user'
   | 'view.events.decision.approve_plan'
   | 'view.events.decision.request_revision'
-  | 'panel.title'
-  | 'panel.teammates'
-  | 'panel.teammates.empty'
-  | 'panel.tasks'
-  | 'panel.tasks.empty'
-  | 'panel.members.count'
-  | 'panel.tasks.count'
-  | 'panel.member.bound'
-  | 'panel.member.running'
-  | 'panel.member.settled'
-  | 'panel.task.pending'
-  | 'panel.task.in_progress'
-  | 'panel.task.completed'
-  | 'panel.task.blocked'
-  | 'panel.assignee'
+  | 'dock.title'
+  | 'dock.running'
+  | 'dock.pending'
+  | 'dock.jump'
+  | 'dock.expand'
+  | 'dock.collapse'
+  | 'dock.members.empty'
+  | 'dock.tasks.empty'
+  | 'marker.progress'
+  | 'marker.decision'
 
 /** Simplified Chinese UI strings for every {@link TeamKey}. */
 export const zh: Record<TeamKey, string> = {
@@ -115,21 +110,16 @@ export const zh: Record<TeamKey, string> = {
   'view.events.decision.escalate_to_user': '升级给用户',
   'view.events.decision.approve_plan': '批准计划',
   'view.events.decision.request_revision': '要求修订',
-  'panel.title': '团队',
-  'panel.teammates': '队员',
-  'panel.teammates.empty': '暂无队员会话',
-  'panel.tasks': '任务',
-  'panel.tasks.empty': '暂无任务进度',
-  'panel.members.count': '{count} 名队员',
-  'panel.tasks.count': '{count} 项任务',
-  'panel.member.bound': '已绑定',
-  'panel.member.running': '运行中',
-  'panel.member.settled': '已交接',
-  'panel.task.pending': '待开始',
-  'panel.task.in_progress': '进行中',
-  'panel.task.completed': '已完成',
-  'panel.task.blocked': '受阻',
-  'panel.assignee': '负责人 {member}',
+  'dock.title': '团队',
+  'dock.running': '{count} 运行中',
+  'dock.pending': '{count} 待裁决',
+  'dock.jump': '打开团队标签页',
+  'dock.expand': '展开团队概览',
+  'dock.collapse': '收起团队概览',
+  'dock.members.empty': '暂无成员状态',
+  'dock.tasks.empty': '暂无任务进度',
+  'marker.progress': '进度',
+  'marker.decision': '裁决',
 }
 
 /** English UI strings for every {@link TeamKey}. */
@@ -182,19 +172,14 @@ export const en: Record<TeamKey, string> = {
   'view.events.decision.escalate_to_user': 'Escalated to user',
   'view.events.decision.approve_plan': 'Plan approved',
   'view.events.decision.request_revision': 'Revision requested',
-  'panel.title': 'Team',
-  'panel.teammates': 'Teammates',
-  'panel.teammates.empty': 'No teammate sessions yet',
-  'panel.tasks': 'Tasks',
-  'panel.tasks.empty': 'No task progress yet',
-  'panel.members.count': '{count} teammates',
-  'panel.tasks.count': '{count} tasks',
-  'panel.member.bound': 'Bound',
-  'panel.member.running': 'Running',
-  'panel.member.settled': 'Settled',
-  'panel.task.pending': 'Pending',
-  'panel.task.in_progress': 'In progress',
-  'panel.task.completed': 'Completed',
-  'panel.task.blocked': 'Blocked',
-  'panel.assignee': 'Assignee {member}',
+  'dock.title': 'Team',
+  'dock.running': '{count} running',
+  'dock.pending': '{count} pending',
+  'dock.jump': 'Open the Team tab',
+  'dock.expand': 'Expand the team overview',
+  'dock.collapse': 'Collapse the team overview',
+  'dock.members.empty': 'No member status yet',
+  'dock.tasks.empty': 'No task progress yet',
+  'marker.progress': 'Progress',
+  'marker.decision': 'Decision',
 }

@@ -2,10 +2,10 @@
  * The "团队" tab's task-board section (the third of the four sections): a
  * list of the leader view's tasks, each a state dot plus subject, status
  * label, assignee, and optional summary. The rows are read straight from
- * the projection's `tasks` — the same source and fold as the chat node's
- * `foldTeamBoard` (latest `team/progress` per taskId) — and never
- * re-folded here. Rows are non-interactive: D9 names no click-to-switch
- * for task rows, so there is no session target to open.
+ * the projection's `tasks` — the projection already folds the latest
+ * `team/progress` per taskId — and never re-folded here. Rows are
+ * non-interactive: D9 names no click-to-switch for task rows, so there is
+ * no session target to open.
  */
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { StateDot, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
