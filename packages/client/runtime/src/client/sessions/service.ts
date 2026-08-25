@@ -316,6 +316,7 @@ export class SessionRuntime implements ISessions {
         subscribe: listener => this.manager.subscribe(listener),
       },
       refresh: id => this.manager.refreshTeam(id),
+      pageMessagesBefore: (leader, anchor, limit) => this.manager.pageTeamMessagesBefore(leader, anchor, limit),
     }
     // The manager owns wire truth; the store is its projection. Manager
     // notifications are already microtask-batched.

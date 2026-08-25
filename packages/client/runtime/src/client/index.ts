@@ -110,9 +110,11 @@ export type {
   ProjectionsBaseline, ProjectionValueStore, SessionProjectionMap, UseProjection,
 } from './sessions/projection-store.ts'
 export type { SessionId } from '@deepseek-ai/dsh-client-connection/client'
-// Wire view type re-export: team consumers type their faces off the runtime
-// mirror without a new apiproxy dependency edge.
-export type { TeamView } from '@deepseek-ai/dsh-host-apiproxy/api'
+// Wire type re-exports: team consumers type their faces off the runtime
+// mirror without a new apiproxy dependency edge (RpcResult: the page-read
+// face's return type).
+export type { RpcError, RpcResult } from '@deepseek-ai/dsh-api-remotes/client'
+export type { MessageAnchor, TeamMessagePage, TeamMessageView, TeamView } from '@deepseek-ai/dsh-host-apiproxy/api'
 
 /** Client-side Cordis context after declaration merging. */
 export type ClientContext = Context

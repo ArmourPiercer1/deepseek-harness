@@ -8,7 +8,9 @@ import type {
 } from '@deepseek-ai/dsh-api-remotes/client'
 // Value + type imports from the inline-safe wire layer (not the connection
 // plugin): plugin-to-plugin value imports are a bundle purity error.
-import { transportError, type TeamView } from '@deepseek-ai/dsh-host-apiproxy/api'
+import {
+  transportError, type MessageAnchor, type TeamMessagePage, type TeamView,
+} from '@deepseek-ai/dsh-host-apiproxy/api'
 import { mergeOrderedBaseline } from '../ordered-baseline.ts'
 import type { ConversationRuntime } from './conversation-assembler.ts'
 import type { SessionListEntry, TitledSessionSummary } from './lineage.ts'
@@ -487,6 +489,37 @@ export class SessionManager {
     })()
     this.teamPulls.set(sessionId, operation)
     return operation
+  }
+
+  /**
+   * Page-read one leader's member messages strictly earlier than the anchor
+   * (the `messagesBefore` wire form; `limit` is host-validated). No mirror
+   * side effect: the page hands to its caller for splicing, and the mirror
+   * stays the snapshot's last-wins truth. Business rejections (a non-team
+   * leader, an anchor the fold does not serve) and transport failures
+   * propagate in the result's error branch — never a fallback to the
+   * snapshot window.
+   * @param leaderSessionId - the leader whose team messages the caller pages.
+   * @param anchor - the loaded message the page must precede.
+   * @param limit - optional page length bound.
+   * @returns the page, or the business/transport error.
+   */
+  async pageTeamMessagesBefore(
+    leaderSessionId: SessionId,
+    anchor: MessageAnchor,
+    limit?: number,
+  ): Promise<RpcResult<TeamMessagePage>> {
+    try {
+      const { result } = await this.api.team.projection({ leaderSessionId, messagesBefore: anchor, limit })
+      if (!result.ok) return result
+      // A page request never answers a snapshot: the `kind` discriminant
+      // keeps the response union honest, and a crossed answer is a loud
+      // wire defect rather than a mislabeled page.
+      if (!('kind' in result.value)) return transportError(new Error('team.projection answered a page request with a snapshot'))
+      return { ok: true, value: result.value }
+    } catch (error) {
+      return transportError(error)
+    }
   }
 
   /** Merge one whole-snapshot view into the leader-keyed mirror (last-wins). */

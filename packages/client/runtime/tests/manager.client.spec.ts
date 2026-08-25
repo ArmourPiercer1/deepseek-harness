@@ -5,7 +5,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
-import type { TeamMessagePage, TeamView } from '@deepseek-ai/dsh-host-apiproxy/api'
+import type { TeamMessagePage, TeamProjectionValue, TeamView } from '@deepseek-ai/dsh-host-apiproxy/api'
 import { SessionManager } from '../src/client/sessions/manager.ts'
 import { resolveTeamView } from '../src/client/sessions/team-mirror.ts'
 import { FakeApiClient, deferred, err, fakeRemote, ok } from './fake-api.client.ts'
@@ -1341,6 +1341,88 @@ describe('team mirror', () => {
     const pull = manager.refreshTeam(S1)
     boom?.()
     await pull
+    expect(Object.keys(manager.getTeamMirror())).toHaveLength(0)
+  })
+
+  it('pages the leader messages before the anchor and keeps the mirror untouched', async () => {
+    const api = new FakeApiClient()
+    api.onTeamProjection = () => Promise.resolve(ok<TeamMessagePage>({
+      kind: 'message-page',
+      teamId: LEADER,
+      leaderSessionId: LEADER,
+      messages: [{ from: 'lead', to: 'mate', message: 'older', at: 1, seq: 0, sessionId: MEMBER }],
+      messageCount: 2,
+    }))
+    const manager = new SessionManager(api, fakeRemote())
+    const result = await manager.pageTeamMessagesBefore(LEADER, { at: 2, sessionId: MEMBER, seq: 1 }, 200)
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        kind: 'message-page',
+        teamId: LEADER,
+        leaderSessionId: LEADER,
+        messages: [{ from: 'lead', to: 'mate', message: 'older', at: 1, seq: 0, sessionId: MEMBER }],
+        messageCount: 2,
+      },
+    })
+    // The page form rides the wire exactly as requested, limit included.
+    expect(api.callsOf('team.projection')).toEqual([
+      { leaderSessionId: LEADER, messagesBefore: { at: 2, sessionId: MEMBER, seq: 1 }, limit: 200 },
+    ])
+    // No mirror side effect: the page hands to its caller, absence stays.
+    expect(Object.keys(manager.getTeamMirror())).toHaveLength(0)
+  })
+
+  it('omits the limit key when the caller pages with the host default', async () => {
+    const api = new FakeApiClient()
+    api.onTeamProjection = () => Promise.resolve(ok<TeamMessagePage>({
+      kind: 'message-page', teamId: LEADER, leaderSessionId: LEADER, messages: [], messageCount: 0,
+    }))
+    const manager = new SessionManager(api, fakeRemote())
+    await manager.pageTeamMessagesBefore(LEADER, { at: 2, sessionId: MEMBER, seq: 1 })
+    expect(api.callsOf('team.projection')).toEqual([
+      { leaderSessionId: LEADER, messagesBefore: { at: 2, sessionId: MEMBER, seq: 1 } },
+    ])
+  })
+
+  it('propagates the business rejection loud without a snapshot fallback', async () => {
+    const api = new FakeApiClient()
+    api.onTeamProjection = payload => Promise.resolve(err<TeamProjectionValue>({
+      code: 'team-anchor-unknown',
+      message: 'anchor named no folded message',
+      details: { leaderSessionId: payload.leaderSessionId },
+    }))
+    const manager = new SessionManager(api, fakeRemote())
+    const view = teamView(LEADER)
+    manager.handleMuxEnvelope(teamFrame(LEADER, view))
+    const result = await manager.pageTeamMessagesBefore(LEADER, { at: 9, sessionId: MEMBER, seq: 9 })
+    expect(result).toEqual({
+      ok: false,
+      error: { code: 'team-anchor-unknown', message: 'anchor named no folded message', details: { leaderSessionId: LEADER } },
+    })
+    // The rejection never touches the mirror: the snapshot frame stays last-wins.
+    expect(manager.getTeamMirror()[LEADER]).toBe(view)
+  })
+
+  it('folds a transport failure into the result error branch', async () => {
+    const api = new FakeApiClient()
+    api.onTeamProjection = () => Promise.reject(new Error('wire down'))
+    const manager = new SessionManager(api, fakeRemote())
+    const result = await manager.pageTeamMessagesBefore(LEADER, { at: 2, sessionId: MEMBER, seq: 1 })
+    expect(result).toEqual({ ok: false, error: { code: 'internal', message: 'wire down', details: {} } })
+    expect(Object.keys(manager.getTeamMirror())).toHaveLength(0)
+  })
+
+  it('answers a snapshot crossed to a page request as a loud error', async () => {
+    const api = new FakeApiClient()
+    api.onTeamProjection = () => Promise.resolve(ok(teamView(LEADER)))
+    const manager = new SessionManager(api, fakeRemote())
+    const result = await manager.pageTeamMessagesBefore(LEADER, { at: 2, sessionId: MEMBER, seq: 1 })
+    expect(result).toEqual({
+      ok: false,
+      error: { code: 'internal', message: 'team.projection answered a page request with a snapshot', details: {} },
+    })
+    // The crossed snapshot is not absorbed into the mirror either.
     expect(Object.keys(manager.getTeamMirror())).toHaveLength(0)
   })
 })

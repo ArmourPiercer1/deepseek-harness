@@ -4,10 +4,18 @@
  * and usage instructions, the durable team panel Chat node (task
  * progress board plus teammate status rows) in the conversation, and the
  * globally visible "团队" conversation view tab backed by the read-only
- * leader-keyed team mirror.
+ * leader-keyed team mirror, whose four-section body is complete: the
+ * delegation timeline (teammate lanes over the honest time domain), the
+ * member groups (leading leader row plus per-member instance rows), the
+ * task board (the projection's task list), and the event stream (the
+ * mixed approval/message feed over the most recent 200 rows with the
+ * "load earlier" append — a depth step over the snapshot stream, then wire
+ * pages of `messagesBefore` once it is loaded).
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ObservableSnapshot, TeamMirror } from '@deepseek-ai/dsh-client-runtime/client'
+import type {
+  ObservableSnapshot, SessionId, TeamMirror,
+} from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the settings slot declarations and ctx.settingsScope.
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale into this program.
@@ -22,6 +30,10 @@ import { en, zh, type TeamKey } from './locales.ts'
 
 export type { TeamSettingsSectionProps } from './TeamSettingsSection.tsx'
 export type { TeamPanelProps, TeammateUiStatus } from './TeamPanel.tsx'
+export type { TeamTimelineProps } from './TeamTimeline.tsx'
+export type { TeamMembersProps } from './TeamMembers.tsx'
+export type { TeamTasksProps } from './TeamTasks.tsx'
+export type { TeamFeedProps } from './TeamFeed.tsx'
 export type { TeamViewProps, TeamViewInjected } from './TeamView.tsx'
 export type { TeamKey } from './locales.ts'
 
@@ -82,12 +94,30 @@ export function apply(ctx: ClientContext): void {
   const teamMirror = teams?.mirror ?? EMPTY_TEAM_MIRROR_SOURCE
   const ensureTeam: TeamViewInjected['ensureTeam'] =
     teams === undefined ? () => Promise.resolve() : sessionId => teams.refresh(sessionId)
+  // The pagination entry rides the same team face. A sessions face without
+  // the capability still gets a callback — a loud error result (unreachable
+  // in practice: the empty mirror renders the zero state, never the feed).
+  const pageTeamMessages: TeamViewInjected['pageTeamMessages'] =
+    teams === undefined
+      ? () => Promise.resolve({
+        ok: false,
+        error: { code: 'internal', message: 'the sessions face carries no team wiring', details: {} },
+      })
+      : (leaderSessionId, anchor, limit) => teams.pageMessagesBefore(leaderSessionId as SessionId, anchor, limit)
   ctx.slots.inject('conversation.view', () => ctx.slots.register({
     name: 'conversation.view',
     id: 'team',
     order: 20,
     locale: NS,
     label: () => t('view.team'),
-    inject: (): TeamViewInjected => ({ hooks: { teamMirror }, ensureTeam }),
+    inject: (): TeamViewInjected => ({
+      hooks: { teamMirror },
+      ensureTeam,
+      pageTeamMessages,
+      // D9: the existing session-open path, threaded as a plain callback so
+      // the component never touches the sessions service. The wire view
+      // carries unbranded ids, so the cast stays at this consumption face.
+      openSession: (sessionId) => { ctx.sessions.open(sessionId as SessionId) },
+    }),
   }, TeamView))
 }

@@ -274,7 +274,7 @@ const plainChild: CatalogEntry = {
  * @returns the session-list subagentsByParent record.
  */
 function subagents(catalog: SubagentCatalogSnapshot): SessionListState['subagentsByParent'] {
-  return { [PARENT_ID]: catalog } as SessionListState['subagentsByParent']
+  return { [PARENT_ID]: catalog }
 }
 
 function listState(overrides: Partial<SessionListState> = {}): SessionListState {
@@ -427,6 +427,7 @@ describe('TeamSettingsSection', () => {
 describe('plugin lifecycle', () => {
   it('registers and removes the definition, keyed renderer, settings section, and view tab with its fiber', async () => {
     const refreshed: string[] = []
+    const opened: string[] = []
     const mirror = { getSnapshot: () => ({}), subscribe: () => () => {} }
     const ctx = new Context()
     await ctx.plugin(SlotRegistry).await()
@@ -437,7 +438,12 @@ describe('plugin lifecycle', () => {
       teams: {
         mirror,
         refresh: (sessionId: string) => { refreshed.push(sessionId); return Promise.resolve() },
+        pageMessagesBefore: (leaderSessionId: string) => Promise.resolve({
+          ok: false,
+          error: { code: 'internal', message: 'page not programmed', details: { leaderSessionId } },
+        }),
       },
+      open: (sessionId: string) => { opened.push(sessionId) },
     } as never)
     await ctx.plugin(ConversationEventRegistry).await()
     ctx.slots.register({
@@ -466,14 +472,27 @@ describe('plugin lifecycle', () => {
     const locale = ctx.get('locale') as { setLocale(id: string): void }
     locale.setLocale('zh')
     expect(resolveSlotLabel(viewEntry?.options.label)).toBe('团队')
-    // The inject face binds the service mirror and delegates the cold pull.
+    // The inject face binds the service mirror, delegates the cold pull and
+    // the wire page, and threads the existing session-open path for the D9
+    // switch.
     const face = viewEntry?.inject?.('leader' as never) as undefined | {
       hooks: { teamMirror: typeof mirror }
       ensureTeam: (sessionId: string) => Promise<void>
+      pageTeamMessages: (
+        leaderSessionId: string,
+        anchor: { at: number; sessionId: string; seq: number },
+      ) => Promise<{ ok: boolean; error?: { code: string; message: string; details: unknown } }>
+      openSession: (sessionId: string) => void
     }
     expect(face?.hooks.teamMirror).toBe(mirror)
     await face?.ensureTeam('child')
     expect(refreshed).toEqual(['child'])
+    // The page callback delegates to the sessions team face and keeps the
+    // result's error branch loud.
+    await expect(face?.pageTeamMessages?.('leader', { at: 1, sessionId: 'child', seq: 0 }))
+      .resolves.toEqual({ ok: false, error: { code: 'internal', message: 'page not programmed', details: { leaderSessionId: 'leader' } } })
+    face?.openSession('member-s')
+    expect(opened).toEqual(['member-s'])
     await fiber.dispose()
     expect(ctx.conversationEvents.entries()).toEqual([])
     expect(ctx.slots.entries('conversation.chat.node')).toEqual([])
@@ -514,8 +533,19 @@ describe('plugin lifecycle', () => {
     const face = entry?.inject?.('leader' as never) as {
       hooks: { teamMirror: { getSnapshot(): unknown; subscribe(fn: () => void): () => void } }
       ensureTeam: (sessionId: never) => Promise<void>
+      pageTeamMessages: (
+        leaderSessionId: string,
+        anchor: { at: number; sessionId: string; seq: number },
+      ) => Promise<{ ok: boolean; error?: { code: string; message: string; details: unknown } }>
+      openSession: (sessionId: string) => void
     }
     expect(face.hooks.teamMirror.getSnapshot()).toEqual({})
+    // The face stays complete: the switch callback is present even though
+    // this fixture sessions face carries no open implementation.
+    expect(typeof face.openSession).toBe('function')
+    // ...and the page callback is the loud no-team-wiring error result.
+    await expect(face.pageTeamMessages('leader', { at: 1, sessionId: 'child', seq: 0 }))
+      .resolves.toEqual({ ok: false, error: { code: 'internal', message: 'the sessions face carries no team wiring', details: {} } })
     const heard = vi.fn()
     const off = face.hooks.teamMirror.subscribe(heard)
     off()

@@ -1,0 +1,199 @@
+.root {
+  --team-lane-height: 28px;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  user-select: none;
+}
+
+.root :global([role='tooltip']) {
+  font: var(--dsw-font-xxxs-11);
+}
+
+.empty {
+  margin: 0;
+  padding: 12px 16px;
+  color: var(--dsw-alias-label-tertiary);
+  font: var(--dsw-font-xs-13);
+}
+
+.plot {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  grid-template-rows: 20px auto;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.corner {
+  border-right: 1px solid var(--dsw-alias-border-l1);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+.axis {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+.tick {
+  position: absolute;
+  top: 3px;
+  left: var(--team-tick-left);
+  padding-left: 4px;
+  border-left: 1px solid var(--dsw-alias-border-l2);
+  height: 100%;
+  color: var(--dsw-alias-label-caption);
+  font: var(--dsw-font-xxxs-11);
+  white-space: nowrap;
+}
+
+.gutter {
+  border-right: 1px solid var(--dsw-alias-border-l1);
+}
+
+.gutterRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  height: var(--team-lane-height);
+  padding: 0 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+.gutterRow:last-child {
+  border-bottom: 0;
+}
+
+.swatch {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--team-lane-color, var(--dsw-alias-label-tertiary));
+}
+
+.laneName {
+  overflow: hidden;
+  color: var(--dsw-alias-label-secondary);
+  font: var(--dsw-font-xs-13);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gutterRow[data-current='true'] .laneName {
+  color: var(--dsw-alias-label-primary);
+  font-weight: 600;
+}
+
+.track {
+  position: relative;
+  overflow: hidden;
+  height: calc(var(--team-lane-count, 1) * var(--team-lane-height));
+  cursor: grab;
+  touch-action: none;
+}
+
+.track[data-panning='true'] {
+  cursor: grabbing;
+}
+
+.track:focus-visible {
+  outline: 1px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -1px;
+}
+
+.domain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--team-domain-left);
+  width: var(--team-domain-width);
+}
+
+.lane {
+  position: relative;
+  height: var(--team-lane-height);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+.lane:last-child {
+  border-bottom: 0;
+}
+
+.lane[data-current='true'] {
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent);
+}
+
+.bar {
+  position: absolute;
+  top: 50%;
+  left: var(--team-bar-left);
+  width: max(2px, var(--team-bar-width));
+  height: 14px;
+  min-width: 2px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--team-lane-color, var(--dsw-alias-label-tertiary));
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.bar:hover {
+  opacity: 1;
+}
+
+.bar[data-running='true'] {
+  animation: team-bar-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes team-bar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar[data-running='true'] {
+    animation: none;
+  }
+}
+
+/* The lane-color ramp (slot index → existing state token; the tint tier
+   lightens a hue toward the layer background for members beyond the four
+   base colors). */
+[data-lane-color='0'] {
+  --team-lane-color: var(--dsw-alias-state-business-primary);
+}
+
+[data-lane-color='1'] {
+  --team-lane-color: var(--dsw-alias-state-success-primary);
+}
+
+[data-lane-color='2'] {
+  --team-lane-color: var(--dsw-alias-state-warn-primary);
+}
+
+[data-lane-color='3'] {
+  --team-lane-color: var(--dsw-alias-state-error-primary);
+}
+
+[data-lane-color='4'] {
+  --team-lane-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, var(--dsw-alias-bg-layer-2));
+}
+
+[data-lane-color='5'] {
+  --team-lane-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 55%, var(--dsw-alias-bg-layer-2));
+}
+
+[data-lane-color='6'] {
+  --team-lane-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 55%, var(--dsw-alias-bg-layer-2));
+}
+
+[data-lane-color='7'] {
+  --team-lane-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, var(--dsw-alias-bg-layer-2));
+}

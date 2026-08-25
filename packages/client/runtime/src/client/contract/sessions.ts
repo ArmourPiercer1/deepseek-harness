@@ -12,6 +12,7 @@ import type {
   RpcResult, SessionId, SubagentAddress,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { HostObservable, SessionMaybeProvideInfo } from '@deepseek-ai/dsh-client-ui-slots'
+import type { MessageAnchor, TeamMessagePage } from '@deepseek-ai/dsh-host-apiproxy/api'
 import type { AgentContext } from '../agents/scope.ts'
 import type { SessionSearchResultItem } from '../sessions/manager.ts'
 import type {
@@ -26,7 +27,8 @@ export type { AgentContext } from '../agents/scope.ts'
 /**
  * The read-only team mirror face: whole-snapshot team projection views keyed
  * by their leader session, last-wins from `session/team` frames, with the
- * cold unary read for a session the mirror does not cover yet.
+ * cold unary read for a session the mirror does not cover yet and the
+ * older-messages page read the mirror does not absorb.
  */
 export interface TeamMirrorFace {
   /**
@@ -43,6 +45,24 @@ export interface TeamMirrorFace {
    * @returns completion of the current or newly started cold read.
    */
   refresh(sessionId: SessionId): Promise<void>
+  /**
+   * Page-read one leader's member messages strictly earlier than the anchor
+   * (the `messagesBefore` wire form; `limit` is host-validated to an integer
+   * in [1, 500]). The page hands to its caller for splicing — the mirror
+   * never absorbs page data and stays the snapshot's last-wins truth.
+   * Business rejections (a non-team leader, an anchor the fold does not
+   * serve) and transport failures surface in the result's error branch;
+   * there is no fallback to the snapshot window.
+   * @param leaderSessionId - the leader whose team messages the caller pages.
+   * @param anchor - the loaded message the page must precede.
+   * @param limit - optional page length bound (the host default is the cap).
+   * @returns the page, or the business/transport error.
+   */
+  pageMessagesBefore(
+    leaderSessionId: SessionId,
+    anchor: MessageAnchor,
+    limit?: number,
+  ): Promise<RpcResult<TeamMessagePage>>
 }
 
 /** The sessions-service face injected as `ctx.sessions`. */

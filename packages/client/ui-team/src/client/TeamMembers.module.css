@@ -1,0 +1,132 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.group {
+  overflow: hidden;
+  min-width: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.group[data-current='true'] {
+  border-color: var(--dsw-alias-state-business-primary);
+}
+
+.groupRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: var(--dsw-font-xs-13);
+  font-weight: 600;
+  text-align: left;
+}
+
+.groupRow[data-leader='true'] {
+  cursor: pointer;
+}
+
+.groupRow[data-leader='true']:hover {
+  background: var(--dsw-alias-bg-layer-3);
+}
+
+.groupRow[data-leader='true']:focus-visible {
+  outline: 1px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -1px;
+}
+
+.groupName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group[data-current='true'] .groupName {
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.instances {
+  display: flex;
+  flex-direction: column;
+}
+
+.instanceRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px 6px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: var(--dsw-font-xs-13);
+  text-align: left;
+  cursor: pointer;
+}
+
+.instanceRow:last-child {
+  border-bottom: 0;
+}
+
+.instanceRow:hover {
+  background: var(--dsw-alias-bg-layer-3);
+}
+
+.instanceRow:focus-visible {
+  outline: 1px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -1px;
+}
+
+.instanceRow:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.instanceRow[data-current='true'] {
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent);
+  color: var(--dsw-alias-label-primary);
+}
+
+.dotSlot {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.instanceStatus {
+  flex: none;
+}
+
+.instanceAction {
+  overflow: hidden;
+  color: var(--dsw-alias-label-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.waitingBadge {
+  flex: none;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--dsw-alias-state-warn-tertiary);
+  color: var(--dsw-alias-state-warn-label);
+  font: var(--dsw-font-xxxs-11);
+}
+
+.noInstances {
+  display: block;
+  padding: 6px 10px 6px 18px;
+  color: var(--dsw-alias-label-tertiary);
+  font: var(--dsw-font-xxxs-11);
+}

@@ -6,7 +6,7 @@ import type {
   RpcError, RpcReceipt, RpcRequest, RpcResponse, SessionId, SessionModels, SessionSearchItem, SkillEntry,
   WorkspaceId, WorkspaceView,
 } from '@deepseek-ai/dsh-api-remotes/client'
-import type { TeamProjectionValue } from '@deepseek-ai/dsh-host-apiproxy/api'
+import type { TeamProjectionRequest, TeamProjectionValue } from '@deepseek-ai/dsh-host-apiproxy/api'
 import { RpcId } from '@deepseek-ai/dsh-client-connection/client'
 import type { SessionRemotes } from '../src/client/sessions/remotes.ts'
 
@@ -178,7 +178,7 @@ export class FakeApiClient implements IApiClient {
 
   // Defaults reject like the real gateway does for an ordinary non-team
   // session (never an empty view); cases program snapshots or pages per need.
-  onTeamProjection: (payload: { leaderSessionId: SessionId }) => Promise<
+  onTeamProjection: (payload: TeamProjectionRequest) => Promise<
     Awaited<ReturnType<IApiClient['team']['projection']>>
   > = payload => Promise.resolve(err<TeamProjectionValue>({
     code: 'team-leader-unknown',
@@ -187,7 +187,7 @@ export class FakeApiClient implements IApiClient {
   }))
 
   readonly team: IApiClient['team'] = {
-    projection: (payload: { leaderSessionId: SessionId }) =>
+    projection: (payload: TeamProjectionRequest) =>
       this.record('team.projection', payload, this.onTeamProjection(payload)),
   }
 
