@@ -24,12 +24,12 @@ export interface ApiProxy {
   sessions: SessionsApi
   subagents: SubagentsApi
   /**
-   * Optional until the P3a browser consumer lands: the host gateway always
-   * provides it, while in-repo fixture impls in packages that do not yet
-   * consume the domain keep compiling; the consuming change makes it
-   * required together with its store.
+   * Read-only team projection domain. The gateway always provides it: a
+   * deployment without the `teamProjection` service answers `projection`
+   * with the explicit `team-unavailable` code instead of omitting the
+   * domain.
    */
-  team?: TeamApi
+  team: TeamApi
   host: HostApi
   workspace: WorkspaceApi
   skills: SkillsApi

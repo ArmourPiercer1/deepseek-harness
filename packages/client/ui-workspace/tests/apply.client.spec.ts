@@ -143,6 +143,15 @@ describe('ui-workspace apply', () => {
     unsubscribe()
   })
 
+  it('degrades the team mirror seat to a static empty source without the teams face', async () => {
+    const b = await bench()
+    declare(b.slots, 'sidebar.workspaces')
+    await b.ctx.plugin({ inject: [...inject], apply }).await()
+    const browser = (b.slots.entries('sidebar.workspaces')[0]!.inject as () => WorkspaceBrowserInjected)()
+    // The bench's sessions double carries no teams face: no badge, no pull.
+    expect(browser.hooks.teamMirror.getSnapshot()).toEqual({})
+  })
+
   it('rejects the browser search callback on a runtime business error', async () => {
     const b = await bench()
     b.search.mockImplementationOnce(async () => ({

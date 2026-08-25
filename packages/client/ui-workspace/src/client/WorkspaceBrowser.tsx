@@ -20,7 +20,7 @@ import type {
 } from '@deepseek-ai/dsh-client-runtime/client'
 import type { WorkspaceBrowserProps } from './contract/slots.ts'
 import type { SessionNode, SessionOrderBy } from './tree.ts'
-import { deriveFlat, deriveGroups, deriveSearchResults, UNGROUPED_KEY } from './tree.ts'
+import { deriveFlat, deriveGroups, deriveSearchResults, teamLeaderCounts, UNGROUPED_KEY } from './tree.ts'
 import { ProjectRowItem, SearchResultItem, SessionNodeItem } from './rows/Rows.tsx'
 import { FLAT_SESSION_ORDER_KEY } from './stores.ts'
 import { WorkspacePickFlow } from './WorkspacePicker.tsx'
@@ -235,6 +235,11 @@ type SessionTreeProps = Pick<
   setSessionOrder: (accountKey: string, order: string[]) => void
   /** Registry-global archive set (hidden rows). */
   archivedSessionIds: readonly SessionNode['id'][]
+  /**
+   * D5 badge facts: the roster member count for every session leading a
+   * mirrored team view (absent = no badge).
+   */
+  teamMemberCounts: ReadonlyMap<SessionNode['id'], number>
   /** Open the browser-owned rename dialog for a real Workspace group. */
   onRenameRequest: (workspaceId: WorkspaceId, currentTitle: string) => void
   /** Open the browser-owned delete-confirmation dialog for a real Workspace group. */
@@ -251,7 +256,7 @@ type SessionTreeProps = Pick<
 function SessionTree({
   useSessions, startSession, open, forkSession, workspaces, archivedSessionIds,
   onRenameRequest, onDeleteRequest, onSessionRename, onSessionArchive,
-  insertWorkspaceBefore, insertSessionBefore, orderBy,
+  insertWorkspaceBefore, insertSessionBefore, orderBy, teamMemberCounts,
   groupExpansion, setGroupExpanded,
   sessionOrderByAccount, sessionUpdatedAtByAccount, syncSessionOrderAccount, setSessionOrder, home, t,
 }: SessionTreeProps) {
@@ -520,6 +525,7 @@ function SessionTree({
                     onFork={forkSession}
                     onArchive={onSessionArchive}
                     drag={dragProps}
+                    teamMemberCount={teamMemberCounts.get(node.id)}
                     t={t}
                   />
                 )
@@ -548,7 +554,8 @@ function SessionTree({
 /** The flat "In one list" body: every session is one draggable top-level row. */
 function FlatList({
   useSessions, open, forkSession, onSessionRename, onSessionArchive, archivedSessionIds,
-  orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, syncSessionOrderAccount, setSessionOrder, t,
+  orderBy, sessionOrderByAccount, sessionUpdatedAtByAccount, syncSessionOrderAccount, setSessionOrder,
+  teamMemberCounts, t,
 }: Pick<
   SessionTreeProps,
   | 'useSessions'
@@ -562,6 +569,7 @@ function FlatList({
   | 'sessionUpdatedAtByAccount'
   | 'syncSessionOrderAccount'
   | 'setSessionOrder'
+  | 'teamMemberCounts'
   | 't'
 >) {
   const list = useSessions(s => s)
@@ -636,6 +644,7 @@ function FlatList({
               onFork={forkSession}
               onArchive={onSessionArchive}
               flat
+              teamMemberCount={teamMemberCounts.get(node.id)}
               drag={{
                 start: () => {
                   dropCommitted.current = false
@@ -678,6 +687,7 @@ function SearchResults({
   open,
   workspaces,
   archivedSessionIds,
+  teamMemberCounts,
   query,
   remote,
   resultLimit,
@@ -685,6 +695,7 @@ function SearchResults({
 }: Pick<SessionTreeProps, 'useSessions' | 'open' | 't'> & {
   workspaces: readonly WorkspaceView[]
   archivedSessionIds: readonly SessionNode['id'][]
+  teamMemberCounts: ReadonlyMap<SessionNode['id'], number>
   query: string
   remote: RemoteSearchState
   resultLimit: number
@@ -710,6 +721,7 @@ function SearchResults({
               result={result}
               currentId={list.current}
               onOpen={open}
+              teamMemberCount={teamMemberCounts.get(result.id)}
               t={t}
             />
           ))}
@@ -762,10 +774,15 @@ export function WorkspaceBrowser({
   searchResultLimit,
   useDirectoryFlow,
   useHostDescription,
+  useTeamMirror,
   renderSlot,
   t,
 }: WorkspaceBrowserProps) {
   const home = useHostDescription(description => description?.home)
+  // D5 badge facts: the mirror record is identity-stable between changes, so
+  // one selection plus a pure derivation feeds every row surface.
+  const teamMirror = useTeamMirror(mirror => mirror)
+  const teamMemberCounts = useMemo(() => teamLeaderCounts(teamMirror), [teamMirror])
   const workspaces = useWorkspaces(state => state.items)
   const workspacePhase = useWorkspaces(state => state.phase)
   const archivedSessionIds = useWorkspaces(state => state.archivedSessionIds)
@@ -1148,6 +1165,7 @@ export function WorkspaceBrowser({
               open={open}
               workspaces={workspaces}
               archivedSessionIds={archivedSessionIds}
+              teamMemberCounts={teamMemberCounts}
               query={normalizedQuery}
               remote={remoteSearch}
               resultLimit={searchResultLimit}
@@ -1165,6 +1183,7 @@ export function WorkspaceBrowser({
                 sessionUpdatedAtByAccount={sessionUpdatedAtByAccount}
                 syncSessionOrderAccount={actions.syncSessionOrderAccount}
                 setSessionOrder={actions.setSessionOrder}
+                teamMemberCounts={teamMemberCounts}
                 t={t}
               />
             )
@@ -1175,6 +1194,7 @@ export function WorkspaceBrowser({
                 onSessionArchive={onSessionArchive}
                 forkSession={forkSession}
                 workspaces={workspaces}
+                teamMemberCounts={teamMemberCounts}
                 groupExpansion={groupExpansion}
                 setGroupExpanded={actions.setGroupExpanded}
                 sessionOrderByAccount={sessionOrderByAccount}

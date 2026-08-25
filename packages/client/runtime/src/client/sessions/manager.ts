@@ -6,9 +6,9 @@ import type {
   IApiClient, HostFrame, MuxFrame, RpcError, RpcRequest, RpcResult, SessionId,
   SessionSummary, SubagentAddress, SubagentCatalog, JobView, WorkspaceId,
 } from '@deepseek-ai/dsh-api-remotes/client'
-// Value import from the inline-safe wire layer (not the connection plugin):
-// plugin-to-plugin value imports are a bundle purity error.
-import { transportError } from '@deepseek-ai/dsh-host-apiproxy/api'
+// Value + type imports from the inline-safe wire layer (not the connection
+// plugin): plugin-to-plugin value imports are a bundle purity error.
+import { transportError, type TeamView } from '@deepseek-ai/dsh-host-apiproxy/api'
 import { mergeOrderedBaseline } from '../ordered-baseline.ts'
 import type { ConversationRuntime } from './conversation-assembler.ts'
 import type { SessionListEntry, TitledSessionSummary } from './lineage.ts'
@@ -22,6 +22,7 @@ import { Notifier } from './notifier.ts'
 import { ProjectionValueStore } from './projection-store.ts'
 import { Session } from './session.ts'
 import type { SessionRemotes } from './remotes.ts'
+import type { TeamMirror } from './team-mirror.ts'
 
 /**
  * List arrival lifecycle, orthogonal to the pull-activity `state` axis:
@@ -147,6 +148,19 @@ export class SessionManager {
    * is stored as an absent key, so absence and `[]` are one representation.
    */
   private readonly jobsBySession = new Map<SessionId, readonly JobView[]>()
+  /**
+   * Read-only team projection mirror: one whole-snapshot {@link TeamView} per
+   * leader session, last-wins from `session/team`. The key is the view's own
+   * `leaderSessionId`, never the frame's sessionId — a bound-teammate
+   * baseline frame carries the teammate's sessionId but the anchored
+   * leader's view. An absent key means "no team known for that leader";
+   * absence, never a sentinel. The record reference is stable until a frame
+   * or a cold pull moves the mirror, so per-leader selector consumers
+   * re-render only on real team changes.
+   */
+  private teamByLeader: TeamMirror = {}
+  /** Single-flight cold reads, keyed by the requested session (its response may anchor another leader). */
+  private readonly teamPulls = new Map<SessionId, Promise<void>>()
 
   private selected: SessionId | undefined
 
@@ -433,6 +447,81 @@ export class SessionManager {
     }
   }
 
+  // ---- Team mirror ----
+
+  /**
+   * The leader-keyed team mirror (read face; the record reference is stable
+   * between changes, so observable views over it stay identity-stable).
+   * @returns the current mirror record.
+   */
+  getTeamMirror(): TeamMirror {
+    return this.teamByLeader
+  }
+
+  /**
+   * Cold-read one session's team projection into the mirror, reusing an
+   * in-flight request (the refreshSubagents posture). The response may
+   * anchor a different leader — a bound-teammate request returns its
+   * leader's view. A business rejection (`team-leader-unknown`, an ordinary
+   * non-team session) and transport failures keep mirror absence; the push
+   * feed remains the live authority.
+   * @param sessionId - the session whose team view the caller needs.
+   * @returns completion of the current or newly started cold read.
+   */
+  refreshTeam(sessionId: SessionId): Promise<void> {
+    const inflight = this.teamPulls.get(sessionId)
+    if (inflight !== undefined) return inflight
+    const operation = (async () => {
+      try {
+        const { result } = await this.api.team.projection({ leaderSessionId: sessionId })
+        // A snapshot request never answers a message page; the `kind`
+        // discriminant keeps the response union honest.
+        if (result.ok && !('kind' in result.value)) {
+          this.setTeamLeader(result.value.leaderSessionId as SessionId, result.value)
+        }
+      } catch {
+        // Transport fold: absence stays; the next frame or pull converges.
+      } finally {
+        this.teamPulls.delete(sessionId)
+      }
+    })()
+    this.teamPulls.set(sessionId, operation)
+    return operation
+  }
+
+  /** Merge one whole-snapshot view into the leader-keyed mirror (last-wins). */
+  private setTeamLeader(leaderSessionId: SessionId, team: TeamView): void {
+    if (this.teamByLeader[leaderSessionId] === team) return
+    this.teamByLeader = { ...this.teamByLeader, [leaderSessionId]: team }
+    this.notifier.markDirty()
+  }
+
+  /**
+   * Drop every mirror entry one session's subscription baseline owns: its
+   * own leader key, or the leader whose view binds it as a member. The new
+   * generation's baseline frame (or its absence) re-establishes the truth,
+   * so a retained last-wins value must not survive ahead of it.
+   */
+  private clearTeamOf(sessionId: SessionId): void {
+    if (Object.keys(this.teamByLeader).length === 0) return
+    const next: Record<SessionId, TeamView> = {}
+    let changed = false
+    for (const leader of Object.keys(this.teamByLeader) as SessionId[]) {
+      const view = this.teamByLeader[leader]
+      const ownedByBaseline = view !== undefined
+        && (leader === sessionId || view.members.some(member => member.sessionIds.includes(sessionId)))
+      if (ownedByBaseline) {
+        changed = true
+        continue
+      }
+      if (view !== undefined) next[leader] = view
+    }
+    if (changed) {
+      this.teamByLeader = next
+      this.notifier.markDirty()
+    }
+  }
+
   // ---- List API ----
 
   /** Full refresh via session.list (single-flight: an in-flight call is reused). */
@@ -711,6 +800,13 @@ export class SessionManager {
       this.notifier.markDirty()
       return
     }
+    if (frame.type === 'session/team') {
+      // Whole-snapshot last-wins keyed by the view's own leader, never the
+      // frame's sessionId (a bound-teammate baseline carries the teammate's
+      // sessionId but the anchored leader's view).
+      this.setTeamLeader(frame.team.leaderSessionId as SessionId, frame.team)
+      return
+    }
     if (frame.type === 'session/subscribed') {
       // Rows past the host's durable baseline rode state a restart lost; drop
       // them so last-wins cannot pin a phantom value over recomputed truth.
@@ -719,6 +815,10 @@ export class SessionManager {
       // task baseline only when the set is non-empty, so a mirror kept from the
       // previous generation would survive as a phantom list.
       this.jobsBySession.delete(frame.sessionId)
+      // And the team mirror re-baselines the same way: the baseline frame (or
+      // its absence, for a session this generation's gate rejects) is the new
+      // truth for every entry this session owns.
+      this.clearTeamOf(frame.sessionId)
       this.notifier.markDirty()
       // New mux-generation baseline: discard the previous queue snapshot.
       // The host omits session/queue when the live queue is empty, so retaining
@@ -834,6 +934,13 @@ export class SessionManager {
         // no relative order. Clearing here makes a detached Activation's rows
         // disappear whichever arrives first.
         this.jobsBySession.delete(frame.sessionId)
+        // The team a removed session led is gone with it (its log anchored the
+        // fold and can push no more). A removed member's row stays honest in
+        // the surviving leader's view: the ordinary push feed refreshes it.
+        if (this.teamByLeader[frame.sessionId] !== undefined) {
+          const { [frame.sessionId]: _team, ...rest } = this.teamByLeader
+          this.teamByLeader = rest
+        }
         if (!durableSubagent) this.projectionStores.delete(frame.sessionId)
         // A pull already in flight was requested before this removal and can
         // carry the pre-removal parentAvailable:true, which would resurrect

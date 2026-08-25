@@ -106,8 +106,8 @@ const UNARY_ROUTES: UnaryRoutes = {
   'subagent.prompt': { schema: subagentPromptRequestSchema, invoke: (api, r, signal) => api.subagents.prompt(r, signal) },
   'subagent.interrupt': { schema: subagentInterruptRequestSchema, invoke: (api, r) => api.subagents.interrupt(r) },
   // The `?.` arm is unreachable through the shipped gateway (createApiProxy
-  // always provides the domain); it answers fixture impls that omit the
-  // optional member with the same code the impl itself would.
+  // always provides the domain); it answers a structurally-typed impl that
+  // omits the member with the same code the impl itself would.
   'team.projection': {
     schema: teamProjectionRequestSchema,
     invoke: (api, r, signal) => api.team?.projection(r, signal)

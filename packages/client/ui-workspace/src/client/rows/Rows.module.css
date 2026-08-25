@@ -216,6 +216,25 @@
   flex: none;
 }
 
+/* D5 team-leader badge: icon + member count between the title and the
+   trailing cells. flex-none, so the title's ellipsis absorbs the width;
+   18px tall inside the 32px session row and the 48px search row. */
+.teamBadge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+  margin: 0 4px 0 0;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2);
+  white-space: nowrap;
+}
+
 /* Trailing action buttons surface on hover only (figma 27:4668 / 27:4656):
    bare 16px glyphs, gap 12, tertiary grey. */
 .rowActions {

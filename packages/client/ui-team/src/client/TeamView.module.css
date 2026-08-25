@@ -1,0 +1,17 @@
+.zero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: var(--dsw-spacing-xl, 24px);
+  color: var(--dsw-color-text-tertiary);
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: var(--dsw-spacing-xl, 24px);
+  color: var(--dsw-color-text-secondary);
+}

@@ -64,7 +64,7 @@ describe('tsdown client artifact', () => {
     const { handoff, exports } = await loadArtifact()
     expect(handoff.id).toBe(PLUGIN_ID)
     expect(exports.apply).toBeTypeOf('function')
-    expect(exports.inject).toEqual(['slots', 'locale', 'conversationEvents'])
+    expect(exports.inject).toEqual(['slots', 'locale', 'conversationEvents', 'sessions'])
   })
 
   it.skipIf(code === undefined)('mounted as an object plugin, apply registers the definition and keyed renderer on the real ring', async () => {

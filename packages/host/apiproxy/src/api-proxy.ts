@@ -25,7 +25,6 @@ import { SubagentError } from '@deepseek-ai/dsh-subagent'
 import type { SubagentListEntry as CatalogSubagentListEntry } from '@deepseek-ai/dsh-subagent'
 import { TeamProjectionError } from '@deepseek-ai/dsh-team-projection'
 import type { TeamView } from '@deepseek-ai/dsh-team-projection'
-import type { TeamApi } from './api/team.ts'
 import { isUserInvocable } from '@deepseek-ai/dsh-skill'
 import type { Workspace, WorkspaceRecord } from '@deepseek-ai/dsh-workspace'
 import {
@@ -1045,11 +1044,11 @@ function changedWorkspaceView(workspaceId: string, value: unknown): WorkspaceVie
  * Implement ApiProxy over a composed host context.
  * @param ctx - a context with the Host spine and Workspace registry mounted.
  * @param defaults - host routing and project-directory defaults.
- * @returns the ApiProxy implementation, with every optional-provision domain
- *   (currently only `team`, optional for not-yet-consuming fixture impls)
- *   concretely provided.
+ * @returns the ApiProxy implementation, with the provision-conditional team
+ *   domain concretely provided (its methods answer `team-unavailable` when
+ *   no projection service is composed).
  */
-export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiProxy & { team: TeamApi } {
+export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiProxy {
   const sessionExportCompressionLevel = defaults.sessionExportCompressionLevel
     ?? DEFAULT_SESSION_LOG_COMPRESSION_LEVEL
   const coldBlankProbeMaxBytes = defaults.coldBlankProbeMaxBytes

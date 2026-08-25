@@ -28,7 +28,7 @@ import type { SessionProjectionMap } from '@deepseek-ai/dsh-session-projection/t
 import type { SnapshotStore } from '../contract/store.ts'
 import { createSnapshotStore } from '../contract/store.ts'
 import type { SessionFace } from '../contract/session.ts'
-import type { AgentContext, ISessions } from '../contract/sessions.ts'
+import type { AgentContext, ISessions, TeamMirrorFace } from '../contract/sessions.ts'
 import { createScope, scopeOf as scopeTagOf } from '../agents/scope.ts'
 import type { ConversationRuntime } from './conversation-assembler.ts'
 import { SessionManager } from './manager.ts'
@@ -236,6 +236,13 @@ export class SessionRuntime implements ISessions {
   readonly searchResultLimit = SESSION_SEARCH_RESULT_LIMIT
   /** List snapshot store (list RPC + host stream increments; re-pulled on reconnect) — the useSessions standard feed, current included. */
   readonly list: SnapshotStore<SessionListState>
+  /**
+   * The read-only team mirror face: a derived observable view over the
+   * manager's leader-keyed mirror (one publication point — the manager's
+   * own notifier — so mirror changes and list changes flush together) plus
+   * the single-flight cold read.
+   */
+  readonly teams: TeamMirrorFace
   /** The object-layer instance cluster and frame dispatch entry. */
   private readonly manager: SessionManager
   /**
@@ -303,6 +310,13 @@ export class SessionRuntime implements ISessions {
       ids: [], byId: {}, current: undefined, phase: 'pending',
       subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
     })
+    this.teams = {
+      mirror: {
+        getSnapshot: () => this.manager.getTeamMirror(),
+        subscribe: listener => this.manager.subscribe(listener),
+      },
+      refresh: id => this.manager.refreshTeam(id),
+    }
     // The manager owns wire truth; the store is its projection. Manager
     // notifications are already microtask-batched.
     this.manager.subscribe(() => { this.projectList() })

@@ -81,7 +81,7 @@ export class ApiProxyService extends Service implements ApiProxy {
 
   readonly sessions: ApiProxy['sessions']
   readonly subagents: ApiProxy['subagents']
-  readonly team: NonNullable<ApiProxy['team']>
+  readonly team: ApiProxy['team']
   readonly workspace: ApiProxy['workspace']
   readonly host: ApiProxy['host']
   readonly goals: ApiProxy['goals']

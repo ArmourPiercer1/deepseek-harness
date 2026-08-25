@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import type {
-  SessionId, SessionListState, SessionSummary, WorkspaceId, WorkspaceListState, WorkspaceView,
+  SessionId, SessionListState, SessionSummary, TeamMirror, TeamView, WorkspaceId,
+  WorkspaceListState, WorkspaceView,
 } from '@deepseek-ai/dsh-client-runtime/client'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
@@ -45,6 +46,21 @@ const workspaceState = (items: readonly WorkspaceView[], archivedSessionIds: rea
 function hook<T>(snapshot: T) {
   return function select<S>(selector: (state: T) => S): S { return selector(snapshot) }
 }
+/** One leader-keyed mirror row: the badge reads rosterMemberCount verbatim. */
+const teamView = (leaderSessionId: string, rosterMemberCount: number): TeamView => ({
+  teamId: leaderSessionId,
+  leaderSessionId,
+  rosterMemberCount,
+  members: [
+    { memberId: 'leader', name: 'leader', role: 'leader', sessionIds: [leaderSessionId], status: 'bound', pendingControlCount: 0 },
+    { memberId: 'mate', name: 'mate', role: 'teammate', sessionIds: ['mate'], status: 'running', pendingControlCount: 0 },
+  ],
+  delegations: [],
+  tasks: [],
+  approvals: [],
+  messages: [],
+  messageCount: 0,
+})
 
 /** jsdom lacks DragEvent — the fireEvent fallback drops clientY, so pin it on the built event. */
 function fireDrag(row: HTMLElement, kind: 'dragOver' | 'drop', clientY: number): void {
@@ -81,6 +97,7 @@ function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
     createWorkspace: vi.fn(async () => workspace('created', [])),
     useDirectoryFlow: bindSnapshotSelector({ getSnapshot: () => true, subscribe: () => () => {} }),
     useHostDescription: selector => selector(undefined),
+    useTeamMirror: hook<TeamMirror>({}),
     renderSlot: ((_name: string, owner: { open: boolean }) => (owner.open ? <div data-testid="directory-flow" /> : null)) as never,
     t,
     ...overrides,
@@ -390,6 +407,45 @@ describe('WorkspaceBrowser', () => {
     expect(screen.getByText('child-s')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /展开|收起/ })).toBeNull()
     expect(screen.getByText('child-s').closest('[role="treeitem"]')?.getAttribute('draggable')).toBe('true')
+  })
+
+  it('badges the team-leader row with its roster count and drops the teammate row (D4/D5)', () => {
+    const leader = summary('leader', 3)
+    const mate = { ...summary('mate', 2), parentId: leader.id, origin: 'subagent' as const }
+    const other = summary('other', 1)
+    const sessions = sessionState(
+      [leader, mate, other],
+      {
+        subagentsByParent: {
+          [leader.id]: {
+            entries: [
+              { kind: 'child', id: mate.id, activity: 'running', hasChildren: false, mode: 'continuable', label: 'team:mate' },
+            ],
+            parentAvailable: true,
+            state: 'ready',
+            error: null,
+          },
+        },
+      },
+    )
+    const b = mount({
+      useSessions: hook(sessions),
+      useWorkspaces: hook(workspaceState([workspace('alpha', ['leader', 'mate', 'other'])])),
+      useTeamMirror: hook<TeamMirror>({ [leader.id]: teamView('leader', 3) }),
+    })
+    fireEvent.click(screen.getByText('alpha'))
+    // D4: the teammate row is gone from the top-level list.
+    expect(screen.queryByText('mate')).toBeNull()
+    expect(screen.getByText('leader')).toBeTruthy()
+    expect(screen.getByText('other')).toBeTruthy()
+    // D5: exactly one badge in the tree — the leader's, with the verbatim count.
+    expect(screen.getByText('3 个成员')).toBeTruthy()
+    expect(screen.getByText('leader').closest('[role="treeitem"]')?.textContent).toContain('3 个成员')
+    expect(screen.getByText('other').closest('[role="treeitem"]')?.textContent).not.toContain('个成员')
+
+    // Mirror gap (session no longer mirrored): the badge is absent again.
+    rerender(b, { useTeamMirror: hook<TeamMirror>({}) })
+    expect(screen.queryByText(/个成员/)).toBeNull()
   })
 
   it('expands the target group before starting a session from its ＋', () => {

@@ -29,7 +29,7 @@ import type { HostObservable, PropsHooks, PropsLocale, PropsRenderSlots, PropsRu
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {
-  SessionId, SessionSearchResultItem, WorkspaceId, WorkspaceView,
+  SessionId, SessionSearchResultItem, TeamMirror, WorkspaceId, WorkspaceView,
 } from '@deepseek-ai/dsh-client-runtime/client'
 import type { createWorkspaceViewStore } from '../stores.ts'
 
@@ -91,6 +91,12 @@ export type WorkspaceBrowserInjected = {
   hooks: DirectoryPickingInjected['hooks'] & {
     /** Current generation's Host description, bound by the slot renderer. */
     hostDescription: HostDescriptionSource
+    /**
+     * Leader-keyed team mirror (the P3a read face), bound as the
+     * `useTeamMirror` selector hook; the browser derives the leader badge
+     * member counts from it (D5/D23).
+     */
+    teamMirror: HostObservable<TeamMirror>
   }
   /**
    * Start a New Session in a Workspace: reuse-or-create its blank session and

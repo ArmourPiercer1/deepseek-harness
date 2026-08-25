@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { Context } from '@deepseek-ai/cordis'
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ConversationEventRegistry, ConversationNodeAssembler, SlotRegistry,
 } from '@deepseek-ai/dsh-client-runtime/client'
@@ -425,17 +425,26 @@ describe('TeamSettingsSection', () => {
 })
 
 describe('plugin lifecycle', () => {
-  it('registers and removes the definition, keyed renderer, and settings section with its fiber', async () => {
+  it('registers and removes the definition, keyed renderer, settings section, and view tab with its fiber', async () => {
+    const refreshed: string[] = []
+    const mirror = { getSnapshot: () => ({}), subscribe: () => () => {} }
     const ctx = new Context()
     await ctx.plugin(SlotRegistry).await()
     ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
     ctx.provide('remote', { $on: () => () => {} } as never)
     ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
+    ctx.provide('sessions', {
+      teams: {
+        mirror,
+        refresh: (sessionId: string) => { refreshed.push(sessionId); return Promise.resolve() },
+      },
+    } as never)
     await ctx.plugin(ConversationEventRegistry).await()
     ctx.slots.register({
       name: 'root',
       children: {
         'conversation.chat.node': { kind: 'keyed', scope: 'session' },
+        'conversation.view': { kind: 'list', scope: 'session' },
         'settings.section': { kind: 'list', scope: 'root' },
       },
     } as never, () => null)
@@ -448,16 +457,70 @@ describe('plugin lifecycle', () => {
     expect(ctx.slots.entries('settings.section')).toHaveLength(1)
     expect(ctx.slots.entries('settings.section')[0]?.options.id).toBe('team')
     expect(resolveSlotLabel(ctx.slots.entries('settings.section')[0]?.options.label)).toBeTypeOf('string')
+    const viewEntry = ctx.slots.entries('conversation.view')[0]
+    expect(viewEntry?.options.id).toBe('team')
+    expect(viewEntry?.options.order).toBe(20)
+    // The tab label follows the active locale (default en; the zh flip is the
+    // product-language contract).
+    expect(resolveSlotLabel(viewEntry?.options.label)).toBe('Team')
+    const locale = ctx.get('locale') as { setLocale(id: string): void }
+    locale.setLocale('zh')
+    expect(resolveSlotLabel(viewEntry?.options.label)).toBe('团队')
+    // The inject face binds the service mirror and delegates the cold pull.
+    const face = viewEntry?.inject?.('leader' as never) as undefined | {
+      hooks: { teamMirror: typeof mirror }
+      ensureTeam: (sessionId: string) => Promise<void>
+    }
+    expect(face?.hooks.teamMirror).toBe(mirror)
+    await face?.ensureTeam('child')
+    expect(refreshed).toEqual(['child'])
     await fiber.dispose()
     expect(ctx.conversationEvents.entries()).toEqual([])
     expect(ctx.slots.entries('conversation.chat.node')).toEqual([])
     expect(ctx.slots.entries('settings.section')).toEqual([])
+    expect(ctx.slots.entries('conversation.view')).toEqual([])
 
     const replacement = ctx.plugin({ inject: [...inject], apply })
     await replacement.await()
     expect(ctx.conversationEvents.entries().map(entry => entry.kind)).toEqual(['team-panel'])
     expect(ctx.slots.entries('conversation.chat.node')).toHaveLength(1)
+    expect(ctx.slots.entries('conversation.view')).toHaveLength(1)
     await replacement.dispose()
+  })
+
+  it('keeps the view tab registered against a sessions face with no team wiring', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SlotRegistry).await()
+    ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
+    ctx.provide('remote', { $on: () => () => {} } as never)
+    ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
+    // The capability member is absent: the tab still registers, the mirror
+    // source is the static empty one, and the cold pull resolves as a no-op.
+    ctx.provide('sessions', {} as never)
+    await ctx.plugin(ConversationEventRegistry).await()
+    ctx.slots.register({
+      name: 'root',
+      children: {
+        'conversation.chat.node': { kind: 'keyed', scope: 'session' },
+        'conversation.view': { kind: 'list', scope: 'session' },
+        'settings.section': { kind: 'list', scope: 'root' },
+      },
+    } as never, () => null)
+    await ctx.plugin({ inject: localeInject, apply: applyLocale }).await()
+    const fiber = ctx.plugin({ inject: [...inject], apply })
+    await fiber.await()
+    const entry = ctx.slots.entries('conversation.view')[0]
+    expect(entry?.options.id).toBe('team')
+    const face = entry?.inject?.('leader' as never) as {
+      hooks: { teamMirror: { getSnapshot(): unknown; subscribe(fn: () => void): () => void } }
+      ensureTeam: (sessionId: never) => Promise<void>
+    }
+    expect(face.hooks.teamMirror.getSnapshot()).toEqual({})
+    const heard = vi.fn()
+    const off = face.hooks.teamMirror.subscribe(heard)
+    off()
+    await expect(face.ensureTeam('child' as never)).resolves.toBeUndefined()
+    await fiber.dispose()
   })
 
   it('keeps the node half inert and registers invariant ownership', async () => {

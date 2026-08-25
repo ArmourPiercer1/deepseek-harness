@@ -141,6 +141,24 @@ export class FakeApiClient implements IApiClient {
     }))),
   }
 
+  // The connection-layer fake carries no team world: every read answers the
+  // team-ness gate rejection, the same fact the real gateway reports for an
+  // ordinary non-team session (never an empty view).
+  readonly team: IApiClient['team'] = {
+    projection: (payload: { leaderSessionId: SessionId }) =>
+      this.record('team.projection', payload, Promise.resolve({
+        rpcId: RpcId(`fake-${nextRpc++}`),
+        result: {
+          ok: false as const,
+          error: {
+            code: 'team-leader-unknown',
+            message: 'fake client serves no team world',
+            details: { leaderSessionId: payload.leaderSessionId },
+          },
+        },
+      })),
+  }
+
   readonly host: IApiClient['host'] = {
     describe: payload => this.record('host.describe', payload, this.onDescribe(payload)),
     pickDirectory: payload => this.record('host.pickDirectory', payload, this.onPickDirectory(payload)),

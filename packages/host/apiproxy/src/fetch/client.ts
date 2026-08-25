@@ -107,11 +107,11 @@ export interface IApiClient {
     interrupt(payload: RequestPayload<'subagent.interrupt'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'subagent.interrupt'>>>
   }
   /**
-   * Optional until the P3a browser store lands: every shipped carrier
-   * implements it, while fixture clients in not-yet-consuming packages keep
-   * compiling; the consuming change makes it required alongside its store.
+   * Read-only team projection domain. Every shipped carrier implements it:
+   * a gateway whose deployment composes no projection service answers with
+   * the explicit `team-unavailable` error code.
    */
-  team?: {
+  team: {
     projection(payload: RequestPayload<'team.projection'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.projection'>>>
   }
   host: {

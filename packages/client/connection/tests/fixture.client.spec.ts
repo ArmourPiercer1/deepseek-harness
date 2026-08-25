@@ -1083,6 +1083,19 @@ describe('FixtureApiClient (protocol-level fake carrier)', () => {
       && event.data.source?.kind === 'goal' && event.data.source.round === 0)).toBe(false)
   })
 
+  it('answers team.projection with the team-ness gate rejection, never an empty view', async () => {
+    const client = new FixtureApiClient()
+    const response = await client.team.projection({ leaderSessionId: sid('fx-alpha') })
+    expect(response.result).toEqual({
+      ok: false,
+      error: {
+        code: 'team-leader-unknown',
+        message: expect.any(String),
+        details: { leaderSessionId: 'fx-alpha' },
+      },
+    })
+  })
+
   it('maps empty, prompt-reject, and workspace-first query scenarios', async () => {
     vi.stubGlobal('location', {
       search: '?fixture=empty&fixturePrompt=reject&fixtureFrames=workspace-first',

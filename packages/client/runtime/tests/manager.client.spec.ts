@@ -5,7 +5,9 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
+import type { TeamMessagePage, TeamView } from '@deepseek-ai/dsh-host-apiproxy/api'
 import { SessionManager } from '../src/client/sessions/manager.ts'
+import { resolveTeamView } from '../src/client/sessions/team-mirror.ts'
 import { FakeApiClient, deferred, err, fakeRemote, ok } from './fake-api.client.ts'
 import { entries, ev, plainTurn } from './event-script.client.ts'
 
@@ -1206,5 +1208,139 @@ describe('background-job mirror', () => {
     // The notifier batches on a microtask; the frame itself is already applied.
     await Promise.resolve()
     expect(seen).toHaveBeenCalled()
+  })
+})
+
+describe('team mirror', () => {
+  const LEADER = 'team-leader' as SessionId
+  const MEMBER = 'team-member' as SessionId
+
+  function teamView(leader: string, over: Partial<TeamView> = {}): TeamView {
+    return {
+      teamId: leader,
+      leaderSessionId: leader,
+      rosterMemberCount: 2,
+      members: [
+        { memberId: 'leader', name: 'leader', role: 'leader', sessionIds: [leader], status: 'bound', pendingControlCount: 0 },
+        { memberId: 'mate', name: 'mate', role: 'teammate', sessionIds: [MEMBER], status: 'running', pendingControlCount: 0 },
+      ],
+      delegations: [],
+      tasks: [],
+      approvals: [],
+      messages: [],
+      messageCount: 0,
+      ...over,
+    }
+  }
+
+  const teamFrame = (sessionId: SessionId, team: TeamView) =>
+    ({ rpcId: 'tt' as never, payload: { type: 'session/team', sessionId, team } as never })
+
+  it('merges whole snapshots last-wins, keyed by the view leader, never the frame session', () => {
+    const manager = new SessionManager(new FakeApiClient(), fakeRemote())
+    const first = teamView(LEADER)
+    // A bound-teammate baseline frame: the teammate's sessionId rides the
+    // frame, the view is the leader's.
+    manager.handleMuxEnvelope(teamFrame(MEMBER, first))
+    expect(manager.getTeamMirror()[LEADER]).toBe(first)
+    expect(LEADER in manager.getTeamMirror() && MEMBER in manager.getTeamMirror()).toBe(false)
+    expect(resolveTeamView(manager.getTeamMirror(), MEMBER)).toBe(first)
+    expect(resolveTeamView(manager.getTeamMirror(), LEADER)).toBe(first)
+    expect(resolveTeamView(manager.getTeamMirror(), S1)).toBeUndefined()
+
+    const second = teamView(LEADER, { rosterMemberCount: 3 })
+    manager.handleMuxEnvelope(teamFrame(LEADER, second))
+    expect(manager.getTeamMirror()[LEADER]).toBe(second)
+  })
+
+  it('keeps the record reference stable until a frame or a cold pull moves the mirror', async () => {
+    const api = new FakeApiClient()
+    api.onList = () => Promise.resolve(ok({ items: [summary(S1)] as never[] }))
+    const manager = new SessionManager(api, fakeRemote())
+    manager.handleMuxEnvelope(teamFrame(LEADER, teamView(LEADER)))
+    const before = manager.getTeamMirror()
+    await manager.refreshList() // unrelated list churn must not re-mint the record
+    expect(manager.getTeamMirror()).toBe(before)
+    manager.handleMuxEnvelope(teamFrame(LEADER, teamView(LEADER, { rosterMemberCount: 4 })))
+    expect(manager.getTeamMirror()).not.toBe(before)
+  })
+
+  it('re-baselines on session/subscribed: the entry the session owns clears, others stay', () => {
+    const manager = new SessionManager(new FakeApiClient(), fakeRemote())
+    const own = teamView(LEADER)
+    // A different leader's team whose member row binds a different session:
+    // subscribing MEMBER must not touch it.
+    const other = teamView('other-leader' as SessionId, {
+      members: [
+        { memberId: 'leader', name: 'leader', role: 'leader', sessionIds: ['other-leader'], status: 'bound', pendingControlCount: 0 },
+        { memberId: 'other-mate', name: 'other-mate', role: 'teammate', sessionIds: ['other-member' as SessionId], status: 'settled', pendingControlCount: 0 },
+      ],
+    })
+    manager.handleMuxEnvelope(teamFrame(LEADER, own))
+    manager.handleMuxEnvelope(teamFrame('other-leader' as SessionId, other))
+    // Subscribing the member clears the leader view that binds it.
+    manager.handleMuxEnvelope({ rpcId: 'sm' as never, payload: { type: 'session/subscribed', sessionId: MEMBER, lastSeq: 1 } as never })
+    expect(LEADER in manager.getTeamMirror()).toBe(false)
+    expect(manager.getTeamMirror()['other-leader' as SessionId]).toBe(other)
+    // Subscribing the leader itself clears its own key; an unrelated
+    // subscription touches nothing.
+    manager.handleMuxEnvelope(teamFrame(LEADER, own))
+    manager.handleMuxEnvelope({ rpcId: 'sl' as never, payload: { type: 'session/subscribed', sessionId: S1, lastSeq: 1 } as never })
+    expect(manager.getTeamMirror()[LEADER]).toBe(own)
+    manager.handleMuxEnvelope({ rpcId: 'so' as never, payload: { type: 'session/subscribed', sessionId: LEADER, lastSeq: 1 } as never })
+    expect(LEADER in manager.getTeamMirror()).toBe(false)
+    // A frame after the baseline re-establishes the entry.
+    manager.handleMuxEnvelope(teamFrame(LEADER, own))
+    expect(manager.getTeamMirror()[LEADER]).toBe(own)
+  })
+
+  it('drops the team a removed session led, while a removed member keeps the leader view', () => {
+    const manager = new SessionManager(new FakeApiClient(), fakeRemote())
+    const view = teamView(LEADER)
+    manager.handleMuxEnvelope(teamFrame(LEADER, view))
+    manager.handleHostEnvelope({ rpcId: 'rm' as never, payload: { type: 'host/session-removed', sessionId: MEMBER } as never })
+    expect(manager.getTeamMirror()[LEADER]).toBe(view)
+    manager.handleHostEnvelope({ rpcId: 'rl' as never, payload: { type: 'host/session-removed', sessionId: LEADER } as never })
+    expect(LEADER in manager.getTeamMirror()).toBe(false)
+  })
+
+  it('cold-pulls single-flight and anchors the response leader, not the requested session', async () => {
+    const api = new FakeApiClient()
+    const gate = deferred<Awaited<ReturnType<FakeApiClient['onTeamProjection']>>>()
+    api.onTeamProjection = () => gate.promise
+    const manager = new SessionManager(api, fakeRemote())
+    const first = manager.refreshTeam(MEMBER)
+    const second = manager.refreshTeam(MEMBER)
+    const third = manager.refreshTeam(LEADER)
+    expect(api.callsOf('team.projection')).toHaveLength(2) // per-session single flight
+    gate.resolve(ok(teamView(LEADER)))
+    await Promise.all([first, second, third])
+    expect(manager.getTeamMirror()[LEADER]).toBeDefined()
+    expect(MEMBER in manager.getTeamMirror()).toBe(false)
+    // A settled pull frees its slot: the next call reads again and a newer
+    // snapshot wins.
+    api.onTeamProjection = () => Promise.resolve(ok(teamView(LEADER, { rosterMemberCount: 9 })))
+    await manager.refreshTeam(MEMBER)
+    expect(manager.getTeamMirror()[LEADER]?.rosterMemberCount).toBe(9)
+  })
+
+  it('keeps mirror absence on business rejection, transport failure, and a page response', async () => {
+    const api = new FakeApiClient()
+    const manager = new SessionManager(api, fakeRemote())
+    await manager.refreshTeam(S1) // default stub: team-leader-unknown
+    expect(Object.keys(manager.getTeamMirror())).toHaveLength(0)
+
+    api.onTeamProjection = () => Promise.resolve(ok<TeamMessagePage>({
+      kind: 'message-page', teamId: 't', leaderSessionId: LEADER, messages: [], messageCount: 0,
+    }))
+    await manager.refreshTeam(S1)
+    expect(Object.keys(manager.getTeamMirror())).toHaveLength(0)
+
+    let boom: (() => void) | undefined
+    api.onTeamProjection = () => new Promise((_resolve, reject) => { boom = () => reject(new Error('wire down')) })
+    const pull = manager.refreshTeam(S1)
+    boom?.()
+    await pull
+    expect(Object.keys(manager.getTeamMirror())).toHaveLength(0)
   })
 })

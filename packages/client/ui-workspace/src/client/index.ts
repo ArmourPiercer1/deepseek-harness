@@ -10,7 +10,7 @@
  */
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ClientContext, TeamMirror } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
@@ -35,6 +35,18 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 /** Dictionary namespace owned by this plugin. */
 const NS = 'workspace'
 
+/** The empty mirror record: the static snapshot of the capability-off source below. */
+const EMPTY_TEAM_MIRROR: TeamMirror = {}
+/**
+ * Static absent source (never notifies): keeps the `useTeamMirror` hook
+ * surface alive when the sessions face carries no team wiring (test doubles);
+ * production always provides it, and the degraded mirror badges no session.
+ */
+const EMPTY_TEAM_MIRROR_SOURCE: HostObservable<TeamMirror> = {
+  getSnapshot: () => EMPTY_TEAM_MIRROR,
+  subscribe: () => () => {},
+}
+
 /**
  * Required services (cordis fiber inject). The target slots are declared by
  * the ui-sidebar / ui-conversation applies, whose activation order relative
@@ -55,6 +67,11 @@ export function apply(ctx: ClientContext): void {
   const connection = ctx.get('connection') as ConnectionHandle
   const hostDescription = connection.hostDescription
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
+
+  // The team mirror read rides the sessions service's team face (one
+  // publication point in the object layer, shared with the team view tab);
+  // a face without the capability degrades to the static empty source.
+  const teamMirror = ctx.sessions.teams?.mirror ?? EMPTY_TEAM_MIRROR_SOURCE
 
   const searchSessions: WorkspaceBrowserInjected['searchSessions'] = async (query, signal) => {
     const result = await ctx.sessions.search(query, signal)
@@ -102,7 +119,7 @@ export function apply(ctx: ClientContext): void {
       await ctx.workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
     },
     createWorkspace: input => ctx.workspaces.create(input),
-    hooks: { directoryFlow: browserFlowSource, hostDescription },
+    hooks: { directoryFlow: browserFlowSource, hostDescription, teamMirror },
   })
   const pickerInjected = (): WorkspacePickerInjected => ({
     createWorkspace: input => ctx.workspaces.create(input),

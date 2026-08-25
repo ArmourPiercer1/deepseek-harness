@@ -6,7 +6,7 @@ DeepSeek Harness 团队插件的 Web 团队配置与状态呈现界面。
 
 ## 角色
 
-团队插件的浏览器端 UI 插件。在设置面板中添加 Team 设置区块，展示 teammate 配置与使用说明；并在领导者会话中注册一个持久的团队面板 Chat 节点：由 `team/progress` 事件折叠出的任务进度看板，加上来自 subagent 目录的 teammate 状态行。
+团队插件的浏览器端 UI 插件。在设置面板中添加 Team 设置区块，展示 teammate 配置与使用说明；在领导者会话中注册一个持久的团队面板 Chat 节点：由 `team/progress` 事件折叠出的任务进度看板，加上来自 subagent 目录的 teammate 状态行；并注册全局可见的「团队」会话视图标签页，数据来自只读的按 leader 键控团队镜像（`ctx.sessions.teams`；冻结团队性判定位于 runtime 的 `resolveTeamView`）。
 
 ## 插槽注册
 
@@ -14,6 +14,11 @@ DeepSeek Harness 团队插件的 Web 团队配置与状态呈现界面。
 |---|---|---|
 | `settings.section` | list/root | 包含 teammate 列表和设置说明的 Team 配置区块 |
 | `conversation.chat.node` | keyed/session，key `team-panel` | 团队面板：任务进度看板与 teammate 状态行；当会话日志中出现 `team/progress` 事件或 `delegate_to_teammate` 工具调用后渲染 |
+| `conversation.view` | list/session，id `team`，order 20 | 团队标签页：非团队会话显示一行零态文案，团队会话在四段视图落地前显示占位内容 |
+
+## 团队视图数据
+
+标签页经其注册的 inject hooks 槽位读取 sessions 服务的团队镜像（`useTeamMirror`，按 leader 键控 `TeamView` 记录的只读选择钩子），并在标签页挂载且镜像缺席该会话时经 `ensureTeam`（单飞的 `team.projection` 一元调用）冷拉补齐。一个会话恰在它领导某个镜像视图、或任一镜像视图把它绑为成员（`members.sessionIds`）时才是团队会话；其余会话只渲染零态，不渲染任何其他结构。
 
 ## 队员状态语义
 

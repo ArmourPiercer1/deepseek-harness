@@ -19,13 +19,44 @@ import type {
 } from '../sessions/service.ts'
 import type { SessionFace } from './session.ts'
 import type { ObservableSnapshot } from './store.ts'
+import type { TeamMirror } from '../sessions/team-mirror.ts'
 
 export type { AgentContext } from '../agents/scope.ts'
+
+/**
+ * The read-only team mirror face: whole-snapshot team projection views keyed
+ * by their leader session, last-wins from `session/team` frames, with the
+ * cold unary read for a session the mirror does not cover yet.
+ */
+export interface TeamMirrorFace {
+  /**
+   * The leader-keyed mirror source (read face; the record reference is
+   * stable between changes, and there is no write API — wire truth is the
+   * object layer's alone).
+   */
+  readonly mirror: ObservableSnapshot<TeamMirror>
+  /**
+   * Cold-read one session's team projection into the mirror (single-flight
+   * per session; a bound-teammate request anchors its leader's view).
+   * Failures keep mirror absence.
+   * @param sessionId - the session whose team view the caller needs.
+   * @returns completion of the current or newly started cold read.
+   */
+  refresh(sessionId: SessionId): Promise<void>
+}
 
 /** The sessions-service face injected as `ctx.sessions`. */
 export interface ISessions {
   /** The useSessions standard feed (list rows + current selection; read face — writes stay inside the domain). */
   readonly list: ObservableSnapshot<SessionListState>
+  /**
+   * The read-only team mirror (capability member, the `useProjection`
+   * precedent: undefined means this sessions face carries no team wiring —
+   * fixture doubles — while production always provides it). Consumers read
+   * `mirror` through their registration's inject hooks compartment and
+   * cold-fill gaps through `refresh`.
+   */
+  readonly teams?: TeamMirrorFace
   /** Atomic current-session provide projection (the renderer host's `sessions.provideInfo` feed). */
   readonly currentProvideInfo: HostObservable<SessionMaybeProvideInfo>
   /**

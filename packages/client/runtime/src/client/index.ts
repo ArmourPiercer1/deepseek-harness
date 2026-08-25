@@ -55,6 +55,9 @@ export type {
 export type { Session } from './sessions/session.ts'
 export type { ISession, ProjectionsFace, SessionFace } from './contract/session.ts'
 export type { AgentContext, ISessions } from './contract/sessions.ts'
+export type { TeamMirrorFace } from './contract/sessions.ts'
+export { resolveTeamView } from './sessions/team-mirror.ts'
+export type { TeamMirror } from './sessions/team-mirror.ts'
 export type { IWorkspaces } from './contract/workspaces.ts'
 export type {
   SessionBinding, SessionListState, SessionProvideContribution, SessionProvideDescriptor, SessionSummary,
@@ -107,6 +110,9 @@ export type {
   ProjectionsBaseline, ProjectionValueStore, SessionProjectionMap, UseProjection,
 } from './sessions/projection-store.ts'
 export type { SessionId } from '@deepseek-ai/dsh-client-connection/client'
+// Wire view type re-export: team consumers type their faces off the runtime
+// mirror without a new apiproxy dependency edge.
+export type { TeamView } from '@deepseek-ai/dsh-host-apiproxy/api'
 
 /** Client-side Cordis context after declaration merging. */
 export type ClientContext = Context

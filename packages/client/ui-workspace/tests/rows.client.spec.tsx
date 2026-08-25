@@ -72,6 +72,45 @@ describe('workspace browser rows', () => {
     expect(screen.getByText('Flat Session').previousElementSibling?.querySelector('[data-state="ongoing"]')).toBeTruthy()
   })
 
+  it('renders the D5 team badge between the title and the time cell without breaking open', () => {
+    const node: SessionNode = {
+      id: sid('leader'), title: 'Leader Session', blank: false, running: false,
+      runningSubagentCount: 0, completed: false, updatedAt: 0,
+    }
+    const onOpen = vi.fn()
+    render(<SessionNodeItem node={node} currentId={undefined} now={0} onOpen={onOpen}
+      onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} teamMemberCount={3} t={t} />)
+    // The plural badge carries the verbatim roster count, directly after the title.
+    const badgeText = screen.getByText('3 个成员')
+    expect(badgeText.previousElementSibling).not.toBeNull()
+    expect(screen.getByText('Leader Session').nextElementSibling?.contains(badgeText)).toBe(true)
+    fireEvent.click(screen.getByRole('treeitem'))
+    expect(onOpen).toHaveBeenCalledWith(node.id)
+  })
+
+  it('renders the singular D5 badge and no badge without a count', () => {
+    const node: SessionNode = {
+      id: sid('solo'), title: 'Solo Leader', blank: false, running: false,
+      runningSubagentCount: 0, completed: false, updatedAt: 0,
+    }
+    const base = { node, currentId: undefined, now: 0, onOpen: vi.fn(),
+      onRename: vi.fn(), onFork: vi.fn(), onArchive: vi.fn() }
+    const view = render(<SessionNodeItem {...base} teamMemberCount={1} t={t} />)
+    expect(screen.getByText('1 个成员')).toBeTruthy()
+    view.rerender(<SessionNodeItem {...base} t={t} />)
+    expect(screen.queryByText(/个成员/)).toBeNull()
+  })
+
+  it('renders the D5 team badge in a search result heading', () => {
+    const result: SearchResultNode = {
+      id: sid('leader'), title: 'Leader', workspace: 'Workspace', running: false,
+      runningSubagentCount: 0, completed: false,
+    }
+    render(<SearchResultItem result={result} currentId={undefined} onOpen={vi.fn()} teamMemberCount={3} t={t} />)
+    const badge = screen.getByText('3 个成员')
+    expect(screen.getByText('Leader').nextElementSibling?.contains(badge)).toBe(true)
+  })
+
   it('renders a selected content-search row and opens only its session', () => {
     const onOpen = vi.fn()
     const result: SearchResultNode = {

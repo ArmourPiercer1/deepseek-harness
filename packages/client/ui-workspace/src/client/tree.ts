@@ -1,12 +1,14 @@
 /**
  * Derives the workspace browser tree from Host Workspace order and membership.
  * Unassigned Sessions trail under Ungrouped; only the selected blank Session
- * remains visible.
+ * remains visible. Teammate children are excluded from every top-level list
+ * surface through their parent catalog's `team:` labels (D4), and the team
+ * leader badge count is derived from the leader-keyed team mirror (D5/D23).
  */
 import {
   indexSubagentDescendants, type PendingInteractionStatus, type SessionId, type SessionListState,
   type SessionSearchResultItem, type SessionSummary, type SubagentDescendantSummary,
-  type WorkspaceId, type WorkspaceView,
+  type TeamMirror, type WorkspaceId, type WorkspaceView,
 } from '@deepseek-ai/dsh-client-runtime/client'
 
 /** Group key for Sessions outside every Workspace. */
@@ -109,14 +111,61 @@ function byRecency(a: SessionSummary, b: SessionSummary): number {
   return a.id < b.id ? -1 : 1
 }
 
+/** Label prefix the delegate tool mints on every teammate child session. */
+const TEAM_LABEL_PREFIX = 'team:'
+
+/**
+ * D4 frozen criterion: the ids of the teammate children no top-level list
+ * surface shows — any parent's subagent catalog listing a `kind: 'child'`
+ * entry whose label carries the `team:` prefix. Catalogs never yet pulled
+ * contribute nothing; ordinary subagent children keep their origin-based
+ * treatment (see {@link sessionVisible}).
+ * @param catalogs - direct durable catalogs from the session list snapshot.
+ * @returns the hidden session ids.
+ */
+export function teamChildSessionIds(catalogs: SessionListState['subagentsByParent']): ReadonlySet<SessionId> {
+  const hidden = new Set<SessionId>()
+  for (const catalog of Object.values(catalogs)) {
+    for (const entry of catalog.entries) {
+      if (entry.kind === 'child' && entry.label !== undefined && entry.label.startsWith(TEAM_LABEL_PREFIX)) {
+        hidden.add(entry.id)
+      }
+    }
+  }
+  return hidden
+}
+
+/**
+ * D5/D23 frozen criterion: for every session that leads a mirrored team view
+ * (a mirror key), the roster-bound member-definition count — leader included,
+ * taken verbatim from the projection's `rosterMemberCount`. Member-only and
+ * mirror-absent sessions have no entry.
+ * @param mirror - the leader-keyed team mirror snapshot.
+ * @returns the leader session id to its badge member count.
+ */
+export function teamLeaderCounts(mirror: TeamMirror): ReadonlyMap<SessionId, number> {
+  const counts = new Map<SessionId, number>()
+  for (const [leader, view] of Object.entries(mirror)) {
+    counts.set(leader as SessionId, view.rosterMemberCount)
+  }
+  return counts
+}
+
 /**
  * Ordinary sessions are visible; among blank sessions, only the current one
- * is visible. Subagent children use their parent header catalog; archived
+ * is visible. Subagent children use their parent header catalog; teammate
+ * children are hidden by their parent catalog's `team:` label (D4); archived
  * sessions are visible nowhere, while their accounting slots remain so
  * unarchiving restores position.
  */
-function sessionVisible(session: SessionSummary, current: SessionId | undefined, archived: ReadonlySet<SessionId>): boolean {
+function sessionVisible(
+  session: SessionSummary,
+  current: SessionId | undefined,
+  archived: ReadonlySet<SessionId>,
+  teamChildren: ReadonlySet<SessionId>,
+): boolean {
   return session.origin !== 'subagent'
+    && !teamChildren.has(session.id)
     && !archived.has(session.id)
     && (!session.blank || session.id === current)
 }
@@ -175,6 +224,7 @@ function groupByWorkspace(
   list: SessionListState,
   workspaces: readonly WorkspaceView[],
   archived: ReadonlySet<SessionId>,
+  teamChildren: ReadonlySet<SessionId>,
   ungroupedOrder: readonly string[] | undefined,
 ): Group[] {
   const groups: Group[] = []
@@ -185,7 +235,7 @@ function groupByWorkspace(
       const summary = list.byId[id]
       if (summary === undefined) continue // account may lead the list pull; the row appears when the summary lands
       accounted.add(id)
-      if (!sessionVisible(summary, list.current, archived)) continue
+      if (!sessionVisible(summary, list.current, archived, teamChildren)) continue
       members.push(summary)
     }
     groups.push(buildGroup(
@@ -196,7 +246,7 @@ function groupByWorkspace(
   const stray = list.ids
     .map(id => list.byId[id])
     .filter((s): s is SessionSummary =>
-      s !== undefined && !accounted.has(s.id) && sessionVisible(s, list.current, archived))
+      s !== undefined && !accounted.has(s.id) && sessionVisible(s, list.current, archived, teamChildren))
   if (stray.length > 0) {
     groups.push(buildGroup(
       UNGROUPED_KEY,
@@ -232,7 +282,8 @@ function sessionNode(
  *
  * Every group shows; sessions populate under expanded groups in the selected
  * local order. Blank sessions are excluded except for the selected
- * provisional New Session row; archived sessions are excluded everywhere.
+ * provisional New Session row; archived sessions are excluded everywhere;
+ * teammate children are excluded through the D4 catalog criterion.
  * Content search lives outside this derivation
  * (see {@link deriveSearchResults}).
  * @param list - sessions list snapshot (`current` feeds containsCurrent).
@@ -250,12 +301,13 @@ export function deriveGroups(
   const archived = new Set(archivedSessionIds)
   const expandedGroups = new Set(view.expandedGroups)
   const descendants = indexSubagentDescendants(list.byId)
+  const teamChildren = teamChildSessionIds(list.subagentsByParent)
   const currentGroup = list.current === undefined
     ? undefined
     : (workspaces.find(w => w.sessionIds.includes(list.current as SessionId))?.workspaceId as string | undefined)
         ?? UNGROUPED_KEY
   const groups: GroupNode[] = []
-  for (const g of groupByWorkspace(list, workspaces, archived, view.ungroupedOrder)) {
+  for (const g of groupByWorkspace(list, workspaces, archived, teamChildren, view.ungroupedOrder)) {
     const expanded = expandedGroups.has(g.key)
     groups.push({
       key: g.key,
@@ -275,7 +327,8 @@ export function deriveGroups(
 /**
  * Derive the flat session list ("In one list" mode): every session — fork
  * children included — as a top-level row, strictly newest-first. No grouping,
- * no parent/child adjacency. Content search lives outside this derivation
+ * no parent/child adjacency; teammate children are excluded through the D4
+ * catalog criterion. Content search lives outside this derivation
  * (see {@link deriveSearchResults}).
  * @param list - sessions list snapshot.
  * @param archivedSessionIds - registry-global archive set.
@@ -287,10 +340,11 @@ export function deriveFlat(
 ): SessionNode[] {
   const archived = new Set(archivedSessionIds)
   const descendants = indexSubagentDescendants(list.byId)
+  const teamChildren = teamChildSessionIds(list.subagentsByParent)
   const rows: SessionSummary[] = []
   for (const id of list.ids) {
     const s = list.byId[id]
-    if (s === undefined || !sessionVisible(s, list.current, archived)) continue
+    if (s === undefined || !sessionVisible(s, list.current, archived, teamChildren)) continue
     rows.push(s)
   }
   rows.sort(byRecency)
@@ -310,6 +364,8 @@ export interface RelativeTime {
  * Merge immediate title/Workspace substring matches with ranked Host content
  * matches. Local rows lead newest-first, content-only rows retain backend
  * order, and duplicate sessions receive the backend snippet in place.
+ * Teammate children are excluded through the D4 catalog criterion, the same
+ * visibility rule as the browsing surfaces.
  * @param list - session metadata authority.
  * @param workspaces - Workspace membership and display labels.
  * @param query - caller text; surrounding whitespace is ignored.
@@ -330,6 +386,7 @@ export function deriveSearchResults(
   if (q === '') return { items: [], hasMore: false }
   const archived = new Set(archivedSessionIds)
   const descendants = indexSubagentDescendants(list.byId)
+  const teamChildren = teamChildSessionIds(list.subagentsByParent)
 
   const workspaceBySession = new Map<SessionId, string>()
   for (const workspace of workspaces) {
@@ -349,7 +406,7 @@ export function deriveSearchResults(
     const summary = list.byId[id]
     // Blank placeholders never match a query (their canonical title displays
     // localized, so matching it would tie search to one language).
-    if (summary === undefined || summary.blank || !sessionVisible(summary, list.current, archived)) continue
+    if (summary === undefined || summary.blank || !sessionVisible(summary, list.current, archived, teamChildren)) continue
     if (
       sessionTitle(summary).toLowerCase().includes(q)
       || labelOf(summary).toLowerCase().includes(q)
@@ -369,7 +426,7 @@ export function deriveSearchResults(
   for (const summary of local) include(summary)
   for (const item of content.items) {
     const summary = list.byId[item.sessionId]
-    if (summary !== undefined && !summary.blank && sessionVisible(summary, list.current, archived)) include(summary)
+    if (summary !== undefined && !summary.blank && sessionVisible(summary, list.current, archived, teamChildren)) include(summary)
   }
 
   return {

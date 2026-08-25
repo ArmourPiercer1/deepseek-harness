@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import {
   HoverCard, IconArchiveOutline20, IconBranchOutline16, IconEditOutline16,
   IconEllipsisOutline16, IconFolderClose16, IconFolderOpen16, IconPlusOutline16,
-  IconTrashOutline16, IconTriangleRightFill14, Menu, StateDot,
+  IconTrashOutline16, IconTriangleRightFill14, IconUserOutline16, Menu, StateDot,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abbreviateHomePath } from '@deepseek-ai/dsh-client-runtime/client'
@@ -300,19 +300,42 @@ function SessionHoverContent({ node, now, t }: { node: SessionNode; now: number;
 }
 
 /**
+ * Team-leader badge (D5): the member glyph plus the roster-bound member count
+ * (leader included). A flex-none chip between the title and the trailing
+ * cells; absent for every non-leader row.
+ * @param props.count - roster member-definition count from the team mirror.
+ * @param props.t - Workspace-browser translation seat.
+ * @returns the badge chip.
+ */
+function TeamBadge({ count, t }: {
+  count: number
+  t: RowTranslate
+}) {
+  return (
+    <span className={css.teamBadge}>
+      <IconUserOutline16 size={12} />
+      <span>{t(count === 1 ? 'teamBadge.one' : 'teamBadge.other', { n: count })}</span>
+    </span>
+  )
+}
+
+/**
  * One flat search result: title, Workspace context, and optional content
  * excerpt. Search navigation opens the session only; it does not address an
  * event inside the conversation.
  * @param props.result - merged local/content search row.
  * @param props.currentId - selected session id.
  * @param props.onOpen - open the selected session.
+ * @param props.teamMemberCount - D5 badge count; the row leads a mirrored team.
  * @param props.t - Workspace-browser translation seat.
  * @returns the result button.
  */
-export function SearchResultItem({ result, currentId, onOpen, t }: {
+export function SearchResultItem({ result, currentId, onOpen, teamMemberCount, t }: {
   result: SearchResultNode
   currentId: string | undefined
   onOpen: (id: SearchResultNode['id']) => void
+  /** The session leads a mirrored team view: the roster member count for its badge. */
+  teamMemberCount?: number | undefined
   t: RowTranslate
 }) {
   const selected = result.id === currentId
@@ -333,6 +356,9 @@ export function SearchResultItem({ result, currentId, onOpen, t }: {
           )}
         </span>
         <span className={css.searchResultTitle}>{result.title}</span>
+        {teamMemberCount !== undefined && (
+          <TeamBadge count={teamMemberCount} t={t} />
+        )}
       </span>
       <span className={css.searchResultMeta}>
         <span className={css.searchResultWorkspace}>{result.workspace}</span>
@@ -356,10 +382,11 @@ export function SearchResultItem({ result, currentId, onOpen, t }: {
  * @param props.onArchive - archive a session by id.
  * @param props.drag - optional draggable-row wiring.
  * @param props.flat - omit the empty status slot in the hierarchy-free flat list.
+ * @param props.teamMemberCount - D5 badge count; the session leads a mirrored team.
  * @param props.t - the browser root's locale seat.
  * @returns the session row.
  */
-export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork, onArchive, drag, flat = false, t }: {
+export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork, onArchive, drag, flat = false, teamMemberCount, t }: {
   node: SessionNode
   currentId: string | undefined
   now: number
@@ -374,6 +401,8 @@ export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork
   drag?: RowDragProps | undefined
   /** The row is rendered without a parent Workspace header. */
   flat?: boolean | undefined
+  /** The session leads a mirrored team view: the roster member count for its badge. */
+  teamMemberCount?: number | undefined
   t: RowTranslate
 }) {
   const row = node
@@ -437,6 +466,9 @@ export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork
         </span>
       )}
       <span className={css.title}>{title}</span>
+      {teamMemberCount !== undefined && (
+        <TeamBadge count={teamMemberCount} t={t} />
+      )}
       {/* A blank New Session row is a provisional placeholder: nothing has
           happened in it yet, so a "now" timestamp and the row verbs
           (rename/fork/archive) would all act on content that does not

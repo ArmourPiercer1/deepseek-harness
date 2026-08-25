@@ -14,6 +14,9 @@ export type TeamKey =
   | 'field.tools'
   | 'field.mcp'
   | 'field.context'
+  | 'view.team'
+  | 'view.zero'
+  | 'view.placeholder'
   | 'panel.title'
   | 'panel.teammates'
   | 'panel.teammates.empty'
@@ -45,6 +48,9 @@ export const zh: Record<TeamKey, string> = {
   'field.tools': '工具',
   'field.mcp': 'MCP 服务器',
   'field.context': '上下文策略',
+  'view.team': '团队',
+  'view.zero': '当前会话未加入任何团队',
+  'view.placeholder': '团队视图建设中',
   'panel.title': '团队',
   'panel.teammates': '队员',
   'panel.teammates.empty': '暂无队员会话',
@@ -77,6 +83,9 @@ export const en: Record<TeamKey, string> = {
   'field.tools': 'Tools',
   'field.mcp': 'MCP Servers',
   'field.context': 'Context Policy',
+  'view.team': 'Team',
+  'view.zero': 'This session is not part of a team',
+  'view.placeholder': 'Team view under construction',
   'panel.title': 'Team',
   'panel.teammates': 'Teammates',
   'panel.teammates.empty': 'No teammate sessions yet',

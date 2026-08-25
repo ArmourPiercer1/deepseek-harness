@@ -9,6 +9,7 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Team"
 - text: Reply with the single word LIGHTHOUSE and stop. {{clock}}
 - button "Copy":
   - img

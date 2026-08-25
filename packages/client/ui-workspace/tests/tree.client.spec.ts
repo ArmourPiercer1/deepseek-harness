@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type {
-  SessionId, SessionListState, SessionSummary, WorkspaceId, WorkspaceView,
+  SessionId, SessionListState, SessionSummary, SubagentCatalogSnapshot, TeamMirror,
+  TeamView, WorkspaceId, WorkspaceView,
 } from '@deepseek-ai/dsh-client-runtime/client'
 import {
-  deriveFlat, deriveGroups, deriveSearchResults, workspaceLabel, relativeTime,
-  UNGROUPED_KEY, UNGROUPED_LABEL,
+  deriveFlat, deriveGroups, deriveSearchResults, teamChildSessionIds, teamLeaderCounts,
+  workspaceLabel, relativeTime, UNGROUPED_KEY, UNGROUPED_LABEL,
 } from '../src/client/tree.ts'
 import { createWorkspaceViewStore } from '../src/client/stores.ts'
 
@@ -30,6 +31,25 @@ const view = (expandedGroups: readonly string[] = [], ungroupedOrder?: readonly 
 })
 const noArchive: readonly SessionId[] = []
 const archived = (...ids: string[]): readonly SessionId[] => ids.map(sid)
+const teamCatalog = (entries: SubagentCatalogSnapshot['entries']): SubagentCatalogSnapshot => ({
+  entries, parentAvailable: true, state: 'ready', error: null,
+})
+const teamWireView = (leader: string, rosterMemberCount: number, memberIds: readonly string[] = []): TeamView => ({
+  teamId: leader,
+  leaderSessionId: leader,
+  rosterMemberCount,
+  members: [
+    { memberId: 'leader', name: 'leader', role: 'leader', sessionIds: [leader], status: 'bound', pendingControlCount: 0 },
+    ...memberIds.map(id => ({
+      memberId: id, name: id, role: 'teammate' as const, sessionIds: [id], status: 'bound' as const, pendingControlCount: 0,
+    })),
+  ],
+  delegations: [],
+  tasks: [],
+  approvals: [],
+  messages: [],
+  messageCount: 0,
+})
 
 describe('deriveGroups', () => {
   it('keeps Host Workspace and sessionIds order without Client recency sorting', () => {
@@ -388,6 +408,116 @@ describe('deriveSearchResults', () => {
     expect(backendMore.hasMore).toBe(true)
     expect(deriveSearchResults(list(), [], '  ', noArchive, { items: [], hasMore: true }, 3))
       .toEqual({ items: [], hasMore: false })
+  })
+})
+
+describe('teamChildSessionIds (D4 catalog criterion)', () => {
+  it('collects only team:-labeled child entries across every parent catalog', () => {
+    const team = sid('team-child')
+    const plain = sid('plain-child')
+    const unlabeled = sid('unlabeled')
+    const diagnosed = sid('diagnosed')
+    const hidden = teamChildSessionIds({
+      [sid('p1')]: teamCatalog([
+        { kind: 'child', id: team, activity: 'running', hasChildren: false, mode: 'continuable', label: 'team:alpha' },
+        { kind: 'child', id: plain, activity: 'inactive', hasChildren: false, mode: 'continuable', label: 'alpha' },
+        { kind: 'child', id: unlabeled, activity: 'inactive', hasChildren: false, mode: 'one-shot' },
+        { kind: 'diagnostic', id: diagnosed, reason: 'corrupt' },
+      ]),
+      [sid('p2')]: teamCatalog([]),
+    })
+    expect(hidden.has(team)).toBe(true)
+    expect(hidden.has(plain)).toBe(false)
+    expect(hidden.has(unlabeled)).toBe(false)
+    expect(hidden.has(diagnosed)).toBe(false)
+    expect(teamChildSessionIds({}).size).toBe(0)
+  })
+})
+
+describe('D4 teammate hiding', () => {
+  const leader = summary('leader', 1)
+
+  it('hides a teammate child from every list surface through its parent catalog label', () => {
+    const mate = { ...summary('mate', 3), parentId: leader.id, origin: 'subagent' as const }
+    const sessions = {
+      ...list(leader, mate),
+      current: leader.id,
+      subagentsByParent: {
+        [leader.id]: teamCatalog([
+          { kind: 'child', id: mate.id, activity: 'running', hasChildren: false, mode: 'continuable', label: 'team:mate' },
+        ]),
+      },
+    }
+    const groups = deriveGroups(sessions, [workspace('first', ['leader', 'mate'])], noArchive, view(['first']))
+    expect(groups[0]!.sessions.map(node => node.id)).toEqual([leader.id])
+    expect(groups[0]!.sessionCount).toBe(1)
+    expect(deriveFlat(sessions, noArchive).map(node => node.id)).toEqual([leader.id])
+    // Neither a title match nor a backend content hit surfaces the teammate.
+    const search = deriveSearchResults(
+      sessions, [workspace('first', ['leader', 'mate'])], 'mate', noArchive,
+      { items: [{ sessionId: mate.id, snippet: 'needle body' }], hasMore: false }, 10,
+    )
+    expect(search.items).toEqual([])
+  })
+
+  it('hides a catalog-labeled teammate even without the subagent origin flag', () => {
+    const catalogMate = summary('catalog-mate', 4)
+    const sessions = {
+      ...list(leader, catalogMate),
+      subagentsByParent: {
+        [leader.id]: teamCatalog([
+          { kind: 'child', id: catalogMate.id, activity: 'inactive', hasChildren: false, mode: 'continuable', label: 'team:scout' },
+        ]),
+      },
+    }
+    expect(deriveFlat(sessions, noArchive).map(node => node.id)).toEqual([leader.id])
+    const strayGroups = deriveGroups(sessions, [], noArchive, view([UNGROUPED_KEY]))
+    expect(strayGroups[0]!.sessions.map(node => node.id)).toEqual([leader.id])
+  })
+
+  it('keeps ordinary subagent, unlabeled one-shot, and diagnostic children on their existing treatment', () => {
+    const regular = { ...summary('regular', 5), parentId: leader.id, origin: 'subagent' as const }
+    const oneShot = summary('one-shot', 6)
+    const broken = summary('broken', 7)
+    const sessions = {
+      ...list(leader, regular, oneShot, broken),
+      subagentsByParent: {
+        [leader.id]: teamCatalog([
+          { kind: 'child', id: regular.id, activity: 'running', hasChildren: false, mode: 'continuable', label: 'analysis' },
+          { kind: 'child', id: oneShot.id, activity: 'inactive', hasChildren: false, mode: 'one-shot' },
+          { kind: 'diagnostic', id: broken.id, reason: 'corrupt' },
+        ]),
+      },
+    }
+    // Origin-based hiding is unchanged; unlabeled children and diagnostics show.
+    const groups = deriveGroups(
+      sessions, [workspace('first', ['leader', 'regular', 'one-shot', 'broken'])], noArchive, view(['first']),
+    )
+    expect(groups[0]!.sessions.map(node => node.id)).toEqual([leader.id, oneShot.id, broken.id])
+    expect(deriveFlat(sessions, noArchive).map(node => node.id)).toEqual([broken.id, oneShot.id, leader.id])
+    expect(deriveSearchResults(
+      sessions, [workspace('first', ['leader', 'regular', 'one-shot', 'broken'])], 'one-shot', noArchive,
+      { items: [], hasMore: false }, 10,
+    ).items.map(item => item.id)).toEqual([oneShot.id])
+  })
+})
+
+describe('teamLeaderCounts (D5/D23 badge counts)', () => {
+  it('maps every mirror key to its verbatim rosterMemberCount', () => {
+    const mirror: TeamMirror = { [sid('leader')]: teamWireView('leader', 3) }
+    const counts = teamLeaderCounts(mirror)
+    expect(counts.size).toBe(1)
+    expect(counts.get(sid('leader'))).toBe(3)
+  })
+
+  it('returns an empty map for an empty mirror', () => {
+    expect(teamLeaderCounts({}).size).toBe(0)
+  })
+
+  it('gives no entry to a session that appears only as a bound member', () => {
+    const counts = teamLeaderCounts({ [sid('leader')]: teamWireView('leader', 2, ['mate']) })
+    expect(counts.has(sid('leader'))).toBe(true)
+    expect(counts.has(sid('mate'))).toBe(false)
   })
 })
 
