@@ -25,7 +25,11 @@ export const TEAM_LABEL_PREFIX = 'team:'
 /** Tool name whose leader-log calls record one delegation span. */
 const DELEGATE_TOOL = 'delegate_to_teammate'
 
-/** Fallback member id for the leader row when the roster defines no leader. */
+/**
+ * Fallback member id for the leader row when the roster defines no leader.
+ * When a teammate definition already takes the id, the leader row takes the
+ * leader session id instead so member ids stay unique.
+ */
 const LEADER_FALLBACK_ID = 'leader'
 
 /** One candidate team child's complete log plus its durable creation label. */
@@ -316,7 +320,9 @@ export function foldTeamView(
   const rosterIds = new Set(roster.map(definition => String(definition.id)))
   const rosterLeader = roster.find(definition => definition.role === 'leader')
   const leaderAction = lastToolName.get(leaderSessionId)
-  const leaderMemberId = String(rosterLeader?.id ?? LEADER_FALLBACK_ID)
+  const leaderMemberId = rosterLeader !== undefined
+    ? String(rosterLeader.id)
+    : rosterIds.has(LEADER_FALLBACK_ID) ? leaderId : LEADER_FALLBACK_ID
   const members: TeamMemberView[] = [{
     memberId: leaderMemberId,
     name: rosterLeader?.name ?? LEADER_FALLBACK_ID,

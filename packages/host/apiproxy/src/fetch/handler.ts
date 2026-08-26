@@ -105,19 +105,22 @@ const UNARY_ROUTES: UnaryRoutes = {
   'subagent.history': { schema: subagentHistoryRequestSchema, invoke: (api, r, signal) => api.subagents.history(r, signal) },
   'subagent.prompt': { schema: subagentPromptRequestSchema, invoke: (api, r, signal) => api.subagents.prompt(r, signal) },
   'subagent.interrupt': { schema: subagentInterruptRequestSchema, invoke: (api, r) => api.subagents.interrupt(r) },
-  // The `?.` arm is unreachable through the shipped gateway (createApiProxy
-  // always provides the domain); it answers a structurally-typed impl that
-  // omits the member with the same code the impl itself would.
+  // The seat is required on every shipped carrier (createApiProxy always
+  // provides the domain); the assertion declares that a structurally-typed
+  // carrier may omit it, which the guard answers with the same code the impl
+  // itself would.
   'team.projection': {
     schema: teamProjectionRequestSchema,
-    invoke: (api, r, signal) => api.team?.projection(r, signal)
-      ?? Promise.resolve({
+    invoke: (api, r, signal) => {
+      const team = api.team as ApiProxy['team'] | undefined
+      return team?.projection(r, signal) ?? Promise.resolve({
         rpcId: r.rpcId,
         result: {
           ok: false as const,
           error: { code: 'team-unavailable' as const, message: 'the team domain is not implemented by this gateway', details: {} },
         },
-      }),
+      })
+    },
   },
   'host.describe': { schema: hostDescribeRequestSchema, invoke: (api, r) => api.host.describe(r) },
   'host.pickDirectory': { schema: hostPickDirectoryRequestSchema, invoke: (api, r, signal) => api.host.pickDirectory(r, signal) },

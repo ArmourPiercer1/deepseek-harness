@@ -1090,7 +1090,7 @@ describe('FixtureApiClient (protocol-level fake carrier)', () => {
       ok: false,
       error: {
         code: 'team-leader-unknown',
-        message: expect.any(String),
+        message: 'the fixture world stages no team session',
         details: { leaderSessionId: 'fx-alpha' },
       },
     })

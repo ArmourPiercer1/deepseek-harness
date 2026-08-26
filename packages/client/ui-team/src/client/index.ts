@@ -142,8 +142,8 @@ export function apply(ctx: ClientContext): void {
   const openTeamTab = (): void => {
     const label = t('view.team')
     for (const tab of document.querySelectorAll<HTMLElement>('[role="tablist"] [role="tab"]')) {
-      // String(): a text-less tab reads as "null" and can never match the label.
-      if (String(tab.textContent).trim() === label) {
+      // A text-less tab has an empty textContent and can never match the label.
+      if (tab.textContent.trim() === label) {
         tab.click()
         return
       }

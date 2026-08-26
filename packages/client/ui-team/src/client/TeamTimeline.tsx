@@ -116,6 +116,7 @@ export function TeamTimeline({
         1,
         Math.max(0, (event.clientX - rect.left) / Math.max(1, rect.width)),
       )
+      /* jscpd:ignore-start -- D8d: home-grown wheel-zoom math paralleling TrajectoryTimeline (cross-package import forbidden) */
       const nextDuration = Math.min(
         fullDuration,
         Math.max(MINIMUM_ZOOM_MS, domainDuration * Math.exp(event.deltaY * WHEEL_ZOOM_EXPONENT)),
@@ -134,6 +135,7 @@ export function TeamTimeline({
     root.addEventListener('wheel', onWheel, { passive: false })
     return () => { root.removeEventListener('wheel', onWheel) }
   }, [domainDuration, domainStart, fullDuration, model])
+  /* jscpd:ignore-end */
 
   if (model === null) {
     return (
@@ -175,6 +177,7 @@ export function TeamTimeline({
     if (pan === null || pan.pointerId !== event.pointerId) return
     if (Math.abs(event.clientX - pan.anchorClientX) >= MINIMUM_DRAG_PX) pan.moved = true
     const rect = event.currentTarget.getBoundingClientRect()
+    /* jscpd:ignore-start -- D8d: home-grown pan math paralleling TrajectoryTimeline (cross-package import forbidden) */
     const delta = (event.clientX - pan.anchorClientX) / Math.max(1, rect.width)
     const nextStart = Math.min(
       Math.max(pan.anchorStart - delta * domainDuration, model.start),
@@ -182,6 +185,7 @@ export function TeamTimeline({
     )
     setViewport({ start: nextStart, end: nextStart + domainDuration })
   }
+  /* jscpd:ignore-end */
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const pan = panRef.current

@@ -245,7 +245,7 @@ describe('TeamFeed', () => {
     expect(feedRows(container)).toHaveLength(500)
     expect(page).not.toHaveBeenCalled()
     fireEvent.click(screen.getByText('加载更早'))
-    await waitFor(() => expect(feedRows(container)).toHaveLength(620))
+    await waitFor(() => { expect(feedRows(container)).toHaveLength(620) })
     expect(page).toHaveBeenCalledTimes(1)
     expect(page).toHaveBeenCalledWith(
       LEADER,
@@ -284,9 +284,9 @@ describe('TeamFeed', () => {
     fireEvent.click(screen.getByText('加载更早'))
     fireEvent.click(screen.getByText('加载更早'))
     fireEvent.click(screen.getByText('加载更早')) // wire page 1
-    await waitFor(() => expect(feedRows(container)).toHaveLength(700))
+    await waitFor(() => { expect(feedRows(container)).toHaveLength(700) })
     fireEvent.click(screen.getByText('加载更早')) // wire page 2
-    await waitFor(() => expect(feedRows(container)).toHaveLength(900))
+    await waitFor(() => { expect(feedRows(container)).toHaveLength(900) })
     expect(page).toHaveBeenCalledTimes(2)
     expect(page.mock.calls[0]?.[1]).toEqual({ at: 1000, sessionId: 'a-s', seq: 0 })
     // The second anchor is page 1's oldest message, not the snapshot's.
@@ -319,7 +319,7 @@ describe('TeamFeed', () => {
         messageCount: 620,
       },
     })
-    await waitFor(() => expect(feedRows(container)).toHaveLength(620))
+    await waitFor(() => { expect(feedRows(container)).toHaveLength(620) })
     expect(page).toHaveBeenCalledTimes(1)
   })
 
@@ -344,7 +344,7 @@ describe('TeamFeed', () => {
     fireEvent.click(screen.getByText('加载更早'))
     fireEvent.click(screen.getByText('加载更早'))
     fireEvent.click(screen.getByText('加载更早'))
-    await waitFor(() => expect(container.querySelector('[data-feed-load-failed]')).not.toBeNull())
+    await waitFor(() => { expect(container.querySelector('[data-feed-load-failed]')).not.toBeNull() })
     // The failure is loud: the error text plus the counted remainder, and
     // the rows stay exactly where the snapshot left them.
     expect(container.querySelector('[data-feed-load-failed]')?.textContent)
@@ -354,7 +354,7 @@ describe('TeamFeed', () => {
     expect(feedRows(container)).toHaveLength(500)
     // The retry succeeds: the note clears and the rows append.
     fireEvent.click(screen.getByText('加载更早'))
-    await waitFor(() => expect(feedRows(container)).toHaveLength(620))
+    await waitFor(() => { expect(feedRows(container)).toHaveLength(620) })
     expect(container.querySelector('[data-feed-load-failed]')).toBeNull()
     expect(container.querySelector('[data-feed-truncated]')).toBeNull()
     expect(screen.queryByText('加载更早')).toBeNull()
@@ -370,7 +370,7 @@ describe('TeamFeed', () => {
     fireEvent.click(screen.getByText('加载更早'))
     fireEvent.click(screen.getByText('加载更早'))
     fireEvent.click(screen.getByText('加载更早'))
-    await waitFor(() => expect(container.querySelector('[data-feed-load-failed]')?.textContent).toBe('更早消息加载失败：wire down'))
+    await waitFor(() => { expect(container.querySelector('[data-feed-load-failed]')?.textContent).toBe('更早消息加载失败：wire down') })
     expect(container.querySelector('[data-feed-truncated]')?.textContent)
       .toBe('还有 120 条更早的消息暂无法加载')
     expect(feedRows(container)).toHaveLength(500)
@@ -392,7 +392,7 @@ describe('TeamFeed', () => {
     fireEvent.click(screen.getByText('加载更早'))
     fireEvent.click(screen.getByText('加载更早'))
     fireEvent.click(screen.getByText('加载更早'))
-    await waitFor(() => expect(feedRows(result.container)).toHaveLength(620))
+    await waitFor(() => { expect(feedRows(result.container)).toHaveLength(620) })
     // A newer frame: five more messages, the same depth count applies to
     // the re-derived window (620 ≥ the new 505-row stream, so the whole
     // stream renders) — the fetched pages are gone with the old seam.
@@ -491,7 +491,7 @@ describe('TeamFeed', () => {
     fireEvent.click(screen.getByText('Load earlier'))
     expect(feedRows(container)).toHaveLength(251)
     fireEvent.click(screen.getByText('Load earlier'))
-    await waitFor(() => expect(container.querySelector('[data-feed-load-failed]')).not.toBeNull())
+    await waitFor(() => { expect(container.querySelector('[data-feed-load-failed]')).not.toBeNull() })
     expect(container.querySelector('[data-feed-load-failed]')?.textContent)
       .toBe('Loading earlier messages failed: page not programmed')
     expect(container.querySelector('[data-feed-truncated]')?.textContent)

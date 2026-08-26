@@ -458,6 +458,22 @@ describe('roster join semantics', () => {
     expect(view.members[0]).toMatchObject({ memberId: 'leader', role: 'leader', sessionIds: ['leader'] })
   })
 
+  it('gives the leader row the leader session id when a teammate definition takes the fallback id', () => {
+    const corpus: TeamCorpus = {
+      leader: { header: header({ id: sid('lead-1') }), events: [] },
+      children: [boundChild('child-r', 'leader', 'team:Rogue')],
+    }
+    const view = foldTeamView(sid('lead-1'), corpus, roster([
+      { id: 'leader', name: 'Rogue' },
+      { id: 'backend' },
+    ]), neverRunning).view
+    expect(view.members[0]).toMatchObject({ memberId: 'lead-1', name: 'leader', role: 'leader', sessionIds: ['lead-1'] })
+    expect(view.members.find(member => member.memberId === 'leader')).toMatchObject({
+      role: 'teammate', name: 'Rogue', status: 'bound', sessionIds: ['child-r'],
+    })
+    expect(view.members.map(member => member.memberId)).toEqual(['lead-1', 'leader', 'backend'])
+  })
+
   it('keeps bound-but-derostered members with the label-derived display name', () => {
     const corpus: TeamCorpus = {
       leader: { header: header({ id: sid('leader') }), events: [] },

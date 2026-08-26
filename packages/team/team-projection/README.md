@@ -14,7 +14,7 @@ Host-plane service package behind the web bundle's host roster (apiproxy is the 
 |---|---|
 | `get(leaderSessionId, signal?)` | Full snapshot; cold path reads persistence, never resumes an Agent. The requested session must pass the [team-ness gate](#team-ness-gate); a failure throws `TeamProjectionError('LEADER_UNKNOWN')` — loud, never a synthetic empty team. |
 | `project(leaderSessionId, signal?, options?)` | Snapshot form unchanged; with `options.messagesBefore` returns a `TeamMessagePage` strictly earlier than the anchor (`limit` in `[1, MESSAGE_CAP]`, default `MESSAGE_CAP`; an anchor naming no folded message is `ANCHOR_UNKNOWN`, never a silent fallback). Same gate as `get`. |
-| `onChanged(listener)` | One whole-snapshot publication per committed leader state (last-wins); triggers are the team event families, leader `delegate_to_teammate` / settlement notices, team-child creation/disposal, and `agent/status` (which recomputes only a leader whose snapshot this process has already folded). |
+| `onChanged(listener)` | One whole-snapshot publication per committed leader state (last-wins); triggers are the team event families, leader `delegate_to_teammate` / settlement notices, team-child creation/disposal, and `agent/status` (which recomputes only a leader whose snapshot this process has already folded). A trigger that lands after an in-flight fold's log read re-arms exactly one follow-up publication, so no committed trigger is dropped; a fold that dies before its log read (the store is gone) arms nothing. |
 
 ## Team-ness gate
 
@@ -31,7 +31,7 @@ A session passing no criterion is rejected with `TeamProjectionError('LEADER_UNK
 - Child logs fold only their own suffix (`seq >= header.seedLength`), so a forked child replaying ancestor history never double-counts.
 - Message global order is `(event.time, recording sessionId, seq)`; the snapshot carries the most recent `MESSAGE_CAP = 500` plus the total `messageCount`.
 - Delegation spans pair a `delegate_to_teammate` call with the member's next `subagent-settled` notice (FIFO per member); an open span's `childSessionId` cold-resolves to the member's latest bound session.
-- `members` is the enabled roster union the corpus bindings: never-bound teammates publish `status: 'unbound'` rows; bound-but-derostered members survive with the label-derived display name; the leader row anchors `sessionIds: [leaderSessionId]` and never reads `settled`.
+- `members` is the enabled roster union the corpus bindings: never-bound teammates publish `status: 'unbound'` rows; bound-but-derostered members survive with the label-derived display name; the leader row anchors `sessionIds: [leaderSessionId]` and never reads `settled`, and its `memberId` is the roster leader entry's id, falling back to `'leader'` when the roster defines no leader — or to the leader session id when a non-leader roster entry already occupies `'leader'`.
 
 ## Model Experience
 

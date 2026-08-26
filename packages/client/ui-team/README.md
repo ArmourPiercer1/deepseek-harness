@@ -56,7 +56,7 @@ No effect.
 ## Known Limitations and Deferred Work
 
 - Settings section is read-only for MVP; inline teammate definition editing is deferred.
-- The dock's team-tab jump degrades to a DOM activation of the tab ring's team button (the chat store's view action is ui-conversation-private); a sanctioned cross-plugin view-switch verb would replace it.
+- The dock's team-tab jump degrades to a DOM activation of the tab ring's team button — the first whole-page tab-list tab whose text matches the team tab's label — because the chat store's view action is ui-conversation-private and no sanctioned cross-plugin view-switch verb exists; a same-labeled tab in any other tab list wins the match, and when no tab ring is rendered at all (a blank conversation hides its header) the jump is a silent no-op.
 - An inline marker's cross-session click degrades to the session switch: the corresponding row of the target session sits at a log seq of the other log space and is unnameable from the row's own session, so only the row's own session gets the in-flow anchor.
 - An inline decision marker renders inert (disabled, no click) while the mirror carries no approval pair for its request id — e.g. before the first snapshot frame — so the click is unavailable rather than misdirected.
 - The event stream's wire pages are tab-local: a new snapshot frame resets the fetched pages (the load depth is kept and the window re-derives over the new frame), so already-paged older messages must be paged again — a retained page's seam with the snapshot window would otherwise open a gap.

@@ -1270,10 +1270,10 @@ describe('team mirror', () => {
     const own = teamView(LEADER)
     // A different leader's team whose member row binds a different session:
     // subscribing MEMBER must not touch it.
-    const other = teamView('other-leader' as SessionId, {
+    const other = teamView('other-leader', {
       members: [
         { memberId: 'leader', name: 'leader', role: 'leader', sessionIds: ['other-leader'], status: 'bound', pendingControlCount: 0 },
-        { memberId: 'other-mate', name: 'other-mate', role: 'teammate', sessionIds: ['other-member' as SessionId], status: 'settled', pendingControlCount: 0 },
+        { memberId: 'other-mate', name: 'other-mate', role: 'teammate', sessionIds: ['other-member'], status: 'settled', pendingControlCount: 0 },
       ],
     })
     manager.handleMuxEnvelope(teamFrame(LEADER, own))
@@ -1337,7 +1337,7 @@ describe('team mirror', () => {
     expect(Object.keys(manager.getTeamMirror())).toHaveLength(0)
 
     let boom: (() => void) | undefined
-    api.onTeamProjection = () => new Promise((_resolve, reject) => { boom = () => reject(new Error('wire down')) })
+    api.onTeamProjection = () => new Promise((_resolve, reject) => { boom = () => { reject(new Error('wire down')) } })
     const pull = manager.refreshTeam(S1)
     boom?.()
     await pull

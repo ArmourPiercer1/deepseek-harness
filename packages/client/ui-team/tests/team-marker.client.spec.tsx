@@ -99,7 +99,7 @@ function segments(container: HTMLElement) {
 }
 
 /** jsdom ships no scrollIntoView; the anchor click needs the spy target. */
-function mockScroll(): ReturnType<typeof vi.spyOn> {
+function mockScroll() {
   if (typeof Element.prototype.scrollIntoView !== 'function') {
     Element.prototype.scrollIntoView = (): void => {}
   }

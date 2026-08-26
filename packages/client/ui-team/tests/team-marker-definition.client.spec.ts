@@ -111,7 +111,7 @@ describe('team-marker Conversation Definition', () => {
     expect(teamMarkerId(decision(3, 'r1', 'deny').event)).toBe('decision:r1:3')
     expect(teamMarkerId(message(4, 'a', 'b', 'hi').event)).toBe('message:4')
     // match() narrows before calling; a non-matching event names a definition bug.
-    expect(() => teamMarkerId(at(5, 'turn/start', { turn: 1 }).event)).toThrowError(/unmatched event type/)
+    expect(() => teamMarkerId(at(5, 'turn/start', { turn: 1 }).event)).toThrow(/unmatched event type/)
   })
 
   it('matches only the four team event types, one unique start per event', () => {
@@ -285,7 +285,7 @@ describe('team-marker Conversation Definition', () => {
   })
 
   it('refuses to fold an event the match cannot produce', () => {
-    expect(() => teamMarkerData(at(1, 'turn/start', { turn: 1 }).event)).toThrowError(/unmatched event type/)
+    expect(() => teamMarkerData(at(1, 'turn/start', { turn: 1 }).event)).toThrow(/unmatched event type/)
   })
 })
 
@@ -368,8 +368,8 @@ describe('D16 jump target resolution', () => {
 
 describe('whole-card removal', () => {
   it('no longer contributes the team-panel renderer kind to the ChatNodeKind merge', () => {
-    expectTypeOf<'team-panel'>().not.toMatchTypeOf<ChatNodeKind>()
-    expectTypeOf<'team-marker'>().toMatchTypeOf<ChatNodeKind>()
+    expectTypeOf<'team-panel'>().not.toExtend<ChatNodeKind>()
+    expectTypeOf<'team-marker'>().toExtend<ChatNodeKind>()
     expect(teamMarkerDefinition.kind).toBe('team-marker')
     expect(teamMarkerDefinition.target).toBe('chat')
   })

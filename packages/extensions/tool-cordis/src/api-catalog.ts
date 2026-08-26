@@ -383,8 +383,8 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Root interface of the unified API. New client-request domain = one new file pair + one field here + one map row.',
     methods: [
       {
-        signature: 'team?: TeamApi',
-        description: 'Optional until the P3a browser consumer lands: the host gateway always provides it, while in-repo fixture impls in packages that do not yet consume the domain keep compiling; the consuming change makes it required together with its store.',
+        signature: 'team: TeamApi',
+        description: 'Read-only team projection domain. The gateway always provides it: a deployment without the `teamProjection` service answers `projection` with the explicit `team-unavailable` code instead of omitting the domain.',
         parameters: [],
       },
       {

@@ -330,7 +330,7 @@ interface HistoryMessage {
 }
 
 function historyOf(options: GenerateOptions): readonly HistoryMessage[] {
-  return options.messages as unknown as readonly HistoryMessage[]
+  return options.messages
 }
 
 function textOf(message: HistoryMessage): string {
@@ -381,7 +381,7 @@ function pendingApprovals(messages: readonly HistoryMessage[]): { requestId: str
     && message.content.some(block => block.type === 'tool-call' && block.name === 'team_control'
       && (() => {
         try {
-          return JSON.parse(block.arguments ?? '{}').request_id === requestId
+          return (JSON.parse(block.arguments ?? '{}') as { request_id?: unknown }).request_id === requestId
         } catch {
           return false
         }
@@ -403,7 +403,7 @@ function delegatedTo(messages: readonly HistoryMessage[], memberId: string): boo
     && message.content.some(block => block.type === 'tool-call' && block.name === 'delegate_to_teammate'
       && (() => {
         try {
-          return JSON.parse(block.arguments ?? '{}').teammate_id === memberId
+          return (JSON.parse(block.arguments ?? '{}') as { teammate_id?: unknown }).teammate_id === memberId
         } catch {
           return false
         }

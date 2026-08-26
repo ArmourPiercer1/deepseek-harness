@@ -121,7 +121,7 @@ function makePendingHost(options: { evaluate?: (view: { name: string }) => Permi
     // The hook reaches `create` through async awaits, so wait the entry into
     // existence before settling it.
     async settle(decision: string) {
-      await vi.waitFor(() => expect(teamControl.create).toHaveBeenCalledTimes(1))
+      await vi.waitFor(() => { expect(teamControl.create).toHaveBeenCalledTimes(1) })
       settleImpl!(decision)
     },
   }
@@ -254,7 +254,7 @@ describe('installApprovalHook — evaluation at the executor', () => {
     installApprovalHook(child as unknown as Context, host.ctx, bound())
     const next = vi.fn().mockResolvedValue({ kind: 'allow' })
     await listener()(exec('probe'), next)
-    expect((host.permission.compile as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
+    expect(host.permission.compile.mock.calls).toHaveLength(1)
     expect(host.logger.error).toHaveBeenCalledWith('error: rule "Bash(broken" was dropped')
     expect(host.logger.warn).toHaveBeenCalledWith('note: a benign warning')
   })
@@ -267,7 +267,7 @@ describe('installApprovalHook — evaluation at the executor', () => {
     const next = vi.fn()
     await listener()(exec('probe'), next)
     await listener()(exec('probe'), next)
-    expect((host.permission.compile as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
+    expect(host.permission.compile.mock.calls).toHaveLength(1)
   })
 })
 
@@ -284,11 +284,12 @@ describe('installApprovalHook — ask at the leader rendezvous', () => {
     expect(host.teamControl.create).toHaveBeenCalledTimes(1)
     expect(host.subagents.reportFrom).toHaveBeenCalledTimes(1)
     const wakeContent = host.subagents.reportFrom.mock.calls[0]![1] as { text: string }[]
+    const createArgs = host.teamControl.create.mock.calls[0]! as [string, { requestId: string }]
     expect(wakeContent[0]?.text)
       .toBe('Teammate "teammate-1" requests approval to run "probe" (request '
-        + host.teamControl.create.mock.calls[0]![1].requestId + '). Review with team_control.')
+        + createArgs[1].requestId + '). Review with team_control.')
     expect(events.filter(event => event.type === 'team/control-request')).toHaveLength(1)
-    const request = events.find(event => event.type === 'team/control-request')!.data as Record<string, unknown>
+    const request = events.find(event => event.type === 'team/control-request')!.data
     expect(request).toMatchObject({ toolName: 'probe', reason: 'requested by rule "probe" (teammate)', arguments: { note: 'x' } })
     expect(audits(events)).toEqual([
       {
@@ -428,7 +429,7 @@ describe('installApprovalHook — ask at the leader rendezvous', () => {
     const next = vi.fn().mockResolvedValue({ kind: 'allow' })
     const result = await listener()({ name: 'probe', arguments: 'plain', signal: signal() }, next)
     expect(result).toEqual({ kind: 'allow' })
-    const request = events.find(event => event.type === 'team/control-request')!.data as Record<string, unknown>
+    const request = events.find(event => event.type === 'team/control-request')!.data
     expect(request).not.toHaveProperty('arguments')
   })
 })
@@ -466,7 +467,7 @@ describe('installApprovalHook — abort race', () => {
     const controller = new AbortController()
     const next = vi.fn()
     const pending = listener()({ name: 'probe', arguments: {}, signal: controller.signal }, next)
-    await vi.waitFor(() => expect(host.subagents.reportFrom).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => { expect(host.subagents.reportFrom).toHaveBeenCalledTimes(1) })
     // Let the wakeup settle and the abort listener register.
     await new Promise((resolve) => { setImmediate(resolve) })
     controller.abort()

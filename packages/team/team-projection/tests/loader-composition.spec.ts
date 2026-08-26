@@ -187,7 +187,7 @@ function makeAgent(ctx: Context, session: Session, status: Agent['status']): Age
     followup: () => {}, steer: () => {}, inject: () => {}, send: () => {}, cancel() {},
     runMaintenance: task => task(new AbortController().signal),
     whenIdle: () => Promise.resolve(),
-  } as Agent
+  }
 }
 
 /** Flip the scripted agent's live status and emit the transition on ctx. */
@@ -269,6 +269,51 @@ describe('team projection real Loader composition', () => {
     expect(published.views.size).toBe(1)
     expect(published.views.get('leader-session')?.members.find(member => member.memberId === 'backend'))
       .toMatchObject({ status: 'bound', sessionIds: ['child-session'] })
+    dispose()
+  }, 30_000)
+
+  it('re-arms one follow-up publish when a commit lands after the in-flight fold read its log', async () => {
+    const ctx = await boot()
+    leaderSession(ctx)
+    childSession(ctx, 'backend')
+    // Park the fold in the subagent directory read — after its log copy — so a
+    // commit can land exactly in the re-arm window.
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    let directoryReads = 0
+    ctx.provide('subagents', {
+      listChildren: (parent: SessionId) => {
+        if (parent !== LEADER) return Promise.resolve([])
+        directoryReads += 1
+        return gate.then(() => [
+          {
+            kind: 'child' as const,
+            id: CHILD,
+            mode: 'continuable' as const,
+            label: 'team:Backend',
+            activity: 'inactive' as const,
+            hasChildren: false,
+          },
+        ])
+      },
+    })
+    const snapshots: string[][] = []
+    const dispose = ctx.teamProjection.onChanged((leaderId, view) => {
+      if (String(leaderId) === 'leader-session') snapshots.push(view.messages.map(message => message.message))
+    })
+    // The created+bind trigger pair coalesces into one rebuild, which is now
+    // parked inside the directory read (its log copy predates the commit below).
+    await vi.waitFor(() => { expect(directoryReads).toBe(1) })
+
+    const session = ctx.sessions.get(LEADER)
+    if (session === undefined) throw new Error('leader missing')
+    say(session, 'captain', 'backend', 'late')
+    release()
+    await vi.waitFor(() => { expect(snapshots.length).toBe(2) })
+    // The first publish folded before the commit; exactly one follow-up covers it.
+    expect(snapshots[0]).toEqual([])
+    expect(snapshots[1]).toEqual(['late'])
+    expect(directoryReads).toBe(2)
     dispose()
   }, 30_000)
 

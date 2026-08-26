@@ -199,7 +199,7 @@ export function parseTeamMemberMarkdown(
     if (typeof rawPermissionMode !== 'string' || !VALID_PERMISSION_MODES.includes(rawPermissionMode)) {
       diagnostics.push({
         severity: 'error',
-        message: `permissionMode must be 'enforce' or 'default' (got ${String(rawPermissionMode)}; 'readonly' and 'bypass' are reserved and unimplemented)`,
+        message: `permissionMode must be 'enforce' or 'default' (got ${typeof rawPermissionMode === 'string' ? rawPermissionMode : JSON.stringify(rawPermissionMode)}; 'readonly' and 'bypass' are reserved and unimplemented)`,
       })
       return { diagnostics }
     }

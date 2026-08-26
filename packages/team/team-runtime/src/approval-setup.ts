@@ -28,10 +28,10 @@ import type {
   CompiledPolicy,
   PermissionContext,
   PermissionDecision,
-  PermissionDecisionData,
   PermissionMode,
   ToolCallView,
 } from '@deepseek-ai/dsh-permission'
+import { appendPermissionDecision, toPermissionDecisionData } from '@deepseek-ai/dsh-permission-engine'
 import { assertNever } from '@deepseek-ai/dsh-llm'
 import { getRecoveredRuleLayers } from './rule-layers.ts'
 
@@ -41,35 +41,6 @@ import { getRecoveredRuleLayers } from './rule-layers.ts'
  * engine dropped, everything else is a benign warning.
  */
 const ERROR_DIAGNOSTIC = 'error: '
-
-/**
- * Build the durable audit payload from a decision and the inputs that produced
- * it, mirroring the engine's audit mapping: the outcome, tool, and mode are
- * always present; the acting member, the deciding rule's raw string and layer,
- * and the deny cause are present only when they apply. Optional fields are
- * omitted (not set to `undefined`) to satisfy `exactOptionalPropertyTypes`.
- *
- * @param call - the tool call that was decided.
- * @param context - the mode and acting member the decision resolved under.
- * @param decision - the decision, from `evaluate` or from the
- *   leader-unreachable settlement of an `ask`.
- * @returns the audit record to append to the session log.
- */
-function toDecisionData(
-  call: ToolCallView,
-  context: PermissionContext,
-  decision: PermissionDecision,
-): PermissionDecisionData {
-  const matched = decision.matchedRule
-  return {
-    toolName: call.name,
-    decision: decision.kind,
-    mode: context.mode,
-    ...(context.memberId !== undefined ? { memberId: context.memberId } : {}),
-    ...(matched !== undefined ? { matchedRuleRaw: matched.raw, layer: matched.layer } : {}),
-    ...(decision.kind === 'deny' && decision.cause !== undefined ? { cause: decision.cause } : {}),
-  }
-}
 
 /**
  * Suspend an `ask` decision at the leader rendezvous: log the control request,
@@ -102,7 +73,7 @@ async function requestLeaderDecision(
   const leaderSessionId = child.session.header.parentSession
   const unavailable = (): PreToolDecision => {
     child.session.append('permission/decision', {
-      ...toDecisionData(view, context, decision),
+      ...toPermissionDecisionData(view, context, decision),
       decision: 'deny',
       cause: 'leader_unreachable',
     })
@@ -144,7 +115,7 @@ async function requestLeaderDecision(
   } catch {
     registry.decide(leaderSessionId, requestId, 'deny')
     child.session.append('permission/decision', {
-      ...toDecisionData(view, context, decision),
+      ...toPermissionDecisionData(view, context, decision),
       decision: 'deny',
       cause: 'leader_unreachable',
     })
@@ -260,11 +231,11 @@ export function installApprovalHook(
         homeDir: process.env['DSH_HOME'] ?? '',
         cwd: session.header.cwd ?? '',
       },
-      memberId: bound.memberId as string,
+      memberId: bound.memberId,
     }
     const view: ToolCallView = { name: exec.name, arguments: exec.arguments as JsonValue }
     const decision = permission.evaluate(view, context)
-    session.append('permission/decision', toDecisionData(view, context, decision))
+    appendPermissionDecision(session, toPermissionDecisionData(view, context, decision))
 
     if (decision.kind === 'allow') return next()
     if (decision.kind === 'deny') return { kind: 'deny', reason: decision.reason }

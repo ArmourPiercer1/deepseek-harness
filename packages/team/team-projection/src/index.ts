@@ -67,6 +67,8 @@ export default class TeamProjectionService extends Service {
   private readonly listeners = new Set<TeamProjectionListener>()
   /** in-flight rebuilds keyed by leader, so one microtask coalesces to one publish. */
   private readonly pending = new Map<SessionId, Promise<void>>()
+  /** Monotonic count of rebuild triggers per leader (every trigger and re-arm increments it). */
+  private readonly triggerSeq = new Map<SessionId, number>()
   /**
    * Leaders whose view this process has folded at least once (published or
    * served): team facts are log facts, so the set only grows. The running
@@ -256,13 +258,20 @@ export default class TeamProjectionService extends Service {
    * roster. A successful fold registers the anchor as an active leader for
    * the agent/status trigger.
    */
-  private async fold(requestedId: SessionId, signal?: AbortSignal): Promise<TeamFold> {
+  private async fold(
+    requestedId: SessionId,
+    signal?: AbortSignal,
+    readStart?: { seq?: number },
+  ): Promise<TeamFold> {
     const sessions = this.ctx.get('sessions')
     const persistence = this.ctx.get('sessionPersistence')
     const subagents = this.ctx.get('subagents')
     if (sessions === undefined) {
       throw new TeamProjectionError('LEADER_UNKNOWN', 'the session store is not composed')
     }
+    // The re-arm watermark: the trigger sequence at this fold's log-read start —
+    // a trigger after it is not in the fold's copy, one at or before it is.
+    if (readStart !== undefined) readStart.seq = this.triggerSeq.get(requestedId) ?? 0
     const requestedLog = await this.readSession(requestedId, persistence, signal)
     if (requestedLog === undefined) {
       throw new TeamProjectionError(
@@ -297,16 +306,23 @@ export default class TeamProjectionService extends Service {
   /**
    * Rebuild one leader and publish the snapshot. Coalesced per leader: callers
    * inside one committing tick share a single rebuild (the fold defers one
-   * microtask so every event of that tick is in the log before it reads), and
-   * the publish happens exactly once after the fold settles.
+   * microtask so every event of that tick is in the log before it reads). A
+   * trigger that lands after the in-flight fold's log read re-arms exactly one
+   * follow-up after the fold settles, so a commit that missed the fold's copy
+   * is always covered by a later publish, while triggers already in the copy
+   * cost no extra broadcast.
    */
-  private async rebuild(leaderSessionId: SessionId): Promise<void> {
+  private rebuild(leaderSessionId: SessionId): Promise<void> {
+    this.triggerSeq.set(leaderSessionId, (this.triggerSeq.get(leaderSessionId) ?? 0) + 1)
     const existing = this.pending.get(leaderSessionId)
     if (existing !== undefined) return existing
     const task = (async () => {
+      // The trigger sequence this fold observes at its log-read start; undefined
+      // when the fold threw before reaching it (the session store unavailable).
+      const readStart: { seq?: number } = {}
       try {
         await Promise.resolve()
-        const { view } = await this.fold(leaderSessionId)
+        const { view } = await this.fold(leaderSessionId, undefined, readStart)
         for (const listener of this.listeners) listener(leaderSessionId, view)
       } catch {
         // An unknown session, a session that fails the team-ness gate (the
@@ -314,6 +330,14 @@ export default class TeamProjectionService extends Service {
         // to publish; the fold stays available to callers that name a team.
       } finally {
         this.pending.delete(leaderSessionId)
+        // A trigger recorded after this fold's log-read start missed its copy —
+        // exactly one follow-up covers it. Triggers at or before the start are
+        // in the copy (an append precedes its emit), so covered triggers cost no
+        // publish; a fold that never reached its read start arms nothing, which
+        // keeps a disposed store from re-arming forever.
+        if (readStart.seq !== undefined && (this.triggerSeq.get(leaderSessionId) ?? 0) > readStart.seq) {
+          void this.rebuild(leaderSessionId)
+        }
       }
     })()
     this.pending.set(leaderSessionId, task)
