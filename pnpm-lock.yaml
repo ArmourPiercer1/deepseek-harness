@@ -8196,6 +8196,15 @@ importers:
       '@deepseek-ai/dsh-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@deepseek-ai/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@deepseek-ai/dsh-permission':
+        specifier: workspace:^
+        version: link:../../permission/permission
+      '@deepseek-ai/dsh-permission-engine':
+        specifier: workspace:^
+        version: link:../../permission/permission-engine
       '@deepseek-ai/dsh-session':
         specifier: workspace:^
         version: link:../../core/session

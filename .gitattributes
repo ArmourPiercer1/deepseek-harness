@@ -11,3 +11,8 @@
 # Pairing records are generated from the three confirmed owner-blob pairs.
 # The worktree-local installer registers the fail-closed driver command.
 *.i18n.yaml merge=dsh-translation-pairing
+
+# User-authored plan documents in docs/active-plans/ intentionally use
+# Markdown two-space hard line breaks (trailing whitespace) in header
+# blocks; the pre-commit `git diff --cached --check` must not reject them.
+docs/active-plans/*.md whitespace=-blank-at-eol
