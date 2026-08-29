@@ -10,10 +10,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import type {
-  RpcResult, SessionId, TeamMessagePage, TeamMirror, TeamView as TeamWireView,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import { resolveTeamView } from '@deepseek-ai/dsh-client-runtime/client'
+  ClientResult, TeamMessagePage, TeamMirror, TeamView as TeamWireView,
+} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { TeamView, type TeamViewProps } from '../src/client/TeamView.tsx'
+import { resolveTeamView } from '../src/client/team-view-model.ts'
 import { zh } from '../src/client/locales.ts'
 
 afterEach(cleanup)
@@ -73,7 +74,7 @@ describe('resolveTeamView (frozen team-ness derivation)', () => {
 
 /** An unprogrammed pagination stub fails loud so an accidental page call is visible. */
 function unprogrammedPage(): TeamViewProps['pageTeamMessages'] {
-  return vi.fn(async (): Promise<RpcResult<TeamMessagePage>> => ({
+  return vi.fn(async (): Promise<ClientResult<TeamMessagePage>> => ({
     ok: false,
     error: { code: 'internal', message: 'page not programmed', details: {} },
   }))
@@ -81,6 +82,9 @@ function unprogrammedPage(): TeamViewProps['pageTeamMessages'] {
 
 function viewProps(mirror: TeamMirror, sessionId: SessionId = LEADER): TeamViewProps {
   return {
+    viewRequest: null,
+    openView: () => {},
+    completeViewRequest: () => {},
     sessionId,
     useSession: (() => undefined) as TeamViewProps['useSession'],
     useProjection: () => undefined,
@@ -88,6 +92,10 @@ function viewProps(mirror: TeamMirror, sessionId: SessionId = LEADER): TeamViewP
     inputActions: { setDraft: () => {}, submit: () => {} } as unknown as TeamViewProps['inputActions'],
     useSessions: () => { throw new Error('unused') },
     useWorkspaces: () => { throw new Error('unused') },
+    useSessionPendingInteraction: () => { throw new Error('unused') },
+    useConversation: () => { throw new Error('unused') },
+    useChat: () => { throw new Error('unused') },
+    useTrajectory: () => { throw new Error('unused') },
     useTeamMirror: selector => selector(mirror),
     ensureTeam: vi.fn(() => Promise.resolve()),
     pageTeamMessages: unprogrammedPage(),

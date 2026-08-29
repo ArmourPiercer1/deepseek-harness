@@ -13,7 +13,7 @@ import {
 } from 'react'
 import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import type { TeamView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { TeamView } from '@deepseek-ai/dsh-api-session-controller/client'
 import {
   deriveTeamTimeline, formatTeamClock, formatTeamDuration, teamTimelineTicks,
   type TeamTimelineSpan,

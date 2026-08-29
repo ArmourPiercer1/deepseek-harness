@@ -9,7 +9,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -75,7 +75,7 @@ describe('tool-permission-guard lifecycle', () => {
 
     // The engine is not composed yet: the guard delegates and the call proceeds.
     const before = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('order-1'),
+      signal: new AbortController().signal, callId: ToolCallId('order-1'),
       name: 'probe', arguments: { action: 'secret-data' },
     })
     expect(before.isError).toBe(false)
@@ -85,7 +85,7 @@ describe('tool-permission-guard lifecycle', () => {
     // inactive forever.
     await ctx.plugin(PermissionEngine)
     const after = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('order-2'),
+      signal: new AbortController().signal, callId: ToolCallId('order-2'),
       name: 'probe', arguments: { action: 'secret-data' },
     })
     expect(after.isError).toBe(true)
@@ -99,14 +99,14 @@ describe('tool-permission-guard lifecycle', () => {
     const fiber = await ctx.plugin(ToolPermissionGuard, GUARD_CONFIG)
 
     const denied = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('hmr-1'),
+      signal: new AbortController().signal, callId: ToolCallId('hmr-1'),
       name: 'probe', arguments: { action: 'secret-data' },
     })
     expect(denied.isError).toBe(true)
 
     await fiber.dispose()
     const afterDispose = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('hmr-2'),
+      signal: new AbortController().signal, callId: ToolCallId('hmr-2'),
       name: 'probe', arguments: { action: 'secret-data' },
     })
     expect(afterDispose.isError).toBe(false)
@@ -125,7 +125,7 @@ describe('tool-permission-guard lifecycle', () => {
     ctx.on('tools/pre-execute', async (_exec, _next) => ({ kind: 'deny', reason: 'downstream policy' }))
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('delegate-1'),
+      signal: new AbortController().signal, callId: ToolCallId('delegate-1'),
       name: 'probe', arguments: { action: 'anything' },
     })
     expect(result.isError).toBe(true)
@@ -143,7 +143,7 @@ describe('tool-permission-guard lifecycle', () => {
 
     const agent = probeAgent('guard-edge-ask')
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('edge-ask-1'),
+      signal: new AbortController().signal, callId: ToolCallId('edge-ask-1'),
       name: 'probe', arguments: { action: 'anything' }, agent,
     })
 
@@ -166,7 +166,7 @@ describe('tool-permission-guard lifecycle', () => {
 
     const agent = probeAgent('guard-edge-deny')
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('edge-deny-1'),
+      signal: new AbortController().signal, callId: ToolCallId('edge-deny-1'),
       name: 'probe', arguments: { action: 'anything' }, agent,
     })
 

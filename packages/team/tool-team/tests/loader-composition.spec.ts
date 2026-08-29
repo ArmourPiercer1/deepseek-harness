@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -107,7 +107,7 @@ describe('tool-team real Loader composition through cordis.yml', () => {
     }])
     const result = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('list'),
+      callId: ToolCallId('list'),
       name: 'list_teammates',
       arguments: {},
       agent: agent(ctx),
@@ -121,7 +121,7 @@ describe('tool-team real Loader composition through cordis.yml', () => {
     const owner = agent(ctx)
     const result = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('progress'),
+      callId: ToolCallId('progress'),
       name: 'team_progress',
       arguments: { action: 'update', task_id: 't1', subject: 'Build', status: 'in_progress' },
       agent: owner,
@@ -139,7 +139,7 @@ describe('tool-team real Loader composition through cordis.yml', () => {
 
     const list = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('ctl-list'),
+      callId: ToolCallId('ctl-list'),
       name: 'team_control',
       arguments: { action: 'list' },
       agent: owner,
@@ -149,7 +149,7 @@ describe('tool-team real Loader composition through cordis.yml', () => {
 
     const decide = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('ctl-decide'),
+      callId: ToolCallId('ctl-decide'),
       name: 'team_control',
       arguments: { action: 'decide', request_id: 'req-1', decision: 'allow_once' },
       agent: owner,
@@ -162,7 +162,7 @@ describe('tool-team real Loader composition through cordis.yml', () => {
     })
     const decidePlan = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('ctl-decide-plan'),
+      callId: ToolCallId('ctl-decide-plan'),
       name: 'team_control',
       arguments: { action: 'decide', request_id: 'req-plan', decision: 'approve_plan' },
       agent: owner,
@@ -175,7 +175,7 @@ describe('tool-team real Loader composition through cordis.yml', () => {
     })
     const decideRev = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('ctl-decide-rev'),
+      callId: ToolCallId('ctl-decide-rev'),
       name: 'team_control',
       arguments: { action: 'decide', request_id: 'req-rev', decision: 'request_revision', reason: 'needs more steps' },
       agent: owner,

@@ -12,9 +12,8 @@ import { resolve } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import { afterEach, describe, expect, it } from 'vitest'
-import {
-  ConversationEventRegistry, SlotRegistry,
-} from '@deepseek-ai/dsh-client-runtime/client'
+import { UiConversation } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 
 const PLUGIN_ID = '@deepseek-ai/dsh-client-ui-team'
 
@@ -50,7 +49,6 @@ describe('tsdown client artifact', () => {
     const modules = new Map<string, unknown>([
       ['react', await import('react')],
       ['react/jsx-runtime', await import('react/jsx-runtime')],
-      ['@deepseek-ai/dsh-client-runtime/client', await import('@deepseek-ai/dsh-client-runtime/client')],
       ['@deepseek-ai/dsh-client-ui-primitives', await import('@deepseek-ai/dsh-client-ui-primitives')],
     ])
     const exports = handoff!.factory((spec) => {
@@ -64,14 +62,20 @@ describe('tsdown client artifact', () => {
     const { handoff, exports } = await loadArtifact()
     expect(handoff.id).toBe(PLUGIN_ID)
     expect(exports.apply).toBeTypeOf('function')
-    expect(exports.inject).toEqual(['slots', 'locale', 'conversationEvents', 'sessions'])
+    expect(exports.inject).toEqual(['slots', 'locale', 'uiConversation', 'sessions'])
   })
 
   it.skipIf(code === undefined)('mounted as an object plugin, apply registers the definition and keyed renderer on the real ring', async () => {
     const { exports } = await loadArtifact()
     const ctx = new Context()
     await ctx.plugin(SlotRegistry).await()
-    await ctx.plugin(ConversationEventRegistry).await()
+    // Paging is session-owned; this registration-only probe never renders the
+    // entry, so the binding stays deliberately empty. The locale plugin backs
+    // the locale-aware labels (its settings scope needs a connection handle
+    // and the Host-facing settings/remote seams).
+    const sessions = { binding: () => undefined }
+    ctx.provide('sessions', sessions)
+    const events = new UiConversation(ctx, sessions as never).events
     // The conversation entry's role: the ring must be declared before riders land.
     ctx.slots.register({
       name: 'root',
@@ -81,11 +85,6 @@ describe('tsdown client artifact', () => {
         'settings.section': { kind: 'list', scope: 'root' },
       },
     } as never, (_p: { renderSlot?: unknown }) => null)
-    // Paging is session-owned; this registration-only probe never renders the
-    // entry, so the binding stays deliberately empty. The locale plugin backs
-    // the locale-aware labels (its settings scope needs a connection handle
-    // and the Host-facing settings/remote seams).
-    ctx.provide('sessions', { binding: () => undefined })
     ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
     ctx.provide('remote', { $on: () => () => {} } as never)
     ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
@@ -94,7 +93,6 @@ describe('tsdown client artifact', () => {
     const fiber = ctx.plugin(exports as { apply: (ctx: Context) => void })
     await fiber.await()
     const slots = ctx.slots
-    const events = ctx.conversationEvents
     expect(slots.entries('conversation.chat.node')).toHaveLength(1)
     expect(slots.entries('conversation.chat.node')[0]?.options.key).toBe('team-marker')
     expect(slots.entries('settings.section')).toHaveLength(1)

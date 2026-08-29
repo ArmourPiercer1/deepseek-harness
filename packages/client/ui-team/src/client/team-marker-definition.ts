@@ -18,9 +18,9 @@
  * event cannot land under a unique id, and replaying the same event is
  * byte-identical). No hot-path window scan: the State carries the whole row.
  */
-import type {
-  ChatConversationViewNode, ConversationNodeDefinition, ConversationEventInput,
-} from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionEventLike } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ChatConversationViewNode } from '@deepseek-ai/dsh-client-ui-chat/client'
+import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
 // Type-only: pulls the team SessionEventMap merge (all four event types) and
 // the payload types into this program.
 import type {
@@ -96,7 +96,7 @@ export interface TeamMarkerMessageData extends TeamMarkerDataBase {
   readonly message: string
 }
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@deepseek-ai/dsh-client-ui-chat/client' {
   interface ChatNodeDataMap {
     /** One compact inline marker row: a single durable team event. */
     'team-marker': TeamMarkerChatData
@@ -113,7 +113,7 @@ declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
  * @throws when the event is not one of the four marker types — the caller
  *   (`match`) narrows before calling, so a throw names a definition bug.
  */
-export function teamMarkerId(event: ConversationEventInput['event']): string {
+export function teamMarkerId(event: SessionEventLike): string {
   switch (event.type) {
     case 'team/progress':
       return `progress:${event.data.taskId}:${event.seq}`
@@ -137,7 +137,7 @@ export function teamMarkerId(event: ConversationEventInput['event']): string {
  * @param event - a matched team event (one of the four marker types).
  * @returns the row state for the event.
  */
-export function teamMarkerData(event: ConversationEventInput['event']): TeamMarkerChatData {
+export function teamMarkerData(event: SessionEventLike): TeamMarkerChatData {
   switch (event.type) {
     case 'team/progress': {
       const data = event.data

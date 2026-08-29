@@ -15,14 +15,16 @@
  * bar above the input (the thin collapsed readout plus the expandable
  * compact member/task lists, team sessions only, with the team-tab jump).
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type {
-  ObservableSnapshot, SessionId, TeamMirror,
-} from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { TeamMirror } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 // Type-only: pulls the settings slot declarations and ctx.settingsScope.
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale into this program.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+// Type-only: pulls the renderer-owned ctx.slots declaration into this program.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: the conversation slot declarations and the ChatNodeDataMap merge point.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { TeamSettingsSection } from './TeamSettingsSection.tsx'
@@ -61,7 +63,7 @@ const EMPTY_TEAM_MIRROR_SOURCE: ObservableSnapshot<TeamMirror> = {
 }
 
 /** Services required by the team UI plugin. */
-export const inject = ['slots', 'locale', 'conversationEvents', 'sessions']
+export const inject = ['slots', 'locale', 'uiConversation', 'sessions']
 
 /**
  * Client plugin body: register the Team settings section, the team panel
@@ -81,7 +83,7 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
   }, TeamSettingsSection))
 
-  ctx.conversationEvents.register(teamMarkerDefinition)
+  ctx.uiConversation.events.register(teamMarkerDefinition)
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
     name: 'conversation.chat.node',
     key: 'team-marker',

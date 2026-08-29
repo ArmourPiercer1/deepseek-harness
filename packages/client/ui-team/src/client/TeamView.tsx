@@ -13,9 +13,11 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 // ui-conversation's session body) must be in the program for this props type.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {
-  MessageAnchor, ObservableSnapshot, RpcResult, SessionId, TeamMessagePage, TeamMirror,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import { resolveTeamView } from '@deepseek-ai/dsh-client-runtime/client'
+  ClientResult, MessageAnchor, TeamMessagePage, TeamMirror,
+} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import { resolveTeamView } from './team-view-model.ts'
 import { TeamTimeline } from './TeamTimeline.tsx'
 import { TeamMembers } from './TeamMembers.tsx'
 import { TeamTasks } from './TeamTasks.tsx'
@@ -43,7 +45,7 @@ export interface TeamViewInjected {
     leaderSessionId: string,
     anchor: MessageAnchor,
     limit?: number,
-  ) => Promise<RpcResult<TeamMessagePage>>
+  ) => Promise<ClientResult<TeamMessagePage>>
   /** Switch the current session to the named member session (D9 navigation). */
   openSession: (sessionId: string) => void
 }

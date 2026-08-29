@@ -15,7 +15,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import type { MessageAnchor, RpcResult, TeamMessagePage, TeamView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ClientResult, MessageAnchor, TeamMessagePage, TeamView } from '@deepseek-ai/dsh-api-session-controller/client'
 import { TeamFeed } from '../src/client/TeamFeed.tsx'
 import { formatTeamClock } from '../src/client/team-timeline-model.ts'
 import { en, zh } from '../src/client/locales.ts'
@@ -77,7 +77,7 @@ type PageStub = Parameters<typeof TeamFeed>[0]['pageMessages']
 
 /** An unprogrammed page stub fails loud so an accidental wire call is visible. */
 function unprogrammedPage(): PageStub {
-  return vi.fn(async (): Promise<RpcResult<TeamMessagePage>> => ({
+  return vi.fn(async (): Promise<ClientResult<TeamMessagePage>> => ({
     ok: false,
     error: { code: 'internal', message: 'page not programmed', details: {} },
   }))
@@ -226,7 +226,7 @@ describe('TeamFeed', () => {
   })
 
   it('pages the wire once the snapshot stream is loaded and retires at the observed total', async () => {
-    const page = vi.fn(async (): Promise<RpcResult<TeamMessagePage>> => ({
+    const page = vi.fn(async (): Promise<ClientResult<TeamMessagePage>> => ({
       ok: true,
       value: {
         kind: 'message-page',
@@ -269,7 +269,7 @@ describe('TeamFeed', () => {
       olderMessages(200, 600, 4000, 'old2-s'),
     ]
     let call = 0
-    const page = vi.fn(async (_leaderSessionId: string, _anchor: MessageAnchor): Promise<RpcResult<TeamMessagePage>> => ({
+    const page = vi.fn(async (_leaderSessionId: string, _anchor: MessageAnchor): Promise<ClientResult<TeamMessagePage>> => ({
       ok: true,
       value: {
         kind: 'message-page',
@@ -296,8 +296,8 @@ describe('TeamFeed', () => {
   })
 
   it('keeps the button busy while a page is in flight and ignores a double click', async () => {
-    let settle!: (value: RpcResult<TeamMessagePage>) => void
-    const page = vi.fn((): Promise<RpcResult<TeamMessagePage>> => new Promise((res) => { settle = res }))
+    let settle!: (value: ClientResult<TeamMessagePage>) => void
+    const page = vi.fn((): Promise<ClientResult<TeamMessagePage>> => new Promise((res) => { settle = res }))
     const team = view({ messages: manyMessages(500), messageCount: 620 })
     const { container } = render(<TeamFeed {...makeProps(team, vi.fn(), zh, page)} />)
     fireEvent.click(screen.getByText('加载更早'))
@@ -361,7 +361,7 @@ describe('TeamFeed', () => {
   })
 
   it('shows the loud error note for a transport failure folded into the result', async () => {
-    const page = vi.fn(async (): Promise<RpcResult<TeamMessagePage>> => ({
+    const page = vi.fn(async (): Promise<ClientResult<TeamMessagePage>> => ({
       ok: false,
       error: { code: 'internal', message: 'wire down', details: {} },
     }))
@@ -377,7 +377,7 @@ describe('TeamFeed', () => {
   })
 
   it('resets the fetched pages when a new snapshot frame lands (depth kept, seam protected)', async () => {
-    const page = vi.fn(async (): Promise<RpcResult<TeamMessagePage>> => ({
+    const page = vi.fn(async (): Promise<ClientResult<TeamMessagePage>> => ({
       ok: true,
       value: {
         kind: 'message-page',

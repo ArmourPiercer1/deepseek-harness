@@ -28,7 +28,7 @@
  * React-free; the renderer supplies the snapshot, the load depth, and the
  * wire pages it has fetched.
  */
-import type { TeamView, TeamMessageView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { TeamView, TeamMessageView } from '@deepseek-ai/dsh-api-session-controller/client'
 
 type ApprovalRow = TeamView['approvals'][number]
 type MessageRow = TeamView['messages'][number]

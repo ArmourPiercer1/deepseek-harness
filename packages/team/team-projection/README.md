@@ -6,7 +6,7 @@ Host-side read-only team projection. `TeamProjectionService` (default export, `c
 
 ## Placement
 
-Host-plane service package behind the web bundle's host roster (apiproxy is the wire consumer; the browser store lands in `dsh-client-runtime`). It does not read `ctx.team` — the team group sits behind the agent preset's isolate realm, invisible to the host plane — so the roster is re-scanned from the filesystem (`$DSH_HOME/teammates` plus the leader session's workspace `.dsh/teammates`, self-contained workspace semantics) with the `team-enablement` settings applied through `ctx.get('settings')` when composed.
+Host-plane service package in the web bundle's host roster (the wire is owned by `dsh-client-connection`; the browser-side team mirror lands in the `dsh-api-session-controller` client face). It does not read `ctx.team` — the team group sits behind the agent preset's isolate realm, invisible to the host plane — so the roster is re-scanned from the filesystem (`$DSH_HOME/teammates` plus the leader session's workspace `.dsh/teammates`, self-contained workspace semantics) with the `team-enablement` settings applied through `ctx.get('settings')` when composed.
 
 ## Service API
 

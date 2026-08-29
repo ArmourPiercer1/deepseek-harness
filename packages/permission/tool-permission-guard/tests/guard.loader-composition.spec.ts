@@ -16,7 +16,7 @@ import { Context } from '@deepseek-ai/cordis'
 import type { Message } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -148,7 +148,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = probeAgent('guard-deny')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('deny-1'),
+      signal: new AbortController().signal, callId: ToolCallId('deny-1'),
       name: 'probe', arguments: { action: 'secret-data' }, agent,
     })
 
@@ -170,7 +170,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = probeAgent('guard-allow')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('allow-1'),
+      signal: new AbortController().signal, callId: ToolCallId('allow-1'),
       name: 'probe', arguments: { action: 'ok-1' }, agent,
     })
 
@@ -198,7 +198,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = probeAgent('guard-ask-noseam')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('ask-1'),
+      signal: new AbortController().signal, callId: ToolCallId('ask-1'),
       name: 'probe', arguments: { action: 'ask-me' }, agent,
     })
 
@@ -227,7 +227,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = turnAgent('guard-ask-granted')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('ask-2'),
+      signal: new AbortController().signal, callId: ToolCallId('ask-2'),
       name: 'probe', arguments: { action: 'ask-me' }, agent,
     })
 
@@ -256,7 +256,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = turnAgent('guard-ask-rejected')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('ask-3'),
+      signal: new AbortController().signal, callId: ToolCallId('ask-3'),
       name: 'probe', arguments: { action: 'ask-me' }, agent,
     })
 
@@ -272,7 +272,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = probeAgent('guard-enforce-fallback')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('mode-1'),
+      signal: new AbortController().signal, callId: ToolCallId('mode-1'),
       name: 'probe', arguments: { action: 'unlisted' }, agent,
     })
 
@@ -298,7 +298,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = probeAgent('guard-mode-default')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('mode-2'),
+      signal: new AbortController().signal, callId: ToolCallId('mode-2'),
       name: 'probe', arguments: { action: 'unlisted' }, agent,
     })
 
@@ -322,7 +322,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = probeAgent('guard-no-engine')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('loose-1'),
+      signal: new AbortController().signal, callId: ToolCallId('loose-1'),
       name: 'probe', arguments: { action: 'anything' }, agent,
     })
 
@@ -337,7 +337,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     ctx.tools.register(makeProbeTool(dispatches))
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('noagent-1'),
+      signal: new AbortController().signal, callId: ToolCallId('noagent-1'),
       name: 'probe', arguments: { action: 'secret-data' },
     })
 
@@ -365,7 +365,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     const agent = probeAgent('guard-diagnostics')
 
     const result = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('diag-1'),
+      signal: new AbortController().signal, callId: ToolCallId('diag-1'),
       name: 'probe', arguments: { action: 'secret-data' }, agent,
     })
 
@@ -376,7 +376,7 @@ describe('tool-permission-guard real Loader composition through cordis.yml', () 
     // A second call reuses the compiled policy: the diagnostics were logged
     // once at the first compile, not per call.
     const second = await ctx.tools.execute({
-      signal: new AbortController().signal, callId: CallId('diag-2'),
+      signal: new AbortController().signal, callId: ToolCallId('diag-2'),
       name: 'probe', arguments: { action: 'secret-data' }, agent,
     })
     expect(second.isError).toBe(true)

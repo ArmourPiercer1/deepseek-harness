@@ -6,7 +6,7 @@
  * first-seen order) — every field read straight from the projection.
  */
 import { describe, expect, it } from 'vitest'
-import type { TeamView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { TeamView } from '@deepseek-ai/dsh-api-session-controller/client'
 import { deriveTeamDockContent, deriveTeamDockCounts } from '../src/client/team-dock-model.ts'
 
 const LEADER = 'leader-s'

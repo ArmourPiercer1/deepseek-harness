@@ -9,7 +9,7 @@
  * reads a wall clock. React-free; the renderer supplies the snapshot and
  * the clock.
  */
-import type { TeamView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { TeamView } from '@deepseek-ai/dsh-api-session-controller/client'
 
 /** One delegation bar inside a lane (the effective end folds in "now"). */
 export interface TeamTimelineSpan {

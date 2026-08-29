@@ -22,7 +22,7 @@
  * React-free; the renderer supplies the row data, the mirror view for the
  * row's session, and the current session id.
  */
-import type { TeamView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { TeamView } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { TeamMarkerChatData } from './team-marker-definition.ts'
 
 /** The resolved D16 jump of one marker row. */

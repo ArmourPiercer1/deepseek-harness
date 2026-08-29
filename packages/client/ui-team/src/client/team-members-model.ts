@@ -14,7 +14,7 @@
  * from the projection — the log baseline with the live running overlay
  * already applied — and never re-derived here.
  */
-import type { TeamView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { TeamView } from '@deepseek-ai/dsh-api-session-controller/client'
 
 /** One projection member row (the wire's `TeamView['members']` entry). */
 type MemberRow = TeamView['members'][number]

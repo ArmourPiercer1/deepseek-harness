@@ -6,7 +6,7 @@ Host 侧只读团队投影。`TeamProjectionService`（默认导出，`ctx.teamP
 
 ## 放置
 
-Host 平面服务包，挂在 web bundle 的 host 名册之后（apiproxy 是 wire 消费方；浏览器 store 在 `dsh-client-runtime` 落地）。不读 `ctx.team` —— team 组位于 agent preset 的 isolate realm 之后，对 host 平面不可见——名册改为从文件系统重扫（`$DSH_HOME/teammates` 加 leader 会话工作区的 `.dsh/teammates`，工作区自包含语义），并在已组合 `ctx.get('settings')` 时应用 `team-enablement` 设置。
+Host 平面服务包，挂在 web bundle 的 host 名册中（wire 由 `dsh-client-connection` 持有；浏览器侧 team mirror 落在 `dsh-api-session-controller` 的 client face）。不读 `ctx.team` —— team 组位于 agent preset 的 isolate realm 之后，对 host 平面不可见——名册改为从文件系统重扫（`$DSH_HOME/teammates` 加 leader 会话工作区的 `.dsh/teammates`，工作区自包含语义），并在已组合 `ctx.get('settings')` 时应用 `team-enablement` 设置。
 
 ## 服务 API
 

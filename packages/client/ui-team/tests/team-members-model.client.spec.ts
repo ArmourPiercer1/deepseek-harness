@@ -6,7 +6,7 @@
  * and the instance field pass-through (status never re-derived).
  */
 import { describe, expect, it } from 'vitest'
-import type { TeamView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { TeamView } from '@deepseek-ai/dsh-api-session-controller/client'
 import { deriveTeamMembers } from '../src/client/team-members-model.ts'
 
 type MemberRow = TeamView['members'][number]

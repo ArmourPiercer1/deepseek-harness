@@ -13,7 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { Context, Service } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import { CallId, MessageId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId, MessageId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -147,7 +147,7 @@ describe('teammate tool activity through the real Loader composition', () => {
 
     const first = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('delegate-run'),
+      callId: ToolCallId('delegate-run'),
       name: 'delegate_to_teammate',
       arguments: { teammate_id: 'backend', prompt: 'work' },
       agent: leader,
@@ -158,11 +158,11 @@ describe('teammate tool activity through the real Loader composition', () => {
     const child = ctx.sessions.create(SessionId('team-child-1'), {
       meta: { parentSession: SessionId('team-activity-agent'), origin: 'subagent' },
     })
-    child.append('tool/call', { turn: 1, step: 1, callId: CallId('call-1'), name: 'pwsh', arguments: '{}' })
+    child.append('tool/call', { turn: 1, step: 1, callId: ToolCallId('call-1'), name: 'pwsh', arguments: '{}' })
 
     const second = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('delegate-rerun'),
+      callId: ToolCallId('delegate-rerun'),
       name: 'delegate_to_teammate',
       arguments: { teammate_id: 'backend', prompt: 'work again' },
       agent: leader,
@@ -182,7 +182,7 @@ describe('teammate tool activity through the real Loader composition', () => {
 
     const first = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('delegate-run-2'),
+      callId: ToolCallId('delegate-run-2'),
       name: 'delegate_to_teammate',
       arguments: { teammate_id: 'backend', prompt: 'work' },
       agent: leader,
@@ -193,16 +193,16 @@ describe('teammate tool activity through the real Loader composition', () => {
     const child = ctx.sessions.create(SessionId('team-child-1'), {
       meta: { parentSession: SessionId('team-activity-agent'), origin: 'subagent' },
     })
-    child.append('tool/call', { turn: 1, step: 1, callId: CallId('call-2'), name: 'pwsh', arguments: '{}' })
+    child.append('tool/call', { turn: 1, step: 1, callId: ToolCallId('call-2'), name: 'pwsh', arguments: '{}' })
 
     const stranger = ctx.sessions.create(SessionId('team-stranger'), {
       meta: { parentSession: SessionId('team-activity-agent'), origin: 'subagent' },
     })
-    stranger.append('tool/call', { turn: 1, step: 1, callId: CallId('call-3'), name: 'Get-Process', arguments: '{}' })
+    stranger.append('tool/call', { turn: 1, step: 1, callId: ToolCallId('call-3'), name: 'Get-Process', arguments: '{}' })
 
     const second = await ctx.tools.execute({
       signal: new AbortController().signal,
-      callId: CallId('delegate-rerun-2'),
+      callId: ToolCallId('delegate-rerun-2'),
       name: 'delegate_to_teammate',
       arguments: { teammate_id: 'backend', prompt: 'work again' },
       agent: leader,

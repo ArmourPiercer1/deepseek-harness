@@ -14,7 +14,7 @@
  * that reads like its family.
  */
 
-import type { DiscoveredModelView } from '@deepseek-ai/dsh-api-remotes/client'
+import type { LlmDiscoveredModel } from '@deepseek-ai/dsh-api-remotes/client'
 
 /**
  * Display names for families whose everyday spelling is not the token in
@@ -42,7 +42,7 @@ export interface CandidateGroup {
   /** The family as the picker shows it. */
   label: string
   /** Candidates in this family, in discovery order. */
-  models: DiscoveredModelView[]
+  models: LlmDiscoveredModel[]
 }
 
 /**
@@ -80,7 +80,7 @@ export function familyLabel(family: string): string {
  * @param candidates - the models a provider advertised.
  * @returns one group per family, in first-appearance order.
  */
-export function groupCandidates(candidates: readonly DiscoveredModelView[]): CandidateGroup[] {
+export function groupCandidates(candidates: readonly LlmDiscoveredModel[]): CandidateGroup[] {
   const groups: CandidateGroup[] = []
   const byFamily = new Map<string, CandidateGroup>()
   for (const candidate of candidates) {

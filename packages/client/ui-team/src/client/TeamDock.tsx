@@ -14,9 +14,10 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 // ui-conversation's root entry) must be in the program for this props type.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {
-  ObservableSnapshot, SessionId, TeamMirror, TeamView,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import { resolveTeamView } from '@deepseek-ai/dsh-client-runtime/client'
+  TeamMirror, TeamView,
+} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import {
   IconChevronDownOutline14, IconChevronUpOutline14, StateDot, type StateDotState,
 } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -24,6 +25,7 @@ import {
   deriveTeamDockContent, deriveTeamDockCounts,
   type TeamDockMemberRow, type TeamDockTaskRow,
 } from './team-dock-model.ts'
+import { resolveTeamView } from './team-view-model.ts'
 import type { TeamKey } from './locales.ts'
 import styles from './TeamDock.module.css'
 

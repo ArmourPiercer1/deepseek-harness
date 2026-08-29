@@ -26,8 +26,8 @@ import { useEffect, useState } from 'react'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { StateDot, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {
-  MessageAnchor, RpcError, RpcResult, TeamMessagePage, TeamMessageView, TeamView,
-} from '@deepseek-ai/dsh-client-runtime/client'
+  ClientFailure, ClientResult, MessageAnchor, TeamMessagePage, TeamMessageView, TeamView,
+} from '@deepseek-ai/dsh-api-session-controller/client'
 import type { TeamKey } from './locales.ts'
 import {
   TEAM_FEED_INITIAL_LIMIT, TEAM_FEED_STEP,
@@ -49,7 +49,7 @@ export interface TeamFeedProps {
     leaderSessionId: string,
     anchor: MessageAnchor,
     limit?: number,
-  ) => Promise<RpcResult<TeamMessagePage>>
+  ) => Promise<ClientResult<TeamMessagePage>>
   /** Switch the current session to the clicked row's session. */
   onSelectSession: (sessionId: string) => void
   /** The team dictionary translate seat. */
@@ -143,7 +143,7 @@ export function TeamFeed({ view, pageMessages, onSelectSession, t }: TeamFeedPro
   const [loadedCount, setLoadedCount] = useState(TEAM_FEED_INITIAL_LIMIT)
   const [olderMessages, setOlderMessages] = useState<readonly TeamMessageView[]>([])
   const [pageMessageCount, setPageMessageCount] = useState<number | undefined>(undefined)
-  const [pageError, setPageError] = useState<RpcError | null>(null)
+  const [pageError, setPageError] = useState<ClientFailure | null>(null)
   const [loading, setLoading] = useState(false)
   // A new snapshot frame re-derives the window at the same depth and
   // resets the fetched pages: the page's seam is the snapshot window's

@@ -7,15 +7,16 @@
  * the ChatNodeKind merge (the whole-card path was removed).
  */
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import {
-  ConversationNodeAssembler, conversationContextKey,
-} from '@deepseek-ai/dsh-client-runtime/client'
+import { ConversationNodeAssembler } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import { conversationContextKey } from '@deepseek-ai/dsh-client-ui-conversation/src/client/contract/conversation.ts'
 import type {
-  ChatConversationViewNode, ConversationEventInput, ConversationMatch,
-  ConversationNodeDefinition, ConversationViewDefinition,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import type { ChatNodeKind } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type { TeamView } from '@deepseek-ai/dsh-client-runtime/client'
+  SessionEventLikeEntry, SessionLiveEventEntry, TeamView,
+} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ChatConversationViewNode, ChatNodeKind } from '@deepseek-ai/dsh-client-ui-chat/client'
+import type {
+  ConversationNodeDefinition, ConversationStartMatch, ConversationViewDefinition,
+} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
 import type { TeamProgressStatus } from '@deepseek-ai/dsh-team'
 import {
   teamMarkerData, teamMarkerDefinition, teamMarkerId,
@@ -55,11 +56,11 @@ const chatViewDefinition: ConversationViewDefinition<ChatConversationViewNode, C
   },
 }
 
-function at(seq: number, type: string, data: unknown): ConversationEventInput {
-  return { event: { seq, time: seq * 100, type, data } as ConversationEventInput['event'], view: undefined }
+function at(seq: number, type: string, data: unknown): SessionLiveEventEntry {
+  return { type: 'event', event: { seq, time: seq * 100, type, data } as SessionEvent }
 }
 
-function assembler(entries: readonly ConversationEventInput[], hasMore = false): ConversationNodeAssembler {
+function assembler(entries: readonly SessionEventLikeEntry[], hasMore = false): ConversationNodeAssembler {
   const value = new ConversationNodeAssembler(new TestEventDefinitions(), new TestViewDefinitions())
   value.replaceWindow(entries, hasMore)
   value.flush()
@@ -79,28 +80,28 @@ function progress(
   memberId: string,
   subject?: string,
   summary?: string,
-): ConversationEventInput {
+): SessionLiveEventEntry {
   return at(seq, 'team/progress', {
     taskId, subject: subject ?? taskId, status, memberId,
     ...(summary === undefined ? {} : { summary }),
   })
 }
 
-function request(seq: number, requestId: string, memberId: string, kind?: 'tool' | 'plan'): ConversationEventInput {
+function request(seq: number, requestId: string, memberId: string, kind?: 'tool' | 'plan'): SessionLiveEventEntry {
   return at(seq, 'team/control-request', {
     requestId, memberId, toolName: 'bash', reason: 'need to push',
     ...(kind === undefined ? {} : { kind }),
   })
 }
 
-function decision(seq: number, requestId: string, value: string, reason?: string): ConversationEventInput {
+function decision(seq: number, requestId: string, value: string, reason?: string): SessionLiveEventEntry {
   return at(seq, 'team/control-decision', {
     requestId, decision: value,
     ...(reason === undefined ? {} : { reason }),
   })
 }
 
-function message(seq: number, from: string, to: string, text: string): ConversationEventInput {
+function message(seq: number, from: string, to: string, text: string): SessionLiveEventEntry {
   return at(seq, 'team/message', { from, to, message: text })
 }
 
@@ -239,15 +240,14 @@ describe('team-marker Conversation Definition', () => {
       at(3, 'turn/end', { turn: 1 }),
     ]
     const first = assembler(events.slice(0, 2))
-    first.append(events[2] as ConversationEventInput)
+    first.append(events[2]!)
     first.flush()
     expect(nodes(first).map(row => row.id)).toEqual(['progress:t1:2'])
   })
 
   it('builds the node from State, and builds nothing before a start exists', () => {
-    const match: ConversationMatch = {
+    const match: ConversationStartMatch = {
       event: progress(4, 't1', 'in_progress', 'm1').event,
-      view: undefined,
       role: 'start',
       location: { kind: 'unresolved' },
     }

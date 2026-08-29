@@ -6,7 +6,7 @@ Web team configuration and status surface for the DeepSeek Harness team plugin.
 
 ## Role
 
-Browser-side UI plugin for the team plugin. Adds a Team settings section to the Settings panel showing teammate configuration and usage instructions, inline team marker Chat nodes in the conversation — one compact single-line row per durable team event (`team/progress`, `team/control-request`, `team/control-decision`, `team/message`), the globally visible Team conversation view tab backed by the read-only leader-keyed team mirror (`ctx.sessions.teams`; the frozen team-ness derivation lives in the runtime as `resolveTeamView`), and the resident team dock bar above the input for team sessions.
+Browser-side UI plugin for the team plugin. Adds a Team settings section to the Settings panel showing teammate configuration and usage instructions, inline team marker Chat nodes in the conversation — one compact single-line row per durable team event (`team/progress`, `team/control-request`, `team/control-decision`, `team/message`), the globally visible Team conversation view tab backed by the read-only leader-keyed team mirror (`ctx.sessions.teams`; the frozen team-ness derivation is an in-package fold kept in lockstep with the object layer's `resolveTeamView`), and the resident team dock bar above the input for team sessions.
 
 ## Slot Registrations
 

@@ -6,7 +6,7 @@ DeepSeek Harness 团队插件的 Web 团队配置与状态呈现界面。
 
 ## 角色
 
-团队插件的浏览器端 UI 插件。在设置面板中添加 Team 设置区块，展示 teammate 配置与使用说明；在会话流中注册内联团队标记 Chat 节点 —— 每条持久团队事件（`team/progress`、`team/control-request`、`team/control-decision`、`team/message`）一行紧凑单行；注册全局可见的「团队」会话视图标签页，数据来自只读的按 leader 键控团队镜像（`ctx.sessions.teams`；冻结团队性判定位于 runtime 的 `resolveTeamView`）；并为团队会话在输入框上方注册常驻团队坞条。
+团队插件的浏览器端 UI 插件。在设置面板中添加 Team 设置区块，展示 teammate 配置与使用说明；在会话流中注册内联团队标记 Chat 节点 —— 每条持久团队事件（`team/progress`、`team/control-request`、`team/control-decision`、`team/message`）一行紧凑单行；注册全局可见的「团队」会话视图标签页，数据来自只读的按 leader 键控团队镜像（`ctx.sessions.teams`；冻结团队性判定为包内折叠，与对象层的 `resolveTeamView` 保持一致）；并为团队会话在输入框上方注册常驻团队坞条。
 
 ## 插槽注册
 

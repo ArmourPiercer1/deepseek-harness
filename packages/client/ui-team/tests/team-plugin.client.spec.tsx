@@ -13,9 +13,8 @@
 import { Context } from '@deepseek-ai/cordis'
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  ConversationEventRegistry, SlotRegistry,
-} from '@deepseek-ai/dsh-client-runtime/client'
+import { UiConversation } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { apply as applyLocale, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
 import { makeTranslate, stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
@@ -47,7 +46,7 @@ describe('plugin lifecycle', () => {
     ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
     ctx.provide('remote', { $on: () => () => {} } as never)
     ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
-    ctx.provide('sessions', {
+    const sessions = {
       teams: {
         mirror,
         refresh: (sessionId: string) => { refreshed.push(sessionId); return Promise.resolve() },
@@ -57,8 +56,9 @@ describe('plugin lifecycle', () => {
         }),
       },
       open: (sessionId: string) => { opened.push(sessionId) },
-    } as never)
-    await ctx.plugin(ConversationEventRegistry).await()
+    } as never
+    ctx.provide('sessions', sessions)
+    const events = new UiConversation(ctx, sessions).events
     ctx.slots.register({
       name: 'root',
       children: {
@@ -71,7 +71,7 @@ describe('plugin lifecycle', () => {
     await ctx.plugin({ inject: localeInject, apply: applyLocale }).await()
     const fiber = ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
-    expect(ctx.conversationEvents.entries().map(entry => entry.kind)).toEqual(['team-marker'])
+    expect(events.entries().map(entry => entry.kind)).toEqual(['team-marker'])
     expect(ctx.slots.entries('conversation.chat.node')).toHaveLength(1)
     expect(ctx.slots.entries('conversation.chat.node')[0]?.options.key).toBe('team-marker')
     expect(ctx.slots.entries('settings.section')).toHaveLength(1)
@@ -153,7 +153,7 @@ describe('plugin lifecycle', () => {
     dockFace?.openTeamTab()
     expect(clicked).toHaveBeenCalledTimes(1)
     await fiber.dispose()
-    expect(ctx.conversationEvents.entries()).toEqual([])
+    expect(events.entries()).toEqual([])
     expect(ctx.slots.entries('conversation.chat.node')).toEqual([])
     expect(ctx.slots.entries('settings.section')).toEqual([])
     expect(ctx.slots.entries('conversation.view')).toEqual([])
@@ -161,7 +161,7 @@ describe('plugin lifecycle', () => {
 
     const replacement = ctx.plugin({ inject: [...inject], apply })
     await replacement.await()
-    expect(ctx.conversationEvents.entries().map(entry => entry.kind)).toEqual(['team-marker'])
+    expect(events.entries().map(entry => entry.kind)).toEqual(['team-marker'])
     expect(ctx.slots.entries('conversation.chat.node')).toHaveLength(1)
     expect(ctx.slots.entries('conversation.view')).toHaveLength(1)
     expect(ctx.slots.entries('conversation.input.dock')).toHaveLength(1)
@@ -176,8 +176,9 @@ describe('plugin lifecycle', () => {
     ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
     // The capability member is absent: the tab still registers, the mirror
     // source is the static empty one, and the cold pull resolves as a no-op.
-    ctx.provide('sessions', {} as never)
-    await ctx.plugin(ConversationEventRegistry).await()
+    const sessions = {} as never
+    ctx.provide('sessions', sessions)
+    new UiConversation(ctx, sessions)
     ctx.slots.register({
       name: 'root',
       children: {

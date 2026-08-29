@@ -19,10 +19,8 @@ import { useMemo, type MouseEvent } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: the conversation slot declarations and the team-marker ChatNode merge.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type {
-  ObservableSnapshot, TeamMirror,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import { resolveTeamView } from '@deepseek-ai/dsh-client-runtime/client'
+import type { TeamMirror } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import {
   type TeamMarkerChatData,
   type TeamMarkerControlDecisionData,
@@ -30,6 +28,7 @@ import {
 } from './team-marker-definition.ts'
 import { resolveTeamMarkerJump } from './team-marker-jump.ts'
 import { formatTeamClock } from './team-timeline-model.ts'
+import { resolveTeamView } from './team-view-model.ts'
 import type { TeamKey } from './locales.ts'
 import styles from './TeamMarker.module.css'
 
