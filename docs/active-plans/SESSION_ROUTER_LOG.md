@@ -151,3 +151,37 @@
   `feat/team-vnext-integration-20260829`（non-ff 即停并报告）。不跑 lint/test 套件（G-SYNC 独立）。
 - 当前状态：等待 WAVE2 交付；push 成功后终验收（GitHub remote head = 双亲 merge commit）→
   向用户报告 → 停止工作；后续派发设计基于 push 后 GitHub 状态构建。
+
+### 轮次 7（2026-08-29）— WAVE2 验收通过，S0（merge + push）完成
+
+- **WAVE2 交付**（`2208c24c`）：merge commit `57e47a7fbb`，双亲核验
+  `9eac3d0d9b`（ours）+ `cd5ef81481`（upstream master）；普通 push
+  `feat/team-vnext-integration-20260829` 成功（remote 落后一个提交，FF 同时带上
+  `9eac3d0d`）；`git ls-remote` 核验 remote head = 本地 HEAD。
+- **编排者独立复核**：0 未合并、worktree 干净、轮次 6 条目已随 merge commit 入库；
+  遗留修复①（fixture spec 无 `FixtureApiClient` 残留、`team-leader-unknown` 断言保留）、
+  遗留修复②（`modelGrouping.ts` 0 `DiscoveredModelView` / 3 `LlmDiscoveredModel`）抽查通过。
+- **子代理报告要点**：12 generator 全 ok；lock 无 downgrade（upstream +672/-0，纯 team
+  workspace 新条目）；pairing verify PASS（4 docs 对 + persistence sidecar + team-projection
+  README sidecar）；`typecheck` EXIT 0（5 轮最小修复全在 team seam：ui-team 客户端 API 随
+  上游 slot/conversation 重构迁移、`CallId`→`ToolCallId`×37、stub props 补全、max-len 折行）；
+  `dsh-client-runtime|dsh-apiproxy` grep 唯一 in-merge 修复 = team-projection README L9
+  （双语重写 + sidecar 重录），其余命中全部 report-only。
+- **全量 replay 核验**（`git merge-tree --write-tree` 重放双亲合并）：110 unmerged 条目
+  （85 content + 22 modify-vs-deletion + 3 ours-only）逐条有账——28 个 expected 文件全部
+  `final = upstream +1/-0`（team 单行锚点插入）；fetch-grouped 为 rename/add 特例（我们的
+  26 行新增保留在 upstream 更名位置，judgment a）；22 个上游删除全部取删除、team 内容迁移
+  新址（session-controller test 块 +219/-1、manager.ts +117/-0、contract +51/-0；
+  `api-proxy-team.spec.ts` 改写为 `team-projection.host.spec.ts` 225 行而非丢弃；
+  `team-mirror.ts` 迁移 + 3 行适配）；各 content 冲突终态 vs upstream 差分逐项列明。
+- **Report-only 项**（follow-up 不修，移交用户/upstream）：invariants README L69 陈旧
+  `dsh-client-runtime` 引用（upstream 自有内容）；workflow-worker-thread spec L563 oxlint
+  warning（upstream 自有）；7 个既有 pairing violations（6 active-plans EN-only + 1
+  team-gui note 死链对）。
+- **Housekeeping**：stash `team-vnext interrupted rescue 20260829-014103` 核验冗余
+  （全部 team delta 已含于 merge commit）后丢弃；rescue 分支
+  `rescue/team-vnext-interrupted-20260829-014103` @ `fbef19f450` 保留为回滚锚点。
+- **S0（规格 §3 状态机）完成**。下一段 G-SYNC（§8：typecheck/lint/build → Team targeted
+  suite → `check:all` → `check:ci:windows-blocking`）→ C0/G0 → P1–P12 + Gates →
+  drift A/B → §26 → PR-GATE → PR → 合入 `feat/agent-teams`（§33 DoD）的派发设计基于
+  push 后 GitHub 状态构建；本会话按用户指令在收尾与报告后停止工作。
